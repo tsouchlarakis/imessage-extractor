@@ -1,0 +1,13 @@
+.github/
+.vscode/
+**/*__pycache__/
+**/*.app/
+**/*.archive/
+**/*.DS_Store
+**/*.egg-info/
+**/*.git/
+**/*.pyc
+dist/
+Icon
+Icon?
+tests/test_data
