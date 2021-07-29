@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""The setup script."""
-
+import versioneer
 from setuptools import setup, find_packages
 
 with open('README.rst') as readme_file:
@@ -10,12 +9,13 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=7.0', ]
+with open('requirements.in') as requirements_file:
+    requirements = requirements_file.read().split()
 
 test_requirements = ['pytest>=3', ]
 
 setup(
-    author="Andoni Sooklaris",
+    author='Andoni Sooklaris',
     author_email='andoni.sooklaris@gmail.com',
     python_requires='>=3.6',
     classifiers=[
@@ -28,14 +28,14 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    description="Extract local iMessage data to a Postgres database or flat textfiles",
+    description='Extract local iMessage data to a Postgres database or flat textfiles',
     entry_points={
         'console_scripts': [
             'imessage_extractor=imessage_extractor.cli:main',
         ],
     },
     install_requires=requirements,
-    license="MIT license",
+    license='MIT license',
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='imessage_extractor',
@@ -44,6 +44,7 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/tsouchlarakis/imessage_extractor',
-    version='0.1.0',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     zip_safe=False,
 )
