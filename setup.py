@@ -31,7 +31,7 @@ setup(
     description='Extract local iMessage data to a Postgres database or flat textfiles',
     entry_points={
         'console_scripts': [
-            'imessage_extractor=imessage_extractor.cli:main',
+            'imessage-extractor=imessage_extractor.cli:main',
         ],
     },
     install_requires=requirements,
