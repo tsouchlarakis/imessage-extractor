@@ -1,7 +1,6 @@
 import logging
 import click
-import pydoni
-from .src.run import run
+from .src.go import go
 
 
 @click.group()
@@ -12,7 +11,7 @@ def cli():
     pass
 
 
-cli.add_command(run)
+cli.add_command(go)
 
 
 def main(args=None):

@@ -16,7 +16,7 @@ logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
 @click.option('--chat-db-path', type=str, default=expanduser('~/Library/Messages/chat.db'),
               help='Path to working chat.db.')
 @click.command()
-def run(chat_db_path, verbose):
+def go(chat_db_path, verbose):
     """
     Run the imessage-extractor.
     """
@@ -45,3 +45,5 @@ def run(chat_db_path, verbose):
 
     # Returns a `ChatDbExtract` object containing a list of `ChatDbTable` objects
     chat_db_extract = extract_sqlite(logger=logger, sqlite_con=sqlite_con)
+
+    # TODO: Save as flat files if specified

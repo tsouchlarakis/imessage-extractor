@@ -7,11 +7,10 @@ class ChatDbTable(object):
     """
     Store data from a single table in chat.db.
     """
-    def __init__(self, df, sqlite_table_name, write_mode) -> None:
+    def __init__(self, df: pd.DataFrame, sqlite_table_name: str) -> None:
         self.df = df
         self.shape = df.shape
         self.sqlite_table_name = sqlite_table_name
-        self.write_mode = write_mode
 
 
 class ChatDbExtract(object):
@@ -45,22 +44,13 @@ def extract_sqlite(logger, sqlite_con: sqlite3.Connection) -> ChatDbExtract:
     sqlite_cursor.execute("select name from sqlite_master where type = 'table';")
     sqlite_tables = [x[0] for x in sqlite_cursor.fetchall()]
 
-    # Declare tables that should be anti-joined with existing tables in the user's Postgres
-    # database (if present), as opposed to rebuilding them entirely from scratch.
-    # Table name : join column(s) pairs
-    append_table_dict = dict(chat_message_join=['chat_id', 'message_id'],
-                             attachment='ROWID',
-                             message='ROWID',
-                             message_attachment_join=['message_id', 'attachment_id'])
-
     chat_db_extract = ChatDbExtract()
 
     # Extract all rows for all tables in chat.db
     logger.info('Reading chat.db source tables...', bold=True)
     for tname in [x for x in sqlite_tables]:
         df_sqlite = pd.read_sql(f'select * from {tname}', sqlite_con)
-        write_mode = 'append' if tname in append_table_dict.keys() else 'overwrite'
-        tobject = ChatDbTable(df_sqlite, sqlite_table_name=tname, write_mode=write_mode)
+        tobject = ChatDbTable(df_sqlite, sqlite_table_name=tname)
         chat_db_extract.add_table(tname, tobject)
         logger.info(f"Read SQLite:{click.style(tname, bold=True)}, shape: {df_sqlite.shape}", arrow='white')
 
