@@ -134,3 +134,15 @@ def print_startup_message(logger: logging.Logger) -> None:
             # time.sleep(.015)
 
         # time.sleep(1.5)
+
+def bold(msg: str) -> str:
+    """
+    Return a string wrapped in bold.
+    """
+    return click.style(msg, bold=True)
+
+def path(msg: str) -> str:
+    """
+    Return a string formatted as a colored path string.
+    """
+    return click.style(msg, fg='blue')
