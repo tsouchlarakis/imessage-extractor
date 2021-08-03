@@ -1,0 +1,66 @@
+{
+    "_SqliteDatabaseProperties": {
+        "write_mode": "replace",
+        "primary_key": "key"
+    },
+    "attachment": {
+        "write_mode": "replace",
+        "primary_key": "ROWID"
+    },
+    "chat": {
+        "write_mode": "replace",
+        "primary_key": "ROWID"
+    },
+    "chat_handle_join": {
+        "write_mode": "replace",
+        "primary_key": ["chat_id", "handle_id"]
+    },
+    "chat_message_join": {
+        "write_mode": "replace",
+        "primary_key": ["chat_id", "message_id"]
+    },
+    "deleted_messages": {
+        "write_mode": "replace",
+        "primary_key": "ROWID"
+    },
+    "handle": {
+        "write_mode": "replace",
+        "primary_key": "ROWID"
+    },
+    "kvtable": {
+        "write_mode": "replace",
+        "primary_key": "ROWID"
+    },
+    "message": {
+        "write_mode": "replace",
+        "primary_key": "ROWID"
+    },
+    "message_attachment_join": {
+        "write_mode": "replace",
+        "primary_key": ["message_id", "attachment_id"]
+    },
+    "message_processing_task": {
+        "write_mode": "replace",
+        "primary_key": "ROWID"
+    },
+    "sqlite_sequence": {
+        "write_mode": "replace",
+        "primary_key": "name"
+    },
+    "sqlite_stat1": {
+        "write_mode": "replace",
+        "primary_key": ["tbl", "idx"]
+    },
+    "sync_deleted_attachments": {
+        "write_mode": "replace",
+        "primary_key": "ROWID"
+    },
+    "sync_deleted_chats": {
+        "write_mode": "replace",
+        "primary_key": "ROWID"
+    },
+    "sync_deleted_messages": {
+        "write_mode": "replace",
+        "primary_key": "ROWID"
+    }
+}
