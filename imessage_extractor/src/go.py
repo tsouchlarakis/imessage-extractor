@@ -116,6 +116,14 @@ def go(chat_db_path,
 
         logger.info(f'Connected to Postgres database {bold(db_name)} hosted on {bold(hostname + ":" + port)}')
 
+        if rebuild:
+            # Drop all objects in the Postgres schema to rebuild it from scratch
+            logger.info('Fully rebuilding destination database objects')
+            pg.execute(f'drop schema if exists {save_pg_schema} cascade')
+            pg.execute(f'create schema {save_pg_schema}')
+            # pg.drop_schema_if_exists_and_recreate(pg_schema, cascade=True)  # TODO: uncomment when new version of pydoni released
+            logger.info(f'Re-created schema from scratch')
+
         logger.info(f'Saving tables to schema {bold(save_pg_schema)}')
         chat_db_extract.save_to_postgres(pg, save_pg_schema, logger)
 

@@ -15,6 +15,122 @@ import typing
 table_info_json_fpath = join(dirname(__file__), 'table_info.json')
 
 
+class CreateTableSQL(object):
+    """
+    Transform a string result of an SQL create statement queried from the 'sql' column
+    in sqlite_master to a Postgres-interpretable create string, with any other custom
+    modifications applied to it.
+    """
+    def __init__(self, sqlite_create_str: str, pg_schema: str, if_not_exists: bool=False) -> None:
+        self.sqlite_create_str = sqlite_create_str
+        self.table_name = re.search(r'CREATE TABLE (\w+)', sqlite_create_str).group(1)
+        self.sql = self._construct(pg_schema, if_not_exists)
+
+    def _map_sqlite_dtypes_to_postgres(self, dtype: str) -> str:
+        """
+        Translate datatypes only available in SQLite to the closest datatypes in Postgres.
+        """
+        dtype_map = {
+            'BLOB': 'TEXT',
+            'INTEGER PRIMARY KEY AUTOINCREMENT': 'SERIAL PRIMARY KEY',
+        }
+
+        if dtype in dtype_map.keys():
+            return dtype_map[dtype]
+        else:
+            return dtype
+
+    def _apply_table_specific_dtype_mods(self, column_defs_lst: list) -> list:
+        """
+        Apply any custom datatype modifications to targeted columns. Modifications are
+        defined in the variable `table_specific_mods` in format:
+
+        table_name: {column_name: new_dtype, ...}
+
+        For example, this function may be used to map a specific column from INTEGER to
+        BIGINT, since the size constraings on SQLite's INTEGER are different than those
+        implemented by Postgres.
+        """
+        new_column_datatypes = {
+            'chat': {
+                'last_read_message_timestamp': 'BIGINT',
+            },
+        }
+
+        new_column_defs_lst = []
+        if self.table_name in new_column_datatypes.keys():
+            mapping = new_column_datatypes[self.table_name]
+            for column_name, dtype in column_defs_lst:
+                if column_name in mapping.keys():
+                    # Change the datatype of the column
+                    new_dtype = mapping[column_name]
+                    new_column_defs_lst.append((column_name, new_dtype))
+                else:
+                    new_column_defs_lst.append((column_name, dtype))
+        else:
+            # No changes to apply
+            new_column_defs_lst = column_defs_lst
+
+        return new_column_defs_lst
+
+    def _construct(self, pg_schema: str, if_not_exists: bool=False, quote_columns: bool=True) -> str:
+        """
+        Construct a Postgres-readable create string from the sqlite_create_str.
+        """
+        if_not_exists_str = 'IF NOT EXISTS ' if if_not_exists else ''
+
+        template = '\n'.join([
+            'CREATE TABLE "{if_not_exists_str}{pg_schema}"."{table_name}"',
+            '(',
+            '{column_defs_str}',
+            ');'
+        ])
+
+        # Remove CREATE TABLE {table_name}
+        column_defs = self.sqlite_create_str.replace('CREATE TABLE', '').replace(self.table_name, '').strip()
+
+        # Remove enclosing parentheses
+        column_defs = column_defs[1:-1]
+
+        # Convert to list and quote each column
+        column_defs = [x.strip() for x in column_defs.split(',')]
+        rgx_is_column = r'^[A-Za-z]+$'
+
+        column_defs_lst = []
+        for name_dtype_str in column_defs:
+            name_dtype_tuple = tuple(name_dtype_str.split(' ', 1))
+            assert len(name_dtype_tuple) in [1, 2], \
+                f'Invalid `name_dtype_str` "{name_dtype_str}" in column specification for table {self.table_name}'
+
+            name = name_dtype_tuple[0]
+            dtype = name_dtype_tuple[1] if len(name_dtype_tuple) == 2 else ''
+            dtype = self._map_sqlite_dtypes_to_postgres(dtype)
+
+
+            column_defs_lst.append((name, dtype))
+
+        column_defs_lst = self._apply_table_specific_dtype_mods(column_defs_lst)
+
+        column_defs_lst_quoted = []
+        for name, dtype in column_defs_lst:
+            if quote_columns:
+                if re.match(rgx_is_column, name):
+                    name = f'"{name}"'  # Add quotes around column name
+
+            column_defs_lst_quoted.append((name, dtype))
+
+        column_defs_str = '\t' + ',\n\t'.join([f'\t{name} {dtype}'.strip() for name, dtype in column_defs_lst_quoted])
+
+        sql = template.format(
+            if_not_exists_str=if_not_exists_str,
+            pg_schema=pg_schema,
+            table_name=self.table_name,
+            column_defs_str=column_defs_str
+        )
+
+        return sql
+
+
 class ChatDbTable(object):
     """
     Store metadata from a single table in chat.db.
@@ -44,14 +160,9 @@ class ChatDbTable(object):
         self.sqlite_cursor.execute(query_sql)
         create_sql_str = [x[0] for x in self.sqlite_cursor.fetchall()][0]
 
-        # Translate SQLite format to Postgres format
-        create_sql_str = create_sql_str.replace('BLOB', 'TEXT')
-        create_sql_str = create_sql_str.replace('INTEGER PRIMARY KEY AUTOINCREMENT', 'SERIAL PRIMARY KEY')
+        create_sql = CreateTableSQL(create_sql_str, self.pg_schema)
 
-        # Add schema name, and quote both the schema name and table name
-        create_sql_str = re.sub(r'(CREATE TABLE) (.*?) ', fr'\1 "{self.pg_schema}"."\2" ', create_sql_str)
-
-        return create_sql_str
+        return create_sql.sql
 
     def get_shape(self) -> tuple:
         """
@@ -86,7 +197,7 @@ class ChatDbTable(object):
 
         # Save table to Postgres
         load_sql = pydoni.advanced_strip(f"""
-        COPY {pg_schema}.{self.table_name}
+        COPY "{pg_schema}"."{self.table_name}"
         FROM '{self.csv_fpath}'
         (DELIMITER ',',
         FORMAT CSV,
