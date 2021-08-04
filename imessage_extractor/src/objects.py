@@ -1,3 +1,4 @@
+import pathlib
 import click
 import logging
 import pandas as pd
@@ -5,14 +6,14 @@ import json
 import re
 import sqlite3
 from pydoni import Postgres
-from os.path import join, dirname, isfile
+from os.path import join, dirname, isfile, splitext, abspath
 from os import stat
 import pydoni
 from .verbosity import bold, path
 import typing
 
 
-table_info_json_fpath = join(dirname(__file__), 'table_info.json')
+table_info_json_fpath = abspath(join(dirname(__file__), 'table_info.json'))
 
 
 class CreateTableSQL(object):
@@ -350,8 +351,6 @@ class ChatDbExtract(object):
 
         while len(inserted_journal) < len(self.table_objects):
             for table_name, table_object in self.table_objects.items():
-                # if table_name == 'chat_message_join':
-                #     import pdb; pdb.set_trace()
                 if table_name not in inserted_journal:
                     if table_object.references is not None:
                         if len([t for t in table_object.references if t not in inserted_journal]):
@@ -374,3 +373,60 @@ class ChatDbExtract(object):
                     # This table has already been saved to Postgres, so we can skip it
                     pass
 
+
+class View(object):
+    """
+    Store information and operations on a target Postgres iMessage database view.
+    """
+    def __init__(self,
+                 vw_name: str,
+                 vw_dpath: typing.Union[str, pathlib.Path],
+                 reference: typing.Union[list, None],
+                 pg_schema: str,
+                 pg: Postgres,
+                 logger: logging.Logger) -> None:
+        self.pg_schema = pg_schema
+        self.vw_name = splitext(vw_name)[0]  # Handles the case that vw_name contains a file extension
+        self.reference = reference
+        self.pg = pg
+        self.logger = logger
+
+        self.fpath = join(vw_dpath, self.vw_name + '.sql')
+        if not isfile(self.fpath):
+            raise FileNotFoundError(f'View {bold(self.vw_name)} definition expected at {path(self.fpath)} but not found')
+
+        with open(self.fpath, 'r') as f:
+            self.def_sql = f.read()
+
+        self.logger.info(f'View {bold(self.vw_name)}', arrow='white')
+
+    def drop(self) -> None:
+        """
+        Drop the target view if it exists.
+        """
+        if self.pg.view_exists(self.pg_schema, self.vw_name):
+            self.pg.drop_view(self.pg_schema, self.vw_name)
+            self.logger.info(f'Removed view {bold(self.vw_name)}')
+
+    def create(self) -> None:
+        """
+        Execute view definition SQL.
+        """
+        if isinstance(self.reference, list):
+            # If this view depends on other objects, let's make sure those objects
+            # exist before proceeding with view definition
+            schema_objects = self.pg.read_sql(f"""
+            select table_name
+            from information_schema.tables
+            where table_schema = '{self.pg_schema}'
+            """).tolist()
+            missing_refs = []
+            for ref in self.reference:
+                if ref not in schema_objects:
+                    missing_refs.append(ref)
+
+            if len(missing_refs) > 0:
+                raise Exception(f'Missing references for view {bold(self.vw_name)}: {str(missing_refs)}')
+
+        self.pg.execute(self.def_sql)
+        self.logger.info(f'Created view {bold(self.vw_name)}')

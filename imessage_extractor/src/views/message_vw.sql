@@ -70,9 +70,9 @@ from
                else false
           end as is_empty
     from
-        imessage_current.chat_full_history_vw c
+        imessage_current.chat c
     join
-        imessage_current.chat_message_join_full_history_vw cm_join
+        imessage_current.chat_message_join cm_join
         on c."ROWID" = cm_join.chat_id
         and c.source = cm_join.source
     join (
@@ -102,7 +102,7 @@ from
                 , source
                 , case when is_from_me = 1 then true when is_from_me = 0 then false else null end as is_from_me
             from
-                imessage_current.message_full_history_vw
+                imessage_current.message
         ) m
         on cm_join.message_id = m."ROWID"
         and cm_join.source = m.source
