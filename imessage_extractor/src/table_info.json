@@ -1,66 +1,82 @@
 {
     "_SqliteDatabaseProperties": {
         "write_mode": "replace",
-        "primary_key": "key"
+        "primary_key": "key",
+        "references": null
     },
     "attachment": {
         "write_mode": "replace",
-        "primary_key": "ROWID"
+        "primary_key": "ROWID",
+        "references": null
     },
     "chat": {
         "write_mode": "replace",
-        "primary_key": "ROWID"
+        "primary_key": "ROWID",
+        "references": null
     },
     "chat_handle_join": {
         "write_mode": "replace",
-        "primary_key": ["chat_id", "handle_id"]
+        "primary_key": ["chat_id", "handle_id"],
+        "references": ["chat", "handle"]
     },
     "chat_message_join": {
         "write_mode": "replace",
-        "primary_key": ["chat_id", "message_id"]
+        "primary_key": ["chat_id", "message_id"],
+        "references": ["chat", "message"]
     },
     "deleted_messages": {
         "write_mode": "replace",
-        "primary_key": "ROWID"
+        "primary_key": "ROWID",
+        "references": null
     },
     "handle": {
         "write_mode": "replace",
-        "primary_key": "ROWID"
+        "primary_key": "ROWID",
+        "references": null
     },
     "kvtable": {
         "write_mode": "replace",
-        "primary_key": "ROWID"
+        "primary_key": "ROWID",
+        "references": null
     },
     "message": {
         "write_mode": "replace",
-        "primary_key": "ROWID"
+        "primary_key": "ROWID",
+        "references": null
     },
     "message_attachment_join": {
         "write_mode": "replace",
-        "primary_key": ["message_id", "attachment_id"]
+        "primary_key": ["message_id", "attachment_id"],
+        "references": ["message", "attachment"]
     },
     "message_processing_task": {
         "write_mode": "replace",
-        "primary_key": "ROWID"
+        "primary_key": "ROWID",
+        "references": null
     },
     "sqlite_sequence": {
         "write_mode": "replace",
-        "primary_key": "name"
+        "primary_key": "name",
+        "references": null
     },
     "sqlite_stat1": {
         "write_mode": "replace",
-        "primary_key": ["tbl", "idx"]
+        "primary_key": ["tbl", "idx"],
+        "references": null
     },
     "sync_deleted_attachments": {
         "write_mode": "replace",
-        "primary_key": "ROWID"
+        "primary_key": "ROWID",
+        "references": null
     },
     "sync_deleted_chats": {
         "write_mode": "replace",
-        "primary_key": "ROWID"
+        "primary_key": "ROWID",
+        "references": null
     },
     "sync_deleted_messages": {
         "write_mode": "replace",
-        "primary_key": "ROWID"
+        "primary_key": "ROWID",
+        "references": null
     }
 }
