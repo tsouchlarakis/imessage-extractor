@@ -35,10 +35,11 @@ class CreateTableSQL(object):
             'INTEGER PRIMARY KEY AUTOINCREMENT': 'SERIAL PRIMARY KEY',
         }
 
-        if dtype in dtype_map.keys():
-            return dtype_map[dtype]
-        else:
-            return dtype
+        for invalid_dtype, correct_dtype in dtype_map.items():
+            if invalid_dtype in dtype:
+                dtype = dtype.replace(invalid_dtype, correct_dtype)
+
+        return dtype
 
     def _apply_table_specific_dtype_mods(self, column_defs_lst: list) -> list:
         """
@@ -55,6 +56,25 @@ class CreateTableSQL(object):
             'chat': {
                 'last_read_message_timestamp': 'BIGINT',
             },
+            'message': {
+                'date': 'BIGINT',
+                'date_read': 'BIGINT',
+                'date_delivered': 'BIGINT',
+                'time_expressive_send_played': 'BIGINT',
+                'date_played': 'BIGINT',
+            },
+            'sqlite_sequence': {
+                'name': 'TEXT',
+                'seq': 'INTEGER',
+            },
+            'sqlite_stat1': {
+                'tbl': 'TEXT',
+                'idx': 'TEXT',
+                'stat': 'TEXT',
+            },
+            'chat_message_join': {
+                'message_date': 'BIGINT',
+            }
         }
 
         new_column_defs_lst = []
@@ -73,6 +93,22 @@ class CreateTableSQL(object):
 
         return new_column_defs_lst
 
+    def _add_schema_and_quotes_to_reference(self, column_defs_lst: list, pg_schema: str) -> list:
+        """
+        Make sure all tables named in the REFERENCES portion of a columns's datatype string
+        have the schema attached. In SQLite, all tables are referenced simply by their name
+        but in Postgres we're loading data into a particular schema.
+        """
+        new_column_defs_lst = []
+        for column_name, dtype in column_defs_lst:
+            if 'REFERENCES' in dtype:
+                # Add the schema to the REFERENCES portion of the datatype string
+                dtype = re.sub(r'(REFERENCES) (\w+)', r'\1 "%s"."\2"' % pg_schema, dtype)
+
+            new_column_defs_lst.append((column_name, dtype))
+
+        return new_column_defs_lst
+
     def _construct(self, pg_schema: str, if_not_exists: bool=False, quote_columns: bool=True) -> str:
         """
         Construct a Postgres-readable create string from the sqlite_create_str.
@@ -82,20 +118,48 @@ class CreateTableSQL(object):
         template = '\n'.join([
             'CREATE TABLE "{if_not_exists_str}{pg_schema}"."{table_name}"',
             '(',
-            '{column_defs_str}',
+            '\t{column_defs_str}',
+            '\t{constraint_str}',
             ');'
         ])
 
-        # Remove CREATE TABLE {table_name}
+        # Remove CREATE TABLE {table_name} to get just the column definition part of the string
         column_defs = self.sqlite_create_str.replace('CREATE TABLE', '').replace(self.table_name, '').strip()
 
         # Remove enclosing parentheses
         column_defs = column_defs[1:-1]
 
-        # Convert to list and quote each column
-        column_defs = [x.strip() for x in column_defs.split(',')]
-        rgx_is_column = r'^[A-Za-z]+$'
+        # Separate out constraint strings from column definitions. For example, if a column
+        # definition string is:
+        #
+        # """
+        # chat_id INTEGER REFERENCES chat (ROWID) ON DELETE CASCADE,
+        # handle_id INTEGER REFERENCES handle (ROWID) ON DELETE CASCADE,
+        # UNIQUE(chat_id, handle_id)
+        # """
+        #
+        # Then the UNIQUE... portion is a constraint string, and the preceding portion is
+        # the column definition string.
+        # constraint_lst = ['UNIQUE', 'PRIMARY KEY']
+        constraint_lst = ['UNIQUE', 'PRIMARY KEY']
+        for item in constraint_lst:
+            column_defs = column_defs.replace(item + ' (', item + '(')
 
+        constraint_lst = [x + '(' for x in constraint_lst]
+        constraint_loc = [column_defs.find(x) for x in constraint_lst]
+        if any(x > 0 for x in constraint_loc):
+            # Remove any constraints from the column definition string
+            constraint_loc = [x for x in constraint_loc if x > 0]
+            constraint_str = column_defs[min(constraint_loc):].strip()
+            column_defs = column_defs[:min(constraint_loc)].strip(' ,')
+        else:
+            constraint_str = ''
+
+        # Now it's acceptable to split on commas, since we've removed constraints
+        column_defs = [x.strip() for x in column_defs.split(',')]
+
+        # Separate column names from datatypes
+        rgx_is_column = r'^[A-Za-z_]+$'
         column_defs_lst = []
         for name_dtype_str in column_defs:
             name_dtype_tuple = tuple(name_dtype_str.split(' ', 1))
@@ -104,12 +168,13 @@ class CreateTableSQL(object):
 
             name = name_dtype_tuple[0]
             dtype = name_dtype_tuple[1] if len(name_dtype_tuple) == 2 else ''
+            dtype = dtype.replace('(ROWID)', '("ROWID")')
             dtype = self._map_sqlite_dtypes_to_postgres(dtype)
-
 
             column_defs_lst.append((name, dtype))
 
         column_defs_lst = self._apply_table_specific_dtype_mods(column_defs_lst)
+        column_defs_lst = self._add_schema_and_quotes_to_reference(column_defs_lst, pg_schema)
 
         column_defs_lst_quoted = []
         for name, dtype in column_defs_lst:
@@ -119,16 +184,18 @@ class CreateTableSQL(object):
 
             column_defs_lst_quoted.append((name, dtype))
 
-        column_defs_str = '\t' + ',\n\t'.join([f'\t{name} {dtype}'.strip() for name, dtype in column_defs_lst_quoted])
+        column_defs_str = ',\n\t'.join([f'\t{name} {dtype}'.strip() for name, dtype in column_defs_lst_quoted])
+        column_defs_str = column_defs_str + ',' if constraint_str > '' else column_defs_str
 
         sql = template.format(
             if_not_exists_str=if_not_exists_str,
             pg_schema=pg_schema,
             table_name=self.table_name,
-            column_defs_str=column_defs_str
+            column_defs_str=column_defs_str,
+            constraint_str=constraint_str
         )
 
-        return sql
+        return sql.replace('\n\n', '\n')
 
 
 class ChatDbTable(object):
@@ -140,18 +207,20 @@ class ChatDbTable(object):
                  table_name: str,
                  write_mode: str,
                  primary_key: typing.Union[str, list],
-                 pg_schema: str) -> None:
+                 pg_schema: str,
+                 references: typing.Union[None, list]) -> None:
         self.sqlite_con = sqlite_con
         self.sqlite_cursor = self.sqlite_con.cursor()
         self.table_name = table_name
         self.write_mode = write_mode
         self.primary_key = primary_key
         self.pg_schema = pg_schema
-        self.shape = self.get_shape()
-        self.create_sql = self.get_create_sql()
+        self.references = references
+        self.shape = self._get_shape()
+        self.create_sql = self._get_create_sql()
         self.csv_fpath = None
 
-    def get_create_sql(self) -> str:
+    def _get_create_sql(self) -> str:
         """
         Query SQLite for the table creation statement.
         """
@@ -164,7 +233,7 @@ class ChatDbTable(object):
 
         return create_sql.sql
 
-    def get_shape(self) -> tuple:
+    def _get_shape(self) -> tuple:
         """
         Query SQLite for the table's shape in format `(rows, columns)`.
         """
@@ -214,9 +283,9 @@ class ChatDbExtract(object):
         self.sqlite_con = sqlite_con
         self.pg_schema = pg_schema
         self.logger = logger
-        self.table_objects = self.extract()
+        self.table_objects = self._extract()
 
-    def extract(self) -> dict:
+    def _extract(self) -> dict:
         """
         Query SQLite database for iMessage tables
         """
@@ -249,6 +318,7 @@ class ChatDbExtract(object):
                                        table_name=table_name,
                                        write_mode=table_data['write_mode'],
                                        primary_key=table_data['primary_key'],
+                                       references=table_data['references'],
                                        pg_schema=self.pg_schema)
 
             table_objects[table_name] = table_object
@@ -272,8 +342,35 @@ class ChatDbExtract(object):
 
     def save_to_postgres(self, pg: Postgres, pg_schema: str, logger: logging.Logger) -> None:
         """
-        Save all tables to Postgres.
+        Save all tables to Postgres in such an order that foreign keys are resolved correctly.
+        For example, if a table depends on another table, then the other table must be created
+        before the dependent table.
         """
-        for table_name, table_object in self.table_objects.items():
-            table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
-            logger.info(f'Saved Postgres:{bold(self.pg_schema + "." + table_name)}', arrow='white')
+        inserted_journal = []  # Keep a log of all tables that have been saved to Postgres
+
+        while len(inserted_journal) < len(self.table_objects):
+            for table_name, table_object in self.table_objects.items():
+                # if table_name == 'chat_message_join':
+                #     import pdb; pdb.set_trace()
+                if table_name not in inserted_journal:
+                    if table_object.references is not None:
+                        if len([t for t in table_object.references if t not in inserted_journal]):
+                            # There is still one or more reference table that has not yet
+                            # been saved to Postgres. Continue to the next table.
+                            continue
+                        else:
+                            # All necessary reference tables for `table_name` have already
+                            # been saved to Postgres, so we can now insert this table
+                            table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
+                            inserted_journal.append(table_name)
+                            logger.info(f'Saved Postgres:{bold(self.pg_schema + "." + table_name)}', arrow='white')
+                    else:
+                        # No references found for this table, we can insert it right away
+                        # since there are no dependencies to worry about
+                        table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
+                        inserted_journal.append(table_name)
+                        logger.info(f'Saved Postgres:{bold(self.pg_schema + "." + table_name)}', arrow='white')
+                else:
+                    # This table has already been saved to Postgres, so we can skip it
+                    pass
+
