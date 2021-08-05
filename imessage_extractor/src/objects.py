@@ -250,9 +250,8 @@ class ChatDbTable(object):
         """
         Save table to a .csv file.
         """
-        # TODO: uncomment
-        # df = pd.read_sql(f'SELECT * FROM {self.table_name}', self.sqlite_con)
-        # df.to_csv(file_name, index=False)
+        df = pd.read_sql(f'SELECT * FROM {self.table_name}', self.sqlite_con)
+        df.to_csv(file_name, index=False)
         self.csv_fpath = file_name
 
     def save_to_postgres(self, pg: Postgres, pg_schema: str) -> None:
@@ -363,13 +362,17 @@ class ChatDbExtract(object):
                             # been saved to Postgres, so we can now insert this table
                             table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                             inserted_journal.append(table_name)
-                            logger.info(f'Saved Postgres:{bold(self.pg_schema + "." + table_name)}', arrow='white')
+                            logger.info(pydoni.advanced_strip(f"""
+                            Saved Postgres:{bold(f'"{self.pg_schema}"."{table_name}"')}
+                            """), arrow='white')
                     else:
                         # No references found for this table, we can insert it right away
                         # since there are no dependencies to worry about
                         table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                         inserted_journal.append(table_name)
-                        logger.info(f'Saved Postgres:{bold(self.pg_schema + "." + table_name)}', arrow='white')
+                        logger.info(pydoni.advanced_strip(f"""
+                            Saved Postgres:{bold(f'"{self.pg_schema}"."{table_name}"')}
+                            """), arrow='white')
                 else:
                     # This table has already been saved to Postgres, so we can skip it
                     pass
@@ -398,8 +401,6 @@ class View(object):
 
         with open(self.fpath, 'r') as f:
             self.def_sql = f.read()
-
-        self.logger.info(f'View {bold(self.vw_name)}', arrow='white')
 
     def drop(self) -> None:
         """
@@ -430,4 +431,3 @@ class View(object):
                 raise Exception(f'Missing reference(s) for view {bold(self.vw_name)}: {str(missing_refs)}')
 
         self.pg.execute(self.def_sql)
-        self.logger.info(f'Created view {bold(self.vw_name)}')

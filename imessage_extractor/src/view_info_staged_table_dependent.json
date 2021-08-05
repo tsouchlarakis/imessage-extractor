@@ -1,0 +1,8 @@
+{
+    "contact_token_usage_vw": {
+        "reference": ["message_tokens", "tokens", "message_vw"]
+    },
+    "contact_top_token_usage_by_length": {
+        "reference": ["contact_token_usage_vw"]
+    }
+}

@@ -24,11 +24,11 @@ def validate_parameters(params: dict) -> None:
     Carry out assertions on parameters.
     """
     if params['save_csv'] is None:
-        if params['save_pg_schema'] is None:
+        if params['pg_schema'] is None:
             raise ValueError('Must specify either --save-csv or --save-pg-schema')
 
-    if (params['save_pg_schema'] is not None and params['pg_credentials'] is None) \
-        or (params['save_pg_schema'] is None and params['pg_credentials'] is not None):
+    if (params['pg_schema'] is not None and params['pg_credentials'] is None) \
+        or (params['pg_schema'] is None and params['pg_credentials'] is not None):
             raise ValueError('Must specify both --pg-credentials and --save-pg-schema if one is specified')
 
     # Log parameter values
@@ -128,7 +128,7 @@ def list_view_names(vw_dpath: typing.Union[str, pathlib.Path]) -> list:
               help='Path to working chat.db.')
 @click.option('--save-csv', type=str, default=None, required=False,
               help='Path to folder to save chat.db tables to.')
-@click.option('--save-pg-schema', type=str, default=None, required=False,
+@click.option('--pg-schema', type=str, default=None, required=False,
               help='Name of Postgres schema to save tables to.')
 @click.option('--pg-credentials', type=str, default=expanduser('~/.pgpass'), required=False,
               help=pydoni.advanced_strip("""EITHER the path to a local Postgres credentials
@@ -139,7 +139,7 @@ def list_view_names(vw_dpath: typing.Union[str, pathlib.Path]) -> list:
 def go(chat_db_path,
        verbose,
        save_csv,
-       save_pg_schema,
+       pg_schema,
        pg_credentials) -> None:
     """
     Run the imessage-extractor!
@@ -169,14 +169,14 @@ def go(chat_db_path,
         logger.info(f'Created temporary export directory {path(save_csv_dpath)}')
 
     # Extract metadata for each table in chat.db
-    chat_db_extract = ChatDbExtract(sqlite_con, save_pg_schema, logger)
+    chat_db_extract = ChatDbExtract(sqlite_con, pg_schema, logger)
 
     # Save tables to .csv files
     logger.info(f'Saving tables to {path(save_csv_dpath)}')
     chat_db_extract.save_to_csv(save_csv_dpath, logger)
 
     # Refresh target Postgres schema
-    if save_pg_schema is not None:
+    if pg_schema is not None:
         # Get Postgres credentials and connect to database
         hostname, port, db_name, pg_user, pw = parse_pg_credentials(pg_credentials)
         pg = pydoni.Postgres(hostname=hostname,
@@ -188,20 +188,20 @@ def go(chat_db_path,
         logger.info(f'Connected to Postgres database {bold(db_name)} hosted on {bold(hostname + ":" + port)}')
 
         # Drop all objects in the Postgres schema to rebuild it from scratch
-        pg.execute(f'drop schema if exists {save_pg_schema} cascade')
-        pg.execute(f'create schema {save_pg_schema}')
+        pg.execute(f'drop schema if exists {pg_schema} cascade')
+        pg.execute(f'create schema {pg_schema}')
         # pg.drop_schema_if_exists_and_recreate(pg_schema, cascade=True)  # TODO: uncomment when new version of pydoni released
         logger.info(f'Re-created schema from scratch')
 
-        logger.info(f'Saving tables to schema {bold(save_pg_schema)}')
-        chat_db_extract.save_to_postgres(pg, save_pg_schema, logger)
+        logger.info(f'Saving tables to schema {bold(pg_schema)}')
+        chat_db_extract.save_to_postgres(pg, pg_schema, logger)
 
-        logger.info('Generating global UIDs for message, attachment, handle and chat tables')
-        core_tables = ['message', 'attachment', 'chat', 'handle']
-        for table_name in core_tables:
-            generate_global_uid_table(pg=pg, pg_schema=save_pg_schema, source_table_name=table_name)
-            logger.info(f'Created sequence {bold(f"{save_pg_schema}.map_{table_name}_uid_seq")}', arrow='white')
-            logger.info(f'Created table {bold(f"{save_pg_schema}.map_{table_name}_uid")}', arrow='white')
+        # logger.info('Generating global UIDs for message, attachment, handle and chat tables')
+        # core_tables = ['message', 'attachment', 'chat', 'handle']
+        # for table_name in core_tables:
+        #     generate_global_uid_table(pg=pg, pg_schema=pg_schema, source_table_name=table_name)
+        #     logger.info(f'Created sequence {bold(f"{pg_schema}.map_{table_name}_uid_seq")}', arrow='white')
+        #     logger.info(f'Created table {bold(f"{pg_schema}.map_{table_name}_uid")}', arrow='white')
 
         logger.info('Building optional custom tables (if they exist)')
         custom_table_fpaths = [abspath(x) for x in listdir(custom_table_dpath) if not x.startswith('.')]
@@ -262,7 +262,7 @@ def go(chat_db_path,
 
                     csv_df.to_sql(name=table_name,
                                   con=pg.dbcon,
-                                  schema=save_pg_schema,
+                                  schema=pg_schema,
                                   index=False,
                                   if_exists='replace')
 
@@ -282,41 +282,142 @@ def go(chat_db_path,
             """))
 
         # Define all Postgres views
-        logger.info(f'Defining Postgres views')
-
+        logger.info(f'Defining Postgres views that are only dependent on chat.db tables')
         vw_names = list_view_names(vw_dpath)
-        with open(join(dirname(__file__), 'view_info.json'), 'r') as f:
-            vw_info = json.load(f)
+
+        # Views that can be defined after chat.db tables are loaded
+        with open(join(dirname(__file__), 'view_info_chat_db_dependent.json'), 'r') as f:
+            vw_info_chat_db_dependent = json.load(f)
+
+        # Views that depend on tables created downstream in this pipeline
+        with open(join(dirname(__file__), 'view_info_staged_table_dependent.json'), 'r') as f:
+            vw_info_staged_table_dependent = json.load(f)
+
+        # Validate that all views defined in vw_info*.json also contain a definition .sql
+        # file in the views/ folder, and that all views with definition .sql files in the
+        # views/ folder also have a corresponding key in the vw_info*.json file.
 
         for vw_name in vw_names:
-            if vw_name not in vw_info.keys():
-                raise Exception(pydoni.advanced_strip(f"""View definition {bold(vw_name)}
-                found at {path(join(vw_dpath, vw_name + ".sql"))} but not accounted
-                for in {path("view_info.json")}"""))
+            view_names_all = list(vw_info_chat_db_dependent.keys()) + list(vw_info_staged_table_dependent.keys())
+            if vw_name not in view_names_all:
+                raise Exception(pydoni.advanced_strip(f"""
+                View definition {bold(vw_name)} found at {path(join(vw_dpath, vw_name + ".sql"))}
+                but not accounted for in {path("view_info.json")}"""))
 
-        for vw_name in vw_info.keys():
+        for vw_name in view_names_all:
             if vw_name not in vw_names:
-                raise Exception(pydoni.advanced_strip(f"""View definition {bold(vw_name)}
-                found in {path("view_info.json")} but not accounted
-                for at {path(join(vw_dpath, vw_name + ".sql"))}"""))
+                raise Exception(pydoni.advanced_strip(f"""
+                View definition {bold(vw_name)} found in {path("view_info.json")} but not
+                accounted for at {path(join(vw_dpath, vw_name + ".sql"))}"""))
 
-        vw_objects = []
-        for vw_name in vw_names:
-            vw_objects.append(View(vw_name=vw_name,
-                                   vw_dpath=vw_dpath,
-                                   reference=vw_info[vw_name]['reference'],
-                                   pg_schema=save_pg_schema,
-                                   pg=pg,
-                                   logger=logger))
+        # Define views intelligently. Views may be dependent on other views or tables, and
+        # as such, as we cannot simply execute a view definition since a dependency of that
+        # view might not exist yet. Instead, we will define views in a manner that ensures
+        # that all dependencies for a particular view are created before executing that view's
+        # definition.
+        #
+        # We will iterate through each view in the view_info*.json file, and for each view,
+        # check each of its dependencies (if any) to ensure that they exist. If one or more
+        # do not, we must navigate to that view in the view_info*.json file and ensure that
+        # all of that view's dependencies exist. If one or more do not yet exist, we must then
+        # continue navigating down the tree of dependencies until we can create all of them.
+        #
+        # For example, suppose view A depends on view B and view C, and view B depends on view D.
+        # We will attempt to create view A, but it depends on two non-existent views, B and C. We
+        # then navigate to view B and find that it depends on view D. We create view D for which
+        # all dependencies exist. Then we can create view B. We then check view C, and find that
+        # we are able to create it without issue. At this point, all dependencies for view A
+        # exist and we can create view A.
 
-        for vw_object in vw_objects:
-            vw_object.create()
+        def vw_dependency_exists(pg_schema: str, reference_name: str, pg: pydoni.Postgres) -> bool:
+            """
+            Determine whether a table or view exists with the given name.
+            """
+            schema_objects = pg.read_sql(f"""
+            select table_name
+            from information_schema.tables
+            where table_schema = '{pg_schema}'
+            """).tolist()
+
+            return reference_name in schema_objects
+
+        def all_references_exist(vw_name: str, vw_info: dict, pg_schema: str, pg: pydoni.Postgres) -> bool:
+            """
+            Check whether ALL references for a given view exist.
+            """
+            references = vw_info[vw_name]['reference']
+            exists_lst = [vw_dependency_exists(pg_schema, ref, pg) for ref in references]
+            return all(exists_lst)
+
+        def get_nonexistent_references(vw_name: str, vw_info: dict, pg_schema: str, pg: pydoni.Postgres) -> list:
+            """
+            List the nonexistent references for a given view.
+            """
+            references = vw_info[vw_name]['reference']
+            nonexistent_lst = [ref for ref in references if not vw_dependency_exists(pg_schema, ref, pg)]
+            return nonexistent_lst
+
+        def smart_create_view(vw_name: str, vw_info: dict, pg_schema: str, pg: pydoni.Postgres) -> None:
+            """
+            Execute a view definition ONLY IF all references for that view exist. If they do
+            not exist, then create them. Each reference might have references themselves, in
+            which case we'll need to create those references too.
+            """
+            if pg.view_exists(pg_schema, vw_name):
+                # View already exists, so we can move on
+                pass
+            else:
+                # Main expected branch of function. We need to create the view and all of its
+                # references if they don't exist.
+                #
+                # Because this function is called recursively, it's possible that `vw_name`
+                # is a reference of the original view this function was called on. Any reference
+                # may be either a table or view. As such, the function all_references_exist()
+                # will fail if passed the name of a table, because the table's name is not
+                # in view_info.json and it MUST check in that file to get a list of the current
+                # view's references. Therefore we must first check whether `vw_name` is a
+                # table or a view.
+                if vw_name not in vw_info.keys():
+                    # This is a table that is not part of the chat.db database. This view
+                    # must be moved to a different section of view_info.json.
+                    raise Exception(pydoni.advanced_strip(f"""
+                    Entity {bold(vw_name)} is not part of the chat.db database, but is required
+                    for a view defined in the view_info_chat_db_dependent.json file.
+                    Please move any views that depend on {bold(vw_name)} to the
+                    view_info_staged_table_dependent.json file, and it will be defined later,
+                    after the staged tables are defined."""))
+                else:
+                    if all_references_exist(vw_name, vw_info, pg_schema, pg):
+                        # Create the view
+                        vw_obj = View(vw_name=vw_name,
+                                    vw_dpath=vw_dpath,
+                                    reference=vw_info[vw_name]['reference'],
+                                    pg_schema=pg_schema,
+                                    pg=pg,
+                                    logger=logger)
+                        vw_obj.create()
+                    else:
+                        # Cannot create the view without creating references first
+                        # This list must be of length >1 because all_references_exist() returned False
+                        nonexistent_references = get_nonexistent_references(vw_name, vw_info, pg_schema, pg)
+                        for ref in nonexistent_references:
+                            # Create the view. Recursive call to this function
+                            smart_create_view(ref, vw_info, pg_schema, pg)
+
+
+        for vw_name, vw_info_dct in vw_info_chat_db_dependent.items():
+            references = vw_info_dct['reference']
+            assert isinstance(references, list), \
+                f'"references" object for view {bold(vw_name)} in vw_info.json must be a list'
+
+            # Create the view intelligently
+            smart_create_view(vw_name, vw_info_chat_db_dependent, pg_schema, pg)
+            logger.info(pydoni.advanced_strip(f"""Defined view
+            {bold(f'"{pg_schema}"."{vw_name}"')} """), arrow='white')
 
     else:
         logger.info('User opted not to save tables to a Postgres database')
 
-
-
     if save_csv is None:
         shutil.rmtree(save_csv_dpath)
-        logger.info(f'Removed {path(save_csv_dpath)}')
+        logger.info(f'Removed temporary directory {path(save_csv_dpath)}')

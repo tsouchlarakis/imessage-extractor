@@ -5,12 +5,6 @@
     "contact_group_names": {
         "reference": ["message"]
     },
-    "contact_token_usage_vw": {
-        "reference": ["message_tokens", "tokens", "message_vw"]
-    },
-    "contact_top_token_usage_by_length": {
-        "reference": ["contact_token_usage_vw"]
-    },
     "contacts_vw": {
         "reference": ["contact_group_names", "contacts_manual", "contacts"]
     },
@@ -18,10 +12,10 @@
         "reference": ["message_vw"]
     },
     "message_vw": {
-        "reference": ["chat", "chat_message_join", "message", "contact_names_vw"]
+        "reference": ["chat", "chat_message_join", "message", "contacts_vw"]
     },
     "qc_missing_contact_names": {
-        "reference": ["message_vw", "contact_names_ignored"]
+        "reference": ["message_vw", "contacts_ignored"]
     },
     "qc_null_flags": {
         "reference": ["message_vw"]
