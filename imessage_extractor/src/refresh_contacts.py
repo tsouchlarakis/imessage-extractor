@@ -68,26 +68,32 @@ def refresh_contacts(exported_contacts_csv_fpath, delete_input_csv, verbose) -> 
 
         for col, value in row[~row.isnull()].to_dict().items():
             if (col != 'Full Name') and ('phone' in col.lower() or 'email' in col.lower()):
-                value_lst = [value]  # Convert to list to append alternative values
+                value_lst = []  # Convert to list to append alternative values
 
                 if 'phone' in col.lower():
-                    phone_no_spaces = str(value).replace(' ', '')
-                    phone_no_chars = str(value).replace(' ', '').replace('(', '').replace(')', '').replace('-', '')
+                    values = str(value).split(';')
+                    for v in values:
 
-                    value_lst.append(phone_no_spaces)
-                    value_lst.append(phone_no_chars)
+                        phone_no_spaces = str(v).replace(' ', '')
+                        phone_no_chars = str(v).replace(' ', '').replace('(', '').replace(')', '').replace('-', '')
 
-                    if re.match(r'^\d{10}$', phone_no_chars):
-                        # Example: 4155954380
-                        phone_10_no_chars_w_plus_one = '+1' + phone_no_chars
-                        value_lst.append(phone_10_no_chars_w_plus_one)
+                        # Add raw values as contender values
+                        if phone_no_chars.isdigit():
+                            value_lst.append(v)
+                            value_lst.append(phone_no_spaces)
+                            value_lst.append(phone_no_chars)
 
-                    if re.match(r'^\d{11}$', phone_no_chars) and phone_no_chars.startswith('1'):
-                        # Example: 14155954380
-                        phone_11_no_chars_w_plus = '+' + phone_no_chars
-                        value_lst.append(phone_11_no_chars_w_plus)
+                        if re.match(r'^\d{10}$', phone_no_chars):
+                            # Example: 4155954380
+                            phone_10_no_chars_w_plus_one = '+1' + phone_no_chars
+                            value_lst.append(phone_10_no_chars_w_plus_one)
 
-                for v_val in value_lst:
+                        if re.match(r'^\d{11}$', phone_no_chars) and phone_no_chars.startswith('1'):
+                            # Example: 14155954380
+                            phone_11_no_chars_w_plus = '+' + phone_no_chars
+                            value_lst.append(phone_11_no_chars_w_plus)
+
+                for v_val in list(set(value_lst)):
                     contact_map_df.loc[len(contact_map_df)] = [v_val, name]
 
     # Ensure only populated contact names remain
