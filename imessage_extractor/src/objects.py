@@ -250,8 +250,9 @@ class ChatDbTable(object):
         """
         Save table to a .csv file.
         """
-        df = pd.read_sql(f'SELECT * FROM {self.table_name}', self.sqlite_con)
-        df.to_csv(file_name, index=False)
+        # TODO: uncomment
+        # df = pd.read_sql(f'SELECT * FROM {self.table_name}', self.sqlite_con)
+        # df.to_csv(file_name, index=False)
         self.csv_fpath = file_name
 
     def save_to_postgres(self, pg: Postgres, pg_schema: str) -> None:

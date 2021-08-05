@@ -2,6 +2,9 @@
     "contact_daily_message_volume_vw": {
         "reference": ["message_vw"]
     },
+    "contact_group_names": {
+        "reference": ["message"]
+    },
     "contact_names_vw": {
         "reference": ["contact_names", "contact_names_manual"]
     },
@@ -10,6 +13,9 @@
     },
     "contact_top_token_usage_by_length": {
         "reference": ["contact_token_usage_vw"]
+    },
+    "contacts_vw": {
+        "reference": ["contact_group_names", "contacts_manual", "contacts"]
     },
     "message_count_top_contacts_vw": {
         "reference": ["message_vw"]

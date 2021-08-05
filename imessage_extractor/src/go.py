@@ -142,7 +142,7 @@ def go(chat_db_path,
        save_pg_schema,
        pg_credentials) -> None:
     """
-    Run the imessage-extractor.
+    Run the imessage-extractor!
     """
     params = locals()
 
