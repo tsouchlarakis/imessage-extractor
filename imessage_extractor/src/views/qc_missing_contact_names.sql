@@ -1,6 +1,6 @@
-drop view if exists imessage.qc_missing_contact_names;
+drop view if exists {pg_schema}.qc_missing_contact_names;
 
-create or replace view imessage.qc_missing_contact_names as
+create or replace view {pg_schema}.qc_missing_contact_names as
 
 select
     chat_identifier
@@ -13,9 +13,9 @@ from (
         , m."text"
         , row_number() over(partition by m.chat_identifier order by message_date desc) as r
     from
-        imessage.message_vw m
+        {pg_schema}.message_vw m
     left join
-        imessage.contact_names_ignored i
+        {pg_schema}.contacts_ignored i
         on m.chat_identifier = i.chat_identifier
     where
         -- Andoni manually checks this view every ~30 days, so no need to review the same texts multiple times
@@ -23,7 +23,7 @@ from (
         and i.chat_identifier is null
         and m.contact_name is null
         and m.is_text = true
-        and not m.chat_identifier ~ '^\d{5,6}$'  -- Phone number of 5-6 digits is typically automated
+        and not m.chat_identifier ~ '^\d{{5,6}}$'  -- Phone number of 5-6 digits is typically automated
 ) t
 where
     r in (1, 2, 3)

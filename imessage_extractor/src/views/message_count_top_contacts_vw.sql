@@ -1,12 +1,12 @@
-drop view if exists imessage.message_count_top_contacts_vw;
+drop view if exists {pg_schema}.message_count_top_contacts_vw;
 
-create or replace view imessage.message_count_top_contacts_vw as
+create or replace view {pg_schema}.message_count_top_contacts_vw as
 
 select
     contact_name
     , count(distinct message_uid) as n_messages
 from
-    imessage.message_vw
+    {pg_schema}.message_vw
 where
     contact_name is not null
 group by

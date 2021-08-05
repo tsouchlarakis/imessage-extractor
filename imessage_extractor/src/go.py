@@ -390,11 +390,11 @@ def go(chat_db_path,
                     if all_references_exist(vw_name, vw_info, pg_schema, pg):
                         # Create the view
                         vw_obj = View(vw_name=vw_name,
-                                    vw_dpath=vw_dpath,
-                                    reference=vw_info[vw_name]['reference'],
-                                    pg_schema=pg_schema,
-                                    pg=pg,
-                                    logger=logger)
+                                      vw_dpath=vw_dpath,
+                                      reference=vw_info[vw_name]['reference'],
+                                      pg_schema=pg_schema,
+                                      pg=pg,
+                                      logger=logger)
                         vw_obj.create()
                     else:
                         # Cannot create the view without creating references first
@@ -421,3 +421,7 @@ def go(chat_db_path,
     if save_csv is None:
         shutil.rmtree(save_csv_dpath)
         logger.info(f'Removed temporary directory {path(save_csv_dpath)}')
+
+    diff_formatted = pydoni.fmt_seconds(time.time() - start_ts, units='auto', round_digits=2)
+    elapsed_time = f"{diff_formatted['value']} {diff_formatted['units']}"
+    logger.info(f'iMessage Extractor workflow completed in {elapsed_time}')

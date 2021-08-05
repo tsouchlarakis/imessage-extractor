@@ -1,6 +1,6 @@
-drop view if exists imessage.contact_token_usage_vw;
+drop view if exists {pg_schema}.contact_token_usage_vw;
 
-create or replace view imessage.contact_token_usage_vw as
+create or replace view {pg_schema}.contact_token_usage_vw as
 
 with t1 as (
     select
@@ -16,10 +16,10 @@ with t1 as (
         , mt.pos_simple
         , t."language"
     from
-        imessage.message_tokens mt
-        join imessage.tokens t
+        {pg_schema}.message_tokens mt
+        join {pg_schema}.tokens t
           on lower(t."token") = lower(mt."token")
-        join imessage.message_vw m
+        join {pg_schema}.message_vw m
           on m.message_uid = mt.message_uid
     where
         t.is_punct = false

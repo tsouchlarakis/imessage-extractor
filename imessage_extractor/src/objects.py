@@ -399,8 +399,18 @@ class View(object):
         if not isfile(self.fpath):
             raise FileNotFoundError(f'View {bold(self.vw_name)} definition expected at {path(self.fpath)} but not found')
 
-        with open(self.fpath, 'r') as f:
-            self.def_sql = f.read()
+        try:
+            with open(self.fpath, 'r') as f:
+                self.def_sql = f.read().format(pg_schema=pg_schema)
+        except Exception as e:
+            raise Exception(pydoni.advanced_strip(
+                f"""View definition {bold(self.vw_name)} is malformed. There is
+                one or more format string enclosed in {{}} in the definition
+                {path(self.fpath)} that is incompatible with local variables
+                stored in each instantiation of the `View` class (stored in
+                objects.py). Either modify the class __init__ to contain this
+                variable if it is necessary, else remove it from the view
+                definition SQL. Original error message: {str(e)}'"""))
 
     def drop(self) -> None:
         """

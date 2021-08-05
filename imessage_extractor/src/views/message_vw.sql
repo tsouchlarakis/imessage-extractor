@@ -1,5 +1,5 @@
-drop view if exists imessage_test.message_vw;
-create view imessage_test.message_vw as
+drop view if exists {pg_schema}.message_vw;
+create view {pg_schema}.message_vw as
 
 select message_id
        , chat_identifier
@@ -67,46 +67,40 @@ from (
            , is_thread
            , thread_original_message_id
            , has_attachment
-    from imessage_test.chat c
-    join imessage_test.chat_message_join cm_join
+    from {pg_schema}.chat c
+    join {pg_schema}.chat_message_join cm_join
       on c."ROWID" = cm_join.chat_id
     join (
         select "ROWID" as message_id
-                , "date"
-                , btrim(
-                    regexp_replace(
-                        replace(
-                            regexp_replace(
-                                "text",
-                                '\.{2,}',
-                                '…',
-                                'g'
-                            ),
-                            '￼',
-                            ''
-                        ),
-                        '[\n\r]+',
-                        ' ',
-                        'g'
-                    )
-                ) as "text"
-                , associated__type
-                , "service"
-                , case when is_from_me = 1 then true when is_from_me = 0 then false else null end as is_from_me
-                , case when msg.thread_originator_guid is not null then true else false end as is_thread
-                , thread_origins.thread_original_message_id
-                , case when cache_has_attachments = 1 then true when cache_has_attachments = 0 then false else null end as has_attachment
-        from imessage_test.message msg
+              --  , "date"
+               , to_timestamp((("date"::double precision / 1000000000::double precision)::numeric + '978307200'::numeric)::double precision) as "date"
+               , btrim(
+                   regexp_replace(
+                       replace(
+                            -- NOTE: curly braces are doubled to comply for python format string
+                            regexp_replace("text", '\.{{2,}}', '…', 'g'),
+                            '￼', ''
+                       ),
+                       '[\n\r]+', ' ', 'g'
+                   )
+               ) as "text"
+               , associated__type
+               , "service"
+               , case when is_from_me = 1 then true when is_from_me = 0 then false else null end as is_from_me
+               , case when msg.thread_originator_guid is not null then true else false end as is_thread
+               , thread_origins.thread_original_message_id
+               , case when cache_has_attachments = 1 then true when cache_has_attachments = 0 then false else null end as has_attachment
+        from {pg_schema}.message msg
         left join (
             select distinct t1.thread_originator_guid, t2."ROWID" as thread_original_message_id
-            from imessage_test.message t1
-            join imessage_test.message t2
-                on t1.thread_originator_guid = t2.guid
+            from {pg_schema}.message t1
+            join {pg_schema}.message t2
+              on t1.thread_originator_guid = t2.guid
         ) as thread_origins
         on msg.thread_originator_guid = thread_origins.thread_originator_guid
     ) m
     on cm_join.message_id = m.message_id
-    left join imessage_test.contacts_vw n
+    left join {pg_schema}.contacts_vw n
            on c._identifier = n.chat_identifier
 ) t1
 order by message_date desc nulls last

@@ -1,6 +1,6 @@
-drop view if exists imessage.contact_top_token_usage_by_length;
+drop view if exists {pg_schema}.contact_top_token_usage_by_length;
 
-create or replace view imessage.contact_top_token_usage_by_length as
+create or replace view {pg_schema}.contact_top_token_usage_by_length as
 
 select
     contact_name
@@ -17,7 +17,7 @@ from (
         , n_token_uses
         , row_number() over(partition by contact_name, is_from_me, length(token) order by n_token_uses desc) as r
     from
-        imessage.contact_token_usage_vw
+        {pg_schema}.contact_token_usage_vw
 ) t1
 where r = 1
 order by

@@ -1,6 +1,6 @@
-drop view if exists imessage.contact_daily_message_volume_vw;
+drop view if exists {pg_schema}.contact_daily_message_volume_vw;
 
-create or replace view imessage.contact_daily_message_volume_vw as
+create or replace view {pg_schema}.contact_daily_message_volume_vw as
 
 select
     contact_name
@@ -25,7 +25,7 @@ from (
         , sum(case when is_text = true then n_words end) as n_text_words
         , row_number() over(partition by contact_name order by count(distinct message_uid) desc) as day_rank_by_n_messages_partition_by_contact
     from
-        imessage.message_vw
+        {pg_schema}.message_vw
     where
         is_text = true
         and contact_name is not null
