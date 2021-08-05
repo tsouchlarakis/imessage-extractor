@@ -72,8 +72,8 @@ def refresh_contacts(exported_contacts_csv_fpath, delete_input_csv, verbose) -> 
 
                 if 'phone' in col.lower():
                     values = str(value).split(';')
-                    for v in values:
 
+                    for v in values:
                         phone_no_spaces = str(v).replace(' ', '')
                         phone_no_chars = str(v).replace(' ', '').replace('(', '').replace(')', '').replace('-', '')
 
@@ -92,6 +92,11 @@ def refresh_contacts(exported_contacts_csv_fpath, delete_input_csv, verbose) -> 
                             # Example: 14155954380
                             phone_11_no_chars_w_plus = '+' + phone_no_chars
                             value_lst.append(phone_11_no_chars_w_plus)
+
+                if 'email' in col.lower():
+                    values = str(value).split(';')
+                    for v in values:
+                        value_lst.append(v)
 
                 for v_val in list(set(value_lst)):
                     contact_map_df.loc[len(contact_map_df)] = [v_val, name]

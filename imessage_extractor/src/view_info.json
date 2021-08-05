@@ -5,9 +5,6 @@
     "contact_group_names": {
         "reference": ["message"]
     },
-    "contact_names_vw": {
-        "reference": ["contact_names", "contact_names_manual"]
-    },
     "contact_token_usage_vw": {
         "reference": ["message_tokens", "tokens", "message_vw"]
     },
