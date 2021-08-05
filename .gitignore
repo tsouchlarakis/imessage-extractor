@@ -13,4 +13,3 @@ Icon?
 tests/test_data
 imessage_extractor/custom_tables/*.csv
 imessage_extractor/custom_tables/custom_table_schemas.json
-.gitignore
