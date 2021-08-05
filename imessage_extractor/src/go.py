@@ -1,17 +1,17 @@
-import json
-import sqlite3
-import pandas as pd
 import click
-import shutil
-import time
-import typing
+import json
+import logging
+import pandas as pd
 import pathlib
 import pydoni
-import logging
+import shutil
+import sqlite3
+import time
+import typing
+from .objects import ChatDbExtract, View
 from .verbosity import print_startup_message, logger_setup, path, bold
 from os import makedirs, listdir
 from os.path import expanduser, isfile, isdir, splitext, abspath, dirname, join, basename
-from .objects import ChatDbExtract, View
 
 
 vw_dpath = abspath(join(dirname(__file__), 'views'))

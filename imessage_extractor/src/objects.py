@@ -1,16 +1,16 @@
-import pathlib
 import click
+import json
 import logging
 import pandas as pd
-import json
+import pathlib
+import pydoni
 import re
 import sqlite3
-from pydoni import Postgres
-from os.path import join, dirname, isfile, splitext, abspath
-from os import stat
-import pydoni
-from .verbosity import bold, path
 import typing
+from .verbosity import bold, path
+from os import stat
+from os.path import join, dirname, isfile, splitext, abspath
+from pydoni import Postgres
 
 
 table_info_json_fpath = abspath(join(dirname(__file__), 'table_info.json'))
