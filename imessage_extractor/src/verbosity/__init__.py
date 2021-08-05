@@ -141,8 +141,16 @@ def bold(msg: str) -> str:
     """
     return click.style(msg, bold=True)
 
+
 def path(msg: str) -> str:
     """
     Return a string formatted as a colored path string.
     """
     return click.style(msg, fg='blue')
+
+
+def code(msg: str) -> str:
+    """
+    Return a string formatted as a colored code string.
+    """
+    return click.style(msg, fg='black')
