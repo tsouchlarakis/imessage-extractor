@@ -426,7 +426,7 @@ class View(object):
                     missing_refs.append(ref)
 
             if len(missing_refs) > 0:
-                raise Exception(f'Missing references for view {bold(self.vw_name)}: {str(missing_refs)}')
+                raise Exception(f'Missing reference(s) for view {bold(self.vw_name)}: {str(missing_refs)}')
 
         self.pg.execute(self.def_sql)
         self.logger.info(f'Created view {bold(self.vw_name)}')
