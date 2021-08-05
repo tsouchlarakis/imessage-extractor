@@ -1,5 +1,6 @@
 import json
 import sqlite3
+import pandas as pd
 import click
 import shutil
 import time
@@ -9,11 +10,12 @@ import pydoni
 import logging
 from .verbosity import print_startup_message, logger_setup, path, bold
 from os import makedirs, listdir
-from os.path import expanduser, isfile, isdir, splitext, abspath, dirname, join
+from os.path import expanduser, isfile, isdir, splitext, abspath, dirname, join, basename
 from .objects import ChatDbExtract, View
 
 
 vw_dpath = abspath(join(dirname(__file__), 'views'))
+custom_table_dpath = abspath(join(dirname(__file__), '..', 'custom_tables'))
 logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
 
 
@@ -73,6 +75,46 @@ def parse_pg_credentials(pg_credentials: typing.Union[str, pathlib.Path]) -> tup
     return hostname, port, db_name, pg_user, pw
 
 
+def generate_global_uid_table(pg: pydoni.Postgres, pg_schema: str, source_table_name: str) -> None:
+    """
+    Build a table mapping ROWID to a unique identifier for each row in the  message, attachment,
+    handle and chat tables. For example, to map message.ROWID to a UID, we would create:
+
+    | ROWID | message_uid         |
+    | ----- | ------------------- |
+    | 1     | 2632847867257029633 |
+    | 2     | 2632847867257029634 |
+    | 3     | ...                 |
+
+    In this case, `message_uid` is generated based on the time of insertion, and the previous
+    value of `message_uid`. As such, this UID of type BIGINT will never be the same for two
+    events in the same table.
+    """
+    valid_sources = ['message', 'attachment', 'handle', 'chat']
+    assert source_table_name in valid_sources, \
+        f'`source_table_name` must be one of {str(valid_sources)}'
+
+    sql = f"""
+    drop sequence if exists {pg_schema}.map_{source_table_name}_uid_seq;
+    create sequence {pg_schema}.map_{source_table_name}_uid_seq;
+
+    create table {pg_schema}.map_{source_table_name}_uid (
+        "ROWID" bigint,
+        "{source_table_name}_uid" int8 not null default id_generator((nextval('{pg_schema}.map_{source_table_name}_uid_seq'::regclass))::integer)
+    );
+
+    insert into {pg_schema}.map_{source_table_name}_uid ("ROWID")
+    select t."ROWID"
+    from {pg_schema}.{source_table_name} t
+    left join {pg_schema}.map_{source_table_name}_uid map
+        on t."ROWID" = map."ROWID"
+    where t."ROWID" is not null
+    and map."ROWID" is null;
+    """
+
+    pg.execute(sql)
+
+
 def list_view_names(vw_dpath: typing.Union[str, pathlib.Path]) -> list:
     """
     Find views in folder.
@@ -98,7 +140,7 @@ def go(chat_db_path,
        verbose,
        save_csv,
        save_pg_schema,
-       pg_credentials):
+       pg_credentials) -> None:
     """
     Run the imessage-extractor.
     """
@@ -154,9 +196,94 @@ def go(chat_db_path,
         logger.info(f'Saving tables to schema {bold(save_pg_schema)}')
         chat_db_extract.save_to_postgres(pg, save_pg_schema, logger)
 
-        # DEFINE MANUAL TABLES
+        logger.info('Generating global UIDs for message, attachment, handle and chat tables')
+        core_tables = ['message', 'attachment', 'chat', 'handle']
+        for table_name in core_tables:
+            generate_global_uid_table(pg=pg, pg_schema=save_pg_schema, source_table_name=table_name)
+            logger.info(f'Created sequence {bold(f"{save_pg_schema}.map_{table_name}_uid_seq")}', arrow='white')
+            logger.info(f'Created table {bold(f"{save_pg_schema}.map_{table_name}_uid")}', arrow='white')
+
+        logger.info('Building optional custom tables (if they exist)')
+        custom_table_fpaths = [abspath(x) for x in listdir(custom_table_dpath) if not x.startswith('.')]
+        any_manual_tabe_defs_exist = len(custom_table_fpaths) > 0
+        if any_manual_tabe_defs_exist:
+            schemas_fpath = join(custom_table_dpath, 'custom_table_schemas.json')
+            if isfile(schemas_fpath):
+                custom_table_csv_fpaths = [x for x in custom_table_fpaths if splitext(x)[1] == '.csv']
+
+                # Validate that for each custom table, there exists both a .csv file with table
+                # data, and a key in custom_table_schemas.json with the same name as the .csv file
+
+                with open(schemas_fpath, 'r') as json_file:
+                    schemas = json.load(json_file)
+
+                for csv_fpath in custom_table_csv_fpaths:
+                    table_name = splitext(basename(csv_fpath))[0]
+                    assert table_name in schemas.keys(), \
+                        pydoni.advanced_strip(f"""Attempting to define custom table {bold(table_name)},
+                        the table data .csv file exists at {path(csv_fpath)} but a column
+                        specification does not exist in {path(schemas_fpath)} for that table.
+                        Add a key in that JSON file with the same name as the .csv file
+                        with a corresponding value that is a dictionary with a name: dtype pair
+                        for each column in the .csv file. For example, if the .csv file has
+                        columns ['id', 'message'], then add an entry to that JSON file:
+                        "{table_name}": {{"id": "INTEGER", "message": "TEXT"}}""")
+
+                for table_name in schemas.keys():
+                    expected_csv_fpath = join(custom_table_dpath, table_name + '.csv')
+                    assert isfile(expected_csv_fpath), \
+                        pydoni.advanced_strip(f"""Attempting to define custom table {bold(table_name)},
+                        but the table data .csv file does not exist at {path(expected_csv_fpath)}.
+                        Please create this .csv file or remove the key in {path(schemas_fpath)}.
+                        """)
+
+                # Now that we know there exists a .csv and a JSON key for each custom table,
+                # we can proceed with validating that the table schemas defined in the JSON file
+                # are compatible with the data contained the corresponding .csv files.
+
+                for table_name, schema_dct in schemas.items():
+                    csv_fpath = join(custom_table_dpath, table_name + '.csv')
+                    csv_df = pd.read_csv(csv_fpath)
+
+                    for col_name, col_dtype in schema_dct.items():
+                        # Validate that column specified in JSON config actually exists
+                        # in the .csv file
+                        assert col_name in csv_df.columns, \
+                            f'Column {bold(col_name)} specified in {path(schemas_fpath)} but does not exist in {path(csv_fpath)}'
+
+                    for col_name in csv_df.columns:
+                        assert col_name in schema_dct.keys(), \
+                            f'Column {bold(col_name)} exists in {path(csv_fpath)} but does not exist in {path(schemas_fpath)}'
+
+                    # At this point, we've validated that there is total alignment between
+                    # this table and its respective columns specified in the JSON config file
+                    # and as .csv file in the `custom_table_dpath` itself. Now we can proceed
+                    # to actually load the table into the Postgres schema.
+
+                    csv_df.to_sql(name=table_name,
+                                  con=pg.dbcon,
+                                  schema=save_pg_schema,
+                                  index=False,
+                                  if_exists='replace')
+
+            else:
+                raise FileNotFoundError(f'Could not find custom table schemas file {schemas_fpath}')
+        else:
+            logger.warning(pydoni.advanced_strip(f"""
+            No custom table data exists, so no custom tables were created. This is perfectly
+            okay and does not affect the running of this pipeline, however know that if you'd
+            like to add a table to this pipeline, you can manually create a .csv file and
+            place it in the {path(custom_table_dpath, 'table_data')} folder. The resulting
+            table will be dropped and re-created with each run of this pipeline, and will
+            be named identically to how you choose to name the .csv file. NOTE: each .csv file
+            must be accompanied by a .json file that specifies the table schema, or else
+            an error will be thrown. That table schema should be in the format:
+            {{column_name1: postgres_data_type1, column_name2: postgres_data_type2, ...}}
+            """))
 
         # Define all Postgres views
+        logger.info(f'Defining Postgres views')
+
         vw_names = list_view_names(vw_dpath)
         with open(join(dirname(__file__), 'view_info.json'), 'r') as f:
             vw_info = json.load(f)
@@ -181,6 +308,9 @@ def go(chat_db_path,
                                    pg_schema=save_pg_schema,
                                    pg=pg,
                                    logger=logger))
+
+        for vw_object in vw_objects:
+            vw_object.create()
 
     else:
         logger.info('User opted not to save tables to a Postgres database')
