@@ -1,6 +1,7 @@
 import click
 import json
 import logging
+from numpy import isin
 import pandas as pd
 import pathlib
 import pydoni
@@ -14,6 +15,7 @@ from pydoni import Postgres
 
 
 table_info_json_fpath = abspath(join(dirname(__file__), 'table_info.json'))
+staged_table_dpath = abspath(join(dirname(__file__), 'staged_tables'))
 
 
 class CreateTableSQL(object):
@@ -441,3 +443,35 @@ class View(object):
                 raise Exception(f'Missing reference(s) for view {bold(self.vw_name)}: {str(missing_refs)}')
 
         self.pg.execute(self.def_sql)
+
+
+class StagedTable(object):
+    """
+    Store information and operations for tables that get staged after chat.db
+    data has been loaded into Postgres.
+    """
+    def __init__(self, pg_schema: str, table_name: str, refresh_function: typing.Callable) -> None:
+        self.pg_schema = pg_schema
+        self.table_name = table_name
+        self.refresh_function = refresh_function
+
+        with open(join(staged_table_dpath, 'staged_table_info.json')) as f:
+            json_data = json.load(f)[self.table_name]
+
+        self.columnspec = json_data['columnspec']
+        self.primary_key = json_data['primary_key']
+        self.references = json_data['references']
+
+        assert isinstance(self.columnspec, dict), \
+            f'Columnspec for {self.table_name} must be a dictionary'
+        assert isinstance(self.primary_key, str) or isinstance(self.primary_key, list), \
+            f'Primary key for {self.table_name} must be a string or list'
+        assert self.references is None or isinstance(self.references, list), \
+            f'References for {self.table_name} must be None or a list'
+
+    def refresh(self, *args, **kwargs):
+        """
+        Execute custom refresh function for a particular table. Refresh functions are
+        stored as python modules and live in relative directory refresh_functions/
+        """
+        self.refresh_function(*args, **kwargs)

@@ -429,6 +429,12 @@ def go(chat_db_path,
 
         define_views_chat_db_dependent(logger=logger, pg=pg, pg_schema=pg_schema)
 
+        # Build staged tables off of chat.db tables, custom tables and views that have
+        # all been built upstream in this workflow
+
+        from .staged_tables.build import build_staged_tables
+        build_staged_tables(pg=pg, pg_schema=pg_schema, logger=logger)
+
     else:
         logger.info('User opted not to save tables to a Postgres database')
 

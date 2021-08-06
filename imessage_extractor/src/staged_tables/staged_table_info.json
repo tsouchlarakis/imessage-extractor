@@ -1,0 +1,24 @@
+{
+    "emoji_text_map": {
+        "columnspec": {
+            "emoji": "text",
+            "plain_text": "text"
+        },
+        "primary_key": "emoji",
+        "references": null
+    },
+    "tokens": {
+        "columnspec": {
+            "": ""
+        },
+        "primary_key": "",
+        "references": ["message_tokens"]
+    },
+    "message_tokens": {
+        "columnspec": {
+            "": ""
+        },
+        "primary_key": "message_id",
+        "references": ["message_vw"]
+    }
+}
