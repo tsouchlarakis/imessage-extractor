@@ -366,13 +366,13 @@ class ChatDbExtract(object):
                             # been saved to Postgres, so we can now insert this table
                             table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                             inserted_journal.append(table_name)
-                            logger.info(f'Saved Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
+                            logger.info(f'Rebuilt Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
                     else:
                         # No references found for this table, we can insert it right away
                         # since there are no dependencies to worry about
                         table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                         inserted_journal.append(table_name)
-                        logger.info(f'Saved Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
+                        logger.info(f'Rebuilt Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
                 else:
                     # This table has already been saved to Postgres, so we can skip it
                     pass

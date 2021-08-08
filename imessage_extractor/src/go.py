@@ -193,6 +193,8 @@ def build_custom_tables(logger: logging.Logger, pg: pydoni.Postgres, pg_schema: 
                               index=False,
                               if_exists='replace')
 
+                logger.info(f'Rebuilt Postgres:{bold(table_name)}', arrow='white')
+
         else:
             raise FileNotFoundError(f'Could not find custom table schemas file {schemas_fpath}')
     else:
@@ -450,9 +452,9 @@ def go(chat_db_path,
     else:
         logger.info('User opted not to save tables to a Postgres database')
 
-    # if save_csv is None:
-    #     shutil.rmtree(save_csv_dpath)
-    #     logger.info(f'Removed temporary directory {path(save_csv_dpath)}')
+    if save_csv is None:
+        shutil.rmtree(save_csv_dpath)
+        logger.info(f'Removed temporary directory {path(save_csv_dpath)}')
 
     diff_formatted = pydoni.fmt_seconds(time.time() - start_ts, units='auto', round_digits=2)
     elapsed_time = f"{diff_formatted['value']} {diff_formatted['units']}"
