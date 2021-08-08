@@ -216,11 +216,11 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
     vw_names = list_view_names(vw_def_dpath)
 
     # Views that can be defined after chat.db tables are loaded
-    with open(join(dirname(__file__), 'view_info_chat_db_dependent.json'), 'r') as f:
+    with open(join(vw_dpath, 'view_info_chat_db_dependent.json'), 'r') as f:
         vw_info_chat_db_dependent = json.load(f)
 
     # Views that depend on tables created downstream in this pipeline
-    with open(join(dirname(__file__), 'view_info_staged_table_dependent.json'), 'r') as f:
+    with open(join(vw_dpath, 'view_info_staged_table_dependent.json'), 'r') as f:
         vw_info_staged_table_dependent = json.load(f)
 
     # Validate that all views defined in vw_info*.json also contain a definition .sql
@@ -320,11 +320,11 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
                 if all_references_exist(vw_name, vw_info, pg_schema, pg):
                     # Create the view
                     vw_obj = View(vw_name=vw_name,
-                                    vw_def_dpath=vw_def_dpath,
-                                    reference=vw_info[vw_name]['reference'],
-                                    pg_schema=pg_schema,
-                                    pg=pg,
-                                    logger=logger)
+                                  vw_dpath=vw_def_dpath,
+                                  reference=vw_info[vw_name]['reference'],
+                                  pg_schema=pg_schema,
+                                  pg=pg,
+                                  logger=logger)
                     vw_obj.create()
                 else:
                     # Cannot create the view without creating references first

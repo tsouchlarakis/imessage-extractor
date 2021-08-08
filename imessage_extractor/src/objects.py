@@ -14,7 +14,7 @@ from os.path import join, dirname, isfile, splitext, abspath
 from pydoni import Postgres
 
 
-table_info_json_fpath = abspath(join(dirname(__file__), 'tables', 'chatdb_chatdb_table_info.json'))
+table_info_json_fpath = abspath(join(dirname(__file__), 'tables', 'chatdb_table_info.json'))
 staged_table_dpath = abspath(join(dirname(__file__), 'staged_tables'))
 
 

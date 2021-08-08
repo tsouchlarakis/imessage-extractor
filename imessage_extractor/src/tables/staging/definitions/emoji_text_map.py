@@ -2,8 +2,8 @@ import emoji
 import logging
 import pandas as pd
 import pydoni
-from ..verbosity import bold
-from .common import columns_match_expectation
+from ....verbosity import bold
+from ..common import columns_match_expectation
 
 
 def refresh_emoji_text_map(pg: pydoni.Postgres,

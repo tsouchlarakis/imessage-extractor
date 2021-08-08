@@ -4,7 +4,7 @@ import nltk
 import pandas as pd
 from tqdm import tqdm
 import pydoni
-from ..verbosity import bold
+from ....verbosity import bold
 
 
 def decontracted(string: str) -> str:
