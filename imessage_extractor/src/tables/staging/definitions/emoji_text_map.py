@@ -25,4 +25,4 @@ def refresh_emoji_text_map(pg: pydoni.Postgres,
                        index=False,
                        if_exists='replace')
 
-    logger.info(f'"{bold(pg_schema)}"."{bold(table_name)}", shape: {emoji_table.shape}')
+    logger.info(f'Built "{bold(pg_schema)}"."{bold(table_name)}", shape: {emoji_table.shape}')

@@ -1,5 +1,5 @@
 import pandas as pd
-from ..verbosity import bold
+from ...verbosity import bold
 
 
 def columns_match_expectation(df: pd.DataFrame, table_name: str, columnspec: dict):

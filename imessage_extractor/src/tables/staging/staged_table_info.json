@@ -16,9 +16,13 @@
     },
     "message_tokens": {
         "columnspec": {
-            "": ""
+            "message_id": "bigint",
+            "token_idx": "int",
+            "token": "text",
+            "pos": "text",
+            "pos_simple": "text"
         },
         "primary_key": "message_id",
-        "references": ["message_vw"]
+        "references": ["message_vw", "emoji_text_map"]
     }
 }

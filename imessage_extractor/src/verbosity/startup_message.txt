@@ -10,38 +10,4 @@ This pipeline is entirely {click.style('non-destructive', bold=True)}, meaning
 none of the original chat.db data is appended to, mutated or
 deleted at any point.
 
-->->->->->->->->->->->->-> {click.style('Postgres Schemas', bold=True)} <-<-<-<-<-<-<-<-<-<-<-<-<-
-
-There are two schemas required in the target Postgres database.
-
-{tab}{click.style('imessage_current', bold=True)}
-{tab}This schema is meant for housing raw chat.db data and is
-{tab}therefore not designed for the user to query, but is rather
-{tab}set up as a data store. Denoted in the code as `pg-schema-load`.
-
-{tab}{click.style('imessage', bold=True)}
-{tab}This schema is meant for housing live views and staged tables,
-{tab}created both internal to this workflow (in band), and external
-{tab}to this workflow (out of band). Denoted in this codebase
-{tab}as `pg-schema-live`.
-
-->->->->->->->->->->->->-> {click.style('Verbosity', bold=True)} <-<-<-<-<-<-<-<-<-<-<-<-<-
-
-Colorized tags are used in the verbose output of this
-workflow to indicate where a particular option has affected
-the execution of the workflow:
-
-{tab}{click.style('<full-refresh>', fg='red')}
-{tab}Indicates that all rows from a staged table have been
-{tab}deleted, but the table structure has remained intact.
-
-{tab}{click.style('<dry-run>', fg='magenta')}
-{tab}Indicates that SQL was not actually executed against the
-{tab}target Postgres DB, but rather that it {click.style('would have', bold=True)}
-{tab}been executed, had this flag not been set to {click.style('True', bg='white')}.
-
-{tab}{click.style('<step-name>', fg='blue')}
-{tab}Indicates a particular workflow subprocess is responsible
-{tab}for a line of logged output.
-
 Let's go!

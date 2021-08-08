@@ -1,7 +1,8 @@
 import pydoni
 import logging
-from ..objects import StagedTable
-from .emoji_text_map import refresh_emoji_text_map
+from ...objects import StagedTable
+from .definitions.emoji_text_map import refresh_emoji_text_map
+from .definitions.message_tokens import refresh_message_tokens
 
 
 def build_staged_tables(pg: pydoni.Postgres, pg_schema: str, logger: logging.Logger) -> None:
@@ -10,9 +11,11 @@ def build_staged_tables(pg: pydoni.Postgres, pg_schema: str, logger: logging.Log
     this script, and add an entry in the `refresh_map` for each table that you'd
     like to refresh.
     """
+    logger.info('Building staged tables')
 
     refresh_map = dict(
         emoji_text_map=refresh_emoji_text_map,
+        message_tokens=refresh_message_tokens,
     )
 
     for table_name, refresh_function in refresh_map.items():

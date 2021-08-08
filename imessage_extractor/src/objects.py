@@ -14,7 +14,7 @@ from os.path import join, dirname, isfile, splitext, abspath
 from pydoni import Postgres
 
 
-table_info_json_fpath = abspath(join(dirname(__file__), 'table_info.json'))
+table_info_json_fpath = abspath(join(dirname(__file__), 'tables', 'chatdb_chatdb_table_info.json'))
 staged_table_dpath = abspath(join(dirname(__file__), 'staged_tables'))
 
 
@@ -302,16 +302,16 @@ class ChatDbExtract(object):
         with open(table_info_json_fpath) as f:
             table_info = json.load(f)
 
-        # Cross reference queried SQLite tables with those in table_info.json. If a table is
-        # found in SQLite but not in table_info.json or the reverse, then an error is thrown.
+        # Cross reference queried SQLite tables with those in chatdb_table_info.json. If a table is
+        # found in SQLite but not in chatdb_table_info.json or the reverse, then an error is thrown.
 
         for table_name in sqlite_table_names:
             if table_name not in table_info.keys():
-                raise Exception(f'Table {bold(table_name)} found in SQLite but not accounted for in {path("table_info.json")}')
+                raise Exception(f'Table {bold(table_name)} found in SQLite but not accounted for in {path("chatdb_table_info.json")}')
 
         for table_name in table_info.keys():
             if table_name not in sqlite_table_names:
-                raise Exception(f'Table {bold(table_name)} found in {path("table_info.json")} but not in SQLite')
+                raise Exception(f'Table {bold(table_name)} found in {path("chatdb_table_info.json")} but not in SQLite')
 
         # Extract all rows for all tables in chat.db
         self.logger.info('Reading chat.db source table metadata')
@@ -455,7 +455,7 @@ class StagedTable(object):
         self.table_name = table_name
         self.refresh_function = refresh_function
 
-        with open(join(staged_table_dpath, 'staged_table_info.json')) as f:
+        with open(join(staged_table_dpath, 'staged_chatdb_table_info.json')) as f:
             json_data = json.load(f)[self.table_name]
 
         self.columnspec = json_data['columnspec']

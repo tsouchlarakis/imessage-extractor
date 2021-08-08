@@ -10,11 +10,13 @@ import time
 import typing
 from .objects import ChatDbExtract, View
 from .verbosity import print_startup_message, logger_setup, path, bold
+from .tables.staging import build_staged_tables
 from os import makedirs, listdir
 from os.path import expanduser, isfile, isdir, splitext, abspath, dirname, join, basename
 
 
 vw_dpath = abspath(join(dirname(__file__), 'views'))
+vw_def_dpath = join(vw_dpath, 'definitions')
 custom_table_dpath = abspath(join(dirname(__file__), '..', 'custom_tables'))
 logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
 
@@ -115,11 +117,11 @@ def generate_global_uid_table(pg: pydoni.Postgres, pg_schema: str, source_table_
     pg.execute(sql)
 
 
-def list_view_names(vw_dpath: typing.Union[str, pathlib.Path]) -> list:
+def list_view_names(vw_def_dpath: typing.Union[str, pathlib.Path]) -> list:
     """
     Find views in folder.
     """
-    return [f.replace('.sql', '') for f in listdir(vw_dpath) if splitext(f)[1] == '.sql']
+    return [f.replace('.sql', '') for f in listdir(vw_def_dpath) if splitext(f)[1] == '.sql']
 
 
 def build_custom_tables(logger: logging.Logger, pg: pydoni.Postgres, pg_schema: str) -> None:
@@ -211,7 +213,7 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
     """
     """
     logger.info(f'Defining Postgres views that are only dependent on chat.db tables')
-    vw_names = list_view_names(vw_dpath)
+    vw_names = list_view_names(vw_def_dpath)
 
     # Views that can be defined after chat.db tables are loaded
     with open(join(dirname(__file__), 'view_info_chat_db_dependent.json'), 'r') as f:
@@ -229,14 +231,14 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
         view_names_all = list(vw_info_chat_db_dependent.keys()) + list(vw_info_staged_table_dependent.keys())
         if vw_name not in view_names_all:
             raise Exception(pydoni.advanced_strip(f"""
-            View definition {bold(vw_name)} found at {path(join(vw_dpath, vw_name + ".sql"))}
+            View definition {bold(vw_name)} found at {path(join(vw_def_dpath, vw_name + ".sql"))}
             but not accounted for in {path("view_info.json")}"""))
 
     for vw_name in view_names_all:
         if vw_name not in vw_names:
             raise Exception(pydoni.advanced_strip(f"""
             View definition {bold(vw_name)} found in {path("view_info.json")} but not
-            accounted for at {path(join(vw_dpath, vw_name + ".sql"))}"""))
+            accounted for at {path(join(vw_def_dpath, vw_name + ".sql"))}"""))
 
     # Define views intelligently. Views may be dependent on other views or tables, and
     # as such, as we cannot simply execute a view definition since a dependency of that
@@ -318,7 +320,7 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
                 if all_references_exist(vw_name, vw_info, pg_schema, pg):
                     # Create the view
                     vw_obj = View(vw_name=vw_name,
-                                    vw_dpath=vw_dpath,
+                                    vw_def_dpath=vw_def_dpath,
                                     reference=vw_info[vw_name]['reference'],
                                     pg_schema=pg_schema,
                                     pg=pg,
@@ -432,8 +434,7 @@ def go(chat_db_path,
         # Build staged tables off of chat.db tables, custom tables and views that have
         # all been built upstream in this workflow
 
-        from .staged_tables.build import build_staged_tables
-        build_staged_tables(pg=pg, pg_schema=pg_schema, logger=logger)
+        # build_staged_tables(pg=pg, pg_schema=pg_schema, logger=logger)
 
     else:
         logger.info('User opted not to save tables to a Postgres database')
