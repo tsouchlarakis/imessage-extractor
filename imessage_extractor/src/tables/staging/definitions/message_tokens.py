@@ -122,19 +122,32 @@ def refresh_message_tokens(pg: pydoni.Postgres,
     Parse messages into tokens and append to message tokens table, for messages that have
     not already been parsed into tokens.
     """
+    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"')
+
     batch_size = 1500
+    logger.debug(f'Batch size: {bold(batch_size)}')
+
+    if pg.table_exists(pg_schema, table_name):
+      # Filter out messages that are already in the message <> tokens mapping table if
+      # it exists
+      join_clause = f"""
+      left join {pg_schema}.{table_name} t
+            on m.message_id = t.message_id
+           and t.message_id is null  -- Not in existing message <> emoji map
+      """
+    else:
+      join_clause = ''
 
     sql = f"""
     select message_id, "text"
     from {pg_schema}.message_vw
-    where is_text = true  -- Not a 'like' or other emote/non-text reaction
-      -- Not already in target table
-      -- TODO: uncomment when pipeline can run incrementally, without full rebuild
-      -- and message_id not in (select distinct message_id from {pg_schema}.{table_name})
+    {join_clause}
+    where is_text = true  -- Not an emote reaction, attachment, or other message with no text
     order by message_id
     """
+    logger.debug(sql)
     message = pg.read_sql(sql)
-    logger.info(f'Tokenizing {len(message)} messages')
+    logger.debug(f'Tokenizing {len(message)} messages')
 
     if isinstance(batch_size, int):
         target_indices = list(chunks(list(message.index), batch_size))

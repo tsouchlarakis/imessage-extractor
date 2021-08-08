@@ -1,7 +1,6 @@
 import click
 import json
 import logging
-from numpy import isin
 import pandas as pd
 import pathlib
 import pydoni
@@ -11,11 +10,10 @@ import typing
 from .verbosity import bold, path
 from os import stat
 from os.path import join, dirname, isfile, splitext, abspath
-from pydoni import Postgres
 
 
 table_info_json_fpath = abspath(join(dirname(__file__), 'tables', 'chatdb_table_info.json'))
-staged_table_dpath = abspath(join(dirname(__file__), 'staged_tables'))
+staged_table_dpath = abspath(join(dirname(__file__), 'tables', 'staging'))
 
 
 class CreateTableSQL(object):
@@ -256,7 +254,7 @@ class ChatDbTable(object):
         df.to_csv(file_name, index=False)
         self.csv_fpath = file_name
 
-    def save_to_postgres(self, pg: Postgres, pg_schema: str) -> None:
+    def save_to_postgres(self, pg: pydoni.Postgres, pg_schema: str) -> None:
         """
         Save table to Postgres.
         """
@@ -343,7 +341,7 @@ class ChatDbExtract(object):
             file_size_str = pydoni.human_filesize(stat(output_file_name).st_size)
             logger.info(f'Saved table {bold(table_name)} to {bold(table_name + ext)} ({file_size_str})', arrow='white')
 
-    def save_to_postgres(self, pg: Postgres, pg_schema: str, logger: logging.Logger) -> None:
+    def save_to_postgres(self, pg: pydoni.Postgres, pg_schema: str, logger: logging.Logger) -> None:
         """
         Save all tables to Postgres in such an order that foreign keys are resolved correctly.
         For example, if a table depends on another table, then the other table must be created
@@ -364,17 +362,13 @@ class ChatDbExtract(object):
                             # been saved to Postgres, so we can now insert this table
                             table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                             inserted_journal.append(table_name)
-                            logger.info(pydoni.advanced_strip(f"""
-                            Saved Postgres:{bold(f'"{self.pg_schema}"."{table_name}"')}
-                            """), arrow='white')
+                            logger.info(f'Saved Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
                     else:
                         # No references found for this table, we can insert it right away
                         # since there are no dependencies to worry about
                         table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                         inserted_journal.append(table_name)
-                        logger.info(pydoni.advanced_strip(f"""
-                            Saved Postgres:{bold(f'"{self.pg_schema}"."{table_name}"')}
-                            """), arrow='white')
+                        logger.info(f'Saved Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
                 else:
                     # This table has already been saved to Postgres, so we can skip it
                     pass
@@ -389,7 +383,7 @@ class View(object):
                  vw_dpath: typing.Union[str, pathlib.Path],
                  reference: typing.Union[list, None],
                  pg_schema: str,
-                 pg: Postgres,
+                 pg: pydoni.Postgres,
                  logger: logging.Logger) -> None:
         self.pg_schema = pg_schema
         self.vw_name = splitext(vw_name)[0]  # Handles the case that vw_name contains a file extension
@@ -455,7 +449,7 @@ class StagedTable(object):
         self.table_name = table_name
         self.refresh_function = refresh_function
 
-        with open(join(staged_table_dpath, 'staged_chatdb_table_info.json')) as f:
+        with open(join(staged_table_dpath, 'staged_table_info.json')) as f:
             json_data = json.load(f)[self.table_name]
 
         self.columnspec = json_data['columnspec']

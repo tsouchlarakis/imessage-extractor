@@ -7,16 +7,17 @@
         "primary_key": "emoji",
         "references": null
     },
-    "tokens": {
+    "message_emoji_map": {
         "columnspec": {
-            "": ""
+            "message_id": "int",
+            "has_emoji": "bool"
         },
-        "primary_key": "",
-        "references": ["message_tokens"]
+        "primary_key": "message_id",
+        "references": ["message_vw", "emoji_text_map"]
     },
     "message_tokens": {
         "columnspec": {
-            "message_id": "bigint",
+            "message_id": "int",
             "token_idx": "int",
             "token": "text",
             "pos": "text",

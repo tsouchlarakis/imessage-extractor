@@ -342,12 +342,9 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
 
         # Create the view intelligently
         smart_create_view(vw_name, vw_info_chat_db_dependent, pg_schema, pg)
-        logger.info(pydoni.advanced_strip(f"""Defined view
-        {bold(f'"{pg_schema}"."{vw_name}"')} """), arrow='white')
+        logger.info(f'Defined view "{bold(pg_schema)}"."{bold(vw_name)}"', arrow='white')
 
 
-@click.option('-v', '--verbose', is_flag=True, default=False,
-              help='Set logging level to INFO.')
 @click.option('--chat-db-path', type=str, default=expanduser('~/Library/Messages/chat.db'),
               help='Path to working chat.db.')
 @click.option('--save-csv', type=str, default=None, required=False,
@@ -358,20 +355,30 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
               help=pydoni.advanced_strip("""EITHER the path to a local Postgres credentials
               file 'i.e. ~/.pgpass', OR a string with the connection credentials. Must
               be in format 'hostname:port:db_name:user:pg_pass'."""))
+@click.option('-v', '--verbose', is_flag=True, default=False,
+              help='Set logging level to INFO.')
+@click.option('--debug', is_flag=True, default=False,
+              help='Set logging level to DEBUG.')
 
 @click.command()
 def go(chat_db_path,
-       verbose,
        save_csv,
        pg_schema,
-       pg_credentials) -> None:
+       pg_credentials,
+       verbose,
+       debug) -> None:
     """
     Run the imessage-extractor!
     """
     params = locals()
 
     # Configure logger
-    logging_level = logging.INFO if verbose else logging.ERROR
+    if debug:
+        logging_level = logging.DEBUG
+    elif verbose:
+        logging_level = logging.INFO
+    else:
+        logging_level = logging.ERROR
     logger = logger_setup(name='imessage-extractor', level=logging_level)
 
     validate_parameters(params)
@@ -417,7 +424,7 @@ def go(chat_db_path,
         # pg.drop_schema_if_exists_and_recreate(pg_schema, cascade=True)  # TODO: uncomment when new version of pydoni released
         logger.info(f'Re-created schema from scratch')
 
-        logger.info(f'Saving tables to schema {bold(pg_schema)}')
+        logger.info(f'Saving tables to schema "{bold(pg_schema)}"')
         chat_db_extract.save_to_postgres(pg, pg_schema, logger)
 
         # logger.info('Generating global UIDs for message, attachment, handle and chat tables')
@@ -434,7 +441,7 @@ def go(chat_db_path,
         # Build staged tables off of chat.db tables, custom tables and views that have
         # all been built upstream in this workflow
 
-        # build_staged_tables(pg=pg, pg_schema=pg_schema, logger=logger)
+        build_staged_tables(pg=pg, pg_schema=pg_schema, logger=logger)
 
     else:
         logger.info('User opted not to save tables to a Postgres database')
