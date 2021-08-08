@@ -343,7 +343,7 @@ class ChatDbExtract(object):
             output_file_name = join(dir_name, table_name + ext)
             table_object.save_to_csv(output_file_name)
             file_size_str = pydoni.human_filesize(stat(output_file_name).st_size)
-            logger.info(f'Saved table {bold(table_name)} to {path(table_name + ext)} ({file_size_str})', arrow='white')
+            logger.info(f'Saved SQLite:{bold(table_name)} to {path(table_name + ext)} ({file_size_str})', arrow='white')
 
     def save_to_postgres(self, pg: pydoni.Postgres, pg_schema: str, logger: logging.Logger) -> None:
         """
@@ -470,7 +470,7 @@ class StagingTable(object):
         self.columnspec = json_data['columnspec']
         self.primary_key = json_data['primary_key']
         self.references = json_data['references']
-        self.references_exist(references=self.references)
+        self.check_references(references=self.references)
 
         assert isinstance(self.columnspec, dict), \
             f'Columnspec for {self.table_name} must be a dictionary'
@@ -479,9 +479,10 @@ class StagingTable(object):
         assert self.references is None or isinstance(self.references, list), \
             f'References for {self.table_name} must be None or a list'
 
-    def references_exist(self, references) -> bool:
+    def check_references(self, references) -> bool:
         """
-        Return True if all reference objects exist in Postgres schema, False otherwise.
+        Return True if all reference objects exist in Postgres schema, and return
+        an error otherwise.
         """
         if isinstance(references, list):
             missing_refs = []
@@ -503,5 +504,4 @@ class StagingTable(object):
                               pg_schema=self.pg_schema,
                               table_name=self.table_name,
                               columnspec=self.columnspec,
-                              references=self.references,
-                              logger=self.logger,)
+                              logger=self.logger)

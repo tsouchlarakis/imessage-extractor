@@ -2,9 +2,7 @@ import re
 import logging
 import nltk
 import pandas as pd
-from tqdm import tqdm
 import pydoni
-import typing
 from ....verbosity import bold
 from ..common import columns_match_expectation
 
@@ -119,13 +117,12 @@ def refresh_message_tokens(pg: pydoni.Postgres,
                            pg_schema: str,
                            table_name: str,
                            columnspec: dict,
-                           references: typing.Union[list, None],
                            logger: logging.Logger) -> None:
     """
     Parse messages into tokens and append to message tokens table, for messages that have
     not already been parsed into tokens.
     """
-    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"')
+    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
 
     batch_size = 1500
     logger.debug(f'Batch size: {bold(batch_size)}')
@@ -161,7 +158,7 @@ def refresh_message_tokens(pg: pydoni.Postgres,
 
     total_tokens_inserted = 0
     for i, targets in enumerate(target_indices):
-        logger.info(f'Tokenizing batch {i + 1} of {len(target_indices)}', arrow='white')
+        logger.debug(f'Tokenizing batch {i + 1} of {len(target_indices)}', arrow='white')
         message_tokens = pd.DataFrame(columns=[k for k, v in columnspec.items()])
         message_subset = message.loc[message.index.isin(targets)]
 
@@ -199,4 +196,4 @@ def refresh_message_tokens(pg: pydoni.Postgres,
                               index=False,
                               if_exists='append')
 
-    logger.info(f'Built "{bold(pg_schema)}"."{bold(table_name)}", shape: {message_tokens.shape}')
+    logger.info(f'Built "{bold(pg_schema)}"."{bold(table_name)}", shape: {message_tokens.shape}', arrow='white')

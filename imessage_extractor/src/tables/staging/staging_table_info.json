@@ -33,9 +33,10 @@
             "stem": "text",
             "lemma": "text",
             "is_english_stopword": "bool",
-            "is_punct": "bool"
+            "is_punct": "bool",
+            "is_emoji": "bool"
         },
         "primary_key": "message_id",
-        "references": ["message_tokens"]
+        "references": ["message_tokens", "emoji_text_map"]
     }
 }

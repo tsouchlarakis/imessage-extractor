@@ -5,6 +5,7 @@ from .definitions.emoji_text_map import refresh_emoji_text_map
 from .definitions.message_tokens import refresh_message_tokens
 from .definitions.message_emoji_map import refresh_message_emoji_map
 from .definitions.tokens import refresh_tokens
+from .definitions.stats_by_contact import refresh_stats_by_contact
 
 
 def build_staged_tables(pg: pydoni.Postgres, pg_schema: str, logger: logging.Logger) -> None:
@@ -20,6 +21,7 @@ def build_staged_tables(pg: pydoni.Postgres, pg_schema: str, logger: logging.Log
         # message_tokens=refresh_message_tokens,
         # message_emoji_map=refresh_message_emoji_map,
         # tokens=refresh_tokens,
+        # stats_by_contact=refresh_stats_by_contact,
     )
 
     for table_name, refresh_function in refresh_map.items():

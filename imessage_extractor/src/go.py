@@ -346,7 +346,7 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
         # Create the view intelligently
         smart_create_view(vw_name, vw_info_chat_db_dependent, pg_schema, pg)
         assert pg.view_exists(pg_schema, vw_name), f'View {bold(vw_name)} not actually created!'
-        logger.info(f'Defined view "{bold(pg_schema)}"."{bold(vw_name)}"', arrow='white')
+        logger.info(f'Defined Postgres"{bold(pg_schema)}"."{bold(vw_name)}"', arrow='white')
 
 
 @click.option('--chat-db-path', type=str, default=expanduser('~/Library/Messages/chat.db'),
