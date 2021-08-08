@@ -1,5 +1,6 @@
 import pandas as pd
 import pydoni
+import typing
 import logging
 from ....verbosity import bold
 
@@ -8,6 +9,7 @@ def refresh_message_emoji_map(pg: pydoni.Postgres,
                               pg_schema: str,
                               table_name: str,
                               columnspec: dict,
+                              references: typing.Union[list, None],
                               logger: logging.Logger) -> None:
     """
     Refresh or rebuild a table in Postgres mapping messages to a boolean columns indicating
@@ -27,8 +29,7 @@ def refresh_message_emoji_map(pg: pydoni.Postgres,
       join_clause = f"""
       left join {pg_schema}.{table_name} e
             on m.message_id = e.message_id
-           and e.message_id is null  -- Not in existing message <> emoji map
-      """
+           and e.message_id is null  -- Not in existing message <> emoji map"""
     else:
       join_clause = ''
 

@@ -4,7 +4,9 @@ import nltk
 import pandas as pd
 from tqdm import tqdm
 import pydoni
+import typing
 from ....verbosity import bold
+from ..common import columns_match_expectation
 
 
 def decontracted(string: str) -> str:
@@ -117,6 +119,7 @@ def refresh_message_tokens(pg: pydoni.Postgres,
                            pg_schema: str,
                            table_name: str,
                            columnspec: dict,
+                           references: typing.Union[list, None],
                            logger: logging.Logger) -> None:
     """
     Parse messages into tokens and append to message tokens table, for messages that have
@@ -180,7 +183,7 @@ def refresh_message_tokens(pg: pydoni.Postgres,
                     message_tokens.loc[len(message_tokens)+1] = value_lst
                 except Exception:
                     raise ValueError(pydoni.advanced_strip(f"""Incompatible column specification
-                    in staged_table_info.json for table {bold(table_name)}. Columns should be:
+                    in staging_table_info.json for table {bold(table_name)}. Columns should be:
                     [message_id, token_idx, token, pos, pos_simple]."""))
 
         # Make doubly sure that we're not attempting to insert any duplicate records (in case
@@ -189,6 +192,7 @@ def refresh_message_tokens(pg: pydoni.Postgres,
             existing_message_tokens = pg.read_table(pg_schema, table_name)
             message_tokens = message_tokens.loc[~message_tokens['message_id'].isin(existing_message_tokens['message_id'])]
 
+        columns_match_expectation(message_tokens, table_name, columnspec)
         message_tokens.to_sql(name=table_name,
                               con=pg.dbcon,
                               schema=pg_schema,

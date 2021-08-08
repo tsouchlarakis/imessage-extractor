@@ -25,5 +25,17 @@
         },
         "primary_key": "message_id",
         "references": ["message_vw", "emoji_text_map"]
+    },
+    "tokens": {
+        "columnspec": {
+            "token": "text",
+            "length": "int",
+            "stem": "text",
+            "lemma": "text",
+            "is_english_stopword": "bool",
+            "is_punct": "bool"
+        },
+        "primary_key": "message_id",
+        "references": ["message_tokens"]
     }
 }

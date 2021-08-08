@@ -1,9 +1,10 @@
 import pydoni
 import logging
-from ...objects import StagedTable
+from ...objects import StagingTable
 from .definitions.emoji_text_map import refresh_emoji_text_map
 from .definitions.message_tokens import refresh_message_tokens
 from .definitions.message_emoji_map import refresh_message_emoji_map
+from .definitions.tokens import refresh_tokens
 
 
 def build_staged_tables(pg: pydoni.Postgres, pg_schema: str, logger: logging.Logger) -> None:
@@ -17,20 +18,17 @@ def build_staged_tables(pg: pydoni.Postgres, pg_schema: str, logger: logging.Log
     refresh_map = dict(
         emoji_text_map=refresh_emoji_text_map,
         # message_tokens=refresh_message_tokens,
-        message_emoji_map=refresh_message_emoji_map,
+        # message_emoji_map=refresh_message_emoji_map,
+        # tokens=refresh_tokens,
     )
 
     for table_name, refresh_function in refresh_map.items():
-        table_obj = StagedTable(
-            pg_schema=pg_schema,
-            table_name=table_name,
-            refresh_function=refresh_function,
-        )
-
-        table_obj.refresh(
+        table_obj = StagingTable(
             pg=pg,
             pg_schema=pg_schema,
             table_name=table_name,
-            columnspec=table_obj.columnspec,
+            refresh_function=refresh_function,
             logger=logger,
         )
+
+        table_obj.refresh()

@@ -1,5 +1,6 @@
 import emoji
 import logging
+import typing
 import pandas as pd
 import pydoni
 from ....verbosity import bold
@@ -10,6 +11,7 @@ def refresh_emoji_text_map(pg: pydoni.Postgres,
                            pg_schema: str,
                            table_name: str,
                            columnspec: dict,
+                           references: typing.Union[list, None],
                            logger: logging.Logger) -> None:
     """
     Refresh table emoji_text_map.

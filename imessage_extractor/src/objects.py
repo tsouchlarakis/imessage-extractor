@@ -262,7 +262,7 @@ class ChatDbTable(object):
             f'Must create {path(self.csv_fpath)} before inserting to Postgres table {bold(self.table_name)}'
 
         # Create table
-        pg.drop_table_if_exists(pg_schema, self.table_name)
+        pg.drop_table(pg_schema, self.table_name, if_exists=True)
         pg.execute(self.create_sql)
 
         # Save table to Postgres
@@ -439,22 +439,34 @@ class View(object):
         self.pg.execute(self.def_sql)
 
 
-class StagedTable(object):
+class StagingTable(object):
     """
     Store information and operations for tables that get staged after chat.db
     data has been loaded into Postgres.
     """
-    def __init__(self, pg_schema: str, table_name: str, refresh_function: typing.Callable) -> None:
+    def __init__(self,
+                 pg: pydoni.Postgres,
+                 pg_schema: str,
+                 table_name: str,
+                 refresh_function: typing.Callable,
+                 logger=logging.Logger) -> None:
+        self.pg = pg
         self.pg_schema = pg_schema
         self.table_name = table_name
         self.refresh_function = refresh_function
+        self.logger = logger
 
-        with open(join(staged_table_dpath, 'staged_table_info.json')) as f:
-            json_data = json.load(f)[self.table_name]
+        with open(join(staged_table_dpath, 'staging_table_info.json')) as f:
+            json_data = json.load(f)
+            if self.table_name in json_data.keys():
+                json_data = json_data[self.table_name]
+            else:
+                raise KeyError(f'Table {bold(table_name)} expected as a key in staging_table_info.json but not found')
 
         self.columnspec = json_data['columnspec']
         self.primary_key = json_data['primary_key']
         self.references = json_data['references']
+        self.references_exist(references=self.references)
 
         assert isinstance(self.columnspec, dict), \
             f'Columnspec for {self.table_name} must be a dictionary'
@@ -463,9 +475,29 @@ class StagedTable(object):
         assert self.references is None or isinstance(self.references, list), \
             f'References for {self.table_name} must be None or a list'
 
-    def refresh(self, *args, **kwargs):
+    def references_exist(self, references) -> bool:
+        """
+        Return True if all reference objects exist in Postgres schema, False otherwise.
+        """
+        if isinstance(references, list):
+            missing_refs = []
+            for ref in references:
+                if not self.pg.table_or_view_exists(self.pg_schema, ref):
+                    missing_refs.append(ref)
+
+            if len(missing_refs) > 0:
+                raise Exception(f'Staging table {bold(self.table_name)} requires the following non-existent references: {str(missing_refs)}')
+
+        return True
+
+    def refresh(self):
         """
         Execute custom refresh function for a particular table. Refresh functions are
         stored as python modules and live in relative directory refresh_functions/
         """
-        self.refresh_function(*args, **kwargs)
+        self.refresh_function(pg=self.pg,
+                              pg_schema=self.pg_schema,
+                              table_name=self.table_name,
+                              columnspec=self.columnspec,
+                              references=self.references,
+                              logger=self.logger,)

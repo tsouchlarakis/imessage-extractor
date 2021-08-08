@@ -1,7 +1,7 @@
-=============
-Staged Tables
-=============
+==============
+Staging Tables
+==============
 
-Define logic for creating staged tables in the target schema.
+Define logic for creating Staging tables in the target schema.
 
 

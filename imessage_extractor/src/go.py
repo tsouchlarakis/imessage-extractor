@@ -259,24 +259,12 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
     # we are able to create it without issue. At this point, all dependencies for view A
     # exist and we can create view A.
 
-    def vw_dependency_exists(pg_schema: str, reference_name: str, pg: pydoni.Postgres) -> bool:
-        """
-        Determine whether a table or view exists with the given name.
-        """
-        schema_objects = pg.read_sql(f"""
-        select table_name
-        from information_schema.tables
-        where table_schema = '{pg_schema}'
-        """).tolist()
-
-        return reference_name in schema_objects
-
     def all_references_exist(vw_name: str, vw_info: dict, pg_schema: str, pg: pydoni.Postgres) -> bool:
         """
         Check whether ALL references for a given view exist.
         """
         references = vw_info[vw_name]['reference']
-        exists_lst = [vw_dependency_exists(pg_schema, ref, pg) for ref in references]
+        exists_lst = [pg.table_or_view_exists(pg_schema, ref) for ref in references]
         return all(exists_lst)
 
     def get_nonexistent_references(vw_name: str, vw_info: dict, pg_schema: str, pg: pydoni.Postgres) -> list:
@@ -284,7 +272,7 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
         List the nonexistent references for a given view.
         """
         references = vw_info[vw_name]['reference']
-        nonexistent_lst = [ref for ref in references if not vw_dependency_exists(pg_schema, ref, pg)]
+        nonexistent_lst = [ref for ref in references if not pg.table_or_view_exists(pg_schema, ref)]
         return nonexistent_lst
 
     def smart_create_view(vw_name: str, vw_info: dict, pg_schema: str, pg: pydoni.Postgres) -> None:
