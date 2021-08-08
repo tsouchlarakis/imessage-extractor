@@ -72,7 +72,6 @@ from (
       on c."ROWID" = cm_join.chat_id
     join (
         select "ROWID" as message_id
-              --  , "date"
                , to_timestamp((("date"::double precision / 1000000000::double precision)::numeric + '978307200'::numeric)::double precision) as "date"
                , btrim(
                    regexp_replace(
