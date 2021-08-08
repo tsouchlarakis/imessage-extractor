@@ -1,3 +1,4 @@
+import pdb
 import click  # Required by `print_startup_message()`
 import logging
 import threading
@@ -76,11 +77,19 @@ class ExtendedLogger(logging.Logger):
         if bold:
             msg = click.style(msg, bold=True)
 
-        arrow_str = click.style('==> ', fg=arrow, bold=True) if arrow else ''
+        arrow_str = click.style('==> ', fg=arrow, bold=True) if arrow is not None else ''
         indent_str = '  ' * indent
 
         msg = str(msg)
         return f'{indent_str} {arrow_str}{msg}'
+
+    # def debug(self, msg: str, *args, **kwargs):
+    #     """
+    #     Override the logging.Logger.debug() method.
+    #     """
+    #     import pdb; pdb.set_trace()
+    #     formatted_msg = self._build_message(msg, *args, **kwargs)
+    #     return super(ExtendedLogger, self).debug(formatted_msg)
 
     def info(self, msg: str, *args, **kwargs):
         """
@@ -89,6 +98,26 @@ class ExtendedLogger(logging.Logger):
         formatted_msg = self._build_message(msg, *args, **kwargs)
         return super(ExtendedLogger, self).info(formatted_msg)
 
+    def warning(self, msg: str, *args, **kwargs):
+        """
+        Override the logging.Logger.warning() method.
+        """
+        formatted_msg = self._build_message(msg, *args, **kwargs)
+        return super(ExtendedLogger, self).warning(formatted_msg)
+
+    def error(self, msg: str, *args, **kwargs):
+        """
+        Override the logging.Logger.error() method.
+        """
+        formatted_msg = self._build_message(msg, *args, **kwargs)
+        return super(ExtendedLogger, self).error(formatted_msg)
+
+    def critical(self, msg: str, *args, **kwargs):
+        """
+        Override the logging.Logger.critical() method.
+        """
+        formatted_msg = self._build_message(msg, *args, **kwargs)
+        return super(ExtendedLogger, self).critical(formatted_msg)
 
 
 def logger_setup(name: str=__name__, level: int=logging.DEBUG, equal_width: bool=False):

@@ -251,15 +251,19 @@ class ChatDbTable(object):
         Save table to a .csv file.
         """
         df = pd.read_sql(f'SELECT * FROM {self.table_name}', self.sqlite_con)
-        df.to_csv(file_name, index=False)
+        # df.to_csv(file_name, index=False)  # TODO: uncomment
         self.csv_fpath = file_name
 
     def save_to_postgres(self, pg: pydoni.Postgres, pg_schema: str) -> None:
         """
         Save table to Postgres.
         """
-        assert isfile(self.csv_fpath), \
-            f'Must create {path(self.csv_fpath)} before inserting to Postgres table {bold(self.table_name)}'
+        if self.csv_fpath is None:
+            raise FileNotFoundError(pydoni.advanced_strip(f"""
+            Must create {path(self.csv_fpath)} before inserting to Postgres
+            table {bold(self.table_name)} (hint: call `save_to_csv()` first)"""))
+        else:
+            assert isfile(self.csv_fpath), f'Expected file {path(self.csv)} does not exist'
 
         # Create table
         pg.drop_table(pg_schema, self.table_name, if_exists=True)
@@ -339,7 +343,7 @@ class ChatDbExtract(object):
             output_file_name = join(dir_name, table_name + ext)
             table_object.save_to_csv(output_file_name)
             file_size_str = pydoni.human_filesize(stat(output_file_name).st_size)
-            logger.info(f'Saved table {bold(table_name)} to {bold(table_name + ext)} ({file_size_str})', arrow='white')
+            logger.info(f'Saved table {bold(table_name)} to {path(table_name + ext)} ({file_size_str})', arrow='white')
 
     def save_to_postgres(self, pg: pydoni.Postgres, pg_schema: str, logger: logging.Logger) -> None:
         """

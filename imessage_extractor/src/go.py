@@ -281,9 +281,10 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
         not exist, then create them. Each reference might have references themselves, in
         which case we'll need to create those references too.
         """
+        logger.debug(f'Requested definition for {bold(vw_name)}')
         if pg.view_exists(pg_schema, vw_name):
             # View already exists, so we can move on
-            pass
+            logger.debug('View already exists')
         else:
             # Main expected branch of function. We need to create the view and all of its
             # references if they don't exist.
@@ -307,6 +308,7 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
             else:
                 if all_references_exist(vw_name, vw_info, pg_schema, pg):
                     # Create the view
+                    logger.debug('All references exist, creating the view')
                     vw_obj = View(vw_name=vw_name,
                                   vw_dpath=vw_def_dpath,
                                   reference=vw_info[vw_name]['reference'],
@@ -318,9 +320,22 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
                     # Cannot create the view without creating references first
                     # This list must be of length >1 because all_references_exist() returned False
                     nonexistent_references = get_nonexistent_references(vw_name, vw_info, pg_schema, pg)
+                    logger.debug(f'Cannot create the view because of nonexistent references {str(nonexistent_references)}')
                     for ref in nonexistent_references:
                         # Create the view. Recursive call to this function
+                        logger.debug(f'Calling `smart_create_view()` recursively for {bold(ref)}')
                         smart_create_view(ref, vw_info, pg_schema, pg)
+
+                    # At this point, we have created all of the refrences for this view,
+                    # so we should be able to simply create it as normal
+                    vw_obj = View(vw_name=vw_name,
+                                  vw_dpath=vw_def_dpath,
+                                  reference=vw_info[vw_name]['reference'],
+                                  pg_schema=pg_schema,
+                                  pg=pg,
+                                  logger=logger)
+                    vw_obj.create()
+                    logger.debug(f'Resolved references for view {bold(vw_name)}')
 
 
     for vw_name, vw_info_dct in vw_info_chat_db_dependent.items():
@@ -330,6 +345,7 @@ def define_views_chat_db_dependent(logger: logging.Logger, pg: pydoni.Postgres, 
 
         # Create the view intelligently
         smart_create_view(vw_name, vw_info_chat_db_dependent, pg_schema, pg)
+        assert pg.view_exists(pg_schema, vw_name), f'View {bold(vw_name)} not actually created!'
         logger.info(f'Defined view "{bold(pg_schema)}"."{bold(vw_name)}"', arrow='white')
 
 
@@ -407,9 +423,9 @@ def go(chat_db_path,
         logger.info(f'Connected to Postgres database {bold(db_name)} hosted on {bold(hostname + ":" + port)}')
 
         # Drop all objects in the Postgres schema to rebuild it from scratch
-        pg.execute(f'drop schema if exists {pg_schema} cascade')
-        pg.execute(f'create schema {pg_schema}')
-        # pg.drop_schema_if_exists_and_recreate(pg_schema, cascade=True)  # TODO: uncomment when new version of pydoni released
+        pg.drop_schema(pg_schema, if_exists=True, cascade=True)
+        pg.create_schema(pg_schema)
+        # pg.drop_schema_and_recreate(pg_schema, if_exists=True, cascade=True)  # TODO: uncomment on new pydoni release
         logger.info(f'Re-created schema from scratch')
 
         logger.info(f'Saving tables to schema "{bold(pg_schema)}"')
@@ -434,9 +450,9 @@ def go(chat_db_path,
     else:
         logger.info('User opted not to save tables to a Postgres database')
 
-    if save_csv is None:
-        shutil.rmtree(save_csv_dpath)
-        logger.info(f'Removed temporary directory {path(save_csv_dpath)}')
+    # if save_csv is None:
+    #     shutil.rmtree(save_csv_dpath)
+    #     logger.info(f'Removed temporary directory {path(save_csv_dpath)}')
 
     diff_formatted = pydoni.fmt_seconds(time.time() - start_ts, units='auto', round_digits=2)
     elapsed_time = f"{diff_formatted['value']} {diff_formatted['units']}"

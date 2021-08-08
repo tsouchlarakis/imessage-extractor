@@ -4,7 +4,8 @@ create view {pg_schema}.message_vw as
 select message_id
        , chat_identifier
        , contact_name
-       , message_date
+       , ts
+       , dt
        , "text"
        , n_characters
        , case when is_emote = false and is_url = false and message_special_type is null then array_length(regexp_split_to_array("text", '\s+'), 1)
@@ -26,7 +27,8 @@ from (
     select m.message_id
            , c._identifier as chat_identifier
            , n.contact_name
-           , m.date as message_date
+           , m.ts
+           , m.ts :: date as dt
            , m."text"
            , length(m."text") as n_characters
            , m.service
@@ -72,7 +74,7 @@ from (
       on c."ROWID" = cm_join.chat_id
     join (
         select "ROWID" as message_id
-               , to_timestamp((("date"::double precision / 1000000000::double precision)::numeric + '978307200'::numeric)::double precision) as "date"
+               , to_timestamp((("date"::double precision / 1000000000::double precision)::numeric + '978307200'::numeric)::double precision) as ts
                , btrim(
                    regexp_replace(
                        replace(
@@ -102,4 +104,4 @@ from (
     left join {pg_schema}.contacts_vw n
            on c._identifier = n.chat_identifier
 ) t1
-order by message_date desc nulls last
+order by msg_id desc nulls last

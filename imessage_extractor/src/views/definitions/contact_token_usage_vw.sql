@@ -4,7 +4,7 @@ create or replace view {pg_schema}.contact_token_usage_vw as
 with t1 as (
     select mt.message_id
            , m.contact_name
-           , m.message_date :: date as message_date
+           , m.dt
            , m.is_from_me
            , lower(mt."token") as "token"
            , t.lemma
@@ -32,8 +32,8 @@ select contact_name
        , count(*) as n_token_uses
        , row_number() over(partition by contact_name order by count(*) desc) as token_rank_within_contact
        , count(distinct message_id) as n_messages_where_token_used
-       , min(message_date) as first_use_date
-       , max(message_date) as last_use_date
+       , min(dt) as first_use_date
+       , max(dt) as last_use_date
 from t1
 group by contact_name
          , is_from_me
