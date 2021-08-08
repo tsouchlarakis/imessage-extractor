@@ -104,4 +104,4 @@ from (
     left join {pg_schema}.contacts_vw n
            on c._identifier = n.chat_identifier
 ) t1
-order by msg_id desc nulls last
+order by message_id desc nulls last

@@ -19,7 +19,7 @@ from (
            , count(distinct case when is_emote = true then message_id end) as n_emote
            , count(distinct case when is_url = true then message_id end) as n_url
            , sum(case when is_text = true then n_characters end) as n_text_characters
-           , sum(case when is_text = true then n_words end) as n_text_words
+           , sum(case when is_text = true then n_tokens end) as n_text_words
            , row_number() over(partition by contact_name order by count(distinct message_id) desc) as day_rank_by_n_messages_partition_by_contact
     from {pg_schema}.message_vw
     where is_text = true

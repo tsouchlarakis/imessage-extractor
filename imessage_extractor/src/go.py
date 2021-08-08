@@ -77,44 +77,44 @@ def parse_pg_credentials(pg_credentials: typing.Union[str, pathlib.Path]) -> tup
     return hostname, port, db_name, pg_user, pw
 
 
-def generate_global_uid_table(pg: pydoni.Postgres, pg_schema: str, source_table_name: str) -> None:
-    """
-    Build a table mapping ROWID to a unique identifier for each row in the  message, attachment,
-    handle and chat tables. For example, to map message.ROWID to a UID, we would create:
+# def generate_global_uid_table(pg: pydoni.Postgres, pg_schema: str, source_table_name: str) -> None:
+#     """
+#     Build a table mapping ROWID to a unique identifier for each row in the  message, attachment,
+#     handle and chat tables. For example, to map message.ROWID to a UID, we would create:
 
-    | ROWID | message_uid         |
-    | ----- | ------------------- |
-    | 1     | 2632847867257029633 |
-    | 2     | 2632847867257029634 |
-    | 3     | ...                 |
+#     | ROWID | message_uid         |
+#     | ----- | ------------------- |
+#     | 1     | 2632847867257029633 |
+#     | 2     | 2632847867257029634 |
+#     | 3     | ...                 |
 
-    In this case, `message_uid` is generated based on the time of insertion, and the previous
-    value of `message_uid`. As such, this UID of type BIGINT will never be the same for two
-    events in the same table.
-    """
-    valid_sources = ['message', 'attachment', 'handle', 'chat']
-    assert source_table_name in valid_sources, \
-        f'`source_table_name` must be one of {str(valid_sources)}'
+#     In this case, `message_uid` is generated based on the time of insertion, and the previous
+#     value of `message_uid`. As such, this UID of type BIGINT will never be the same for two
+#     events in the same table.
+#     """
+#     valid_sources = ['message', 'attachment', 'handle', 'chat']
+#     assert source_table_name in valid_sources, \
+#         f'`source_table_name` must be one of {str(valid_sources)}'
 
-    sql = f"""
-    drop sequence if exists {pg_schema}.map_{source_table_name}_uid_seq;
-    create sequence {pg_schema}.map_{source_table_name}_uid_seq;
+#     sql = f"""
+#     drop sequence if exists {pg_schema}.map_{source_table_name}_uid_seq;
+#     create sequence {pg_schema}.map_{source_table_name}_uid_seq;
 
-    create table {pg_schema}.map_{source_table_name}_uid (
-        "ROWID" bigint,
-        "{source_table_name}_uid" int8 not null default id_generator((nextval('{pg_schema}.map_{source_table_name}_uid_seq'::regclass))::integer)
-    );
+#     create table {pg_schema}.map_{source_table_name}_uid (
+#         "ROWID" bigint,
+#         "{source_table_name}_uid" int8 not null default id_generator((nextval('{pg_schema}.map_{source_table_name}_uid_seq'::regclass))::integer)
+#     );
 
-    insert into {pg_schema}.map_{source_table_name}_uid ("ROWID")
-    select t."ROWID"
-    from {pg_schema}.{source_table_name} t
-    left join {pg_schema}.map_{source_table_name}_uid map
-        on t."ROWID" = map."ROWID"
-    where t."ROWID" is not null
-    and map."ROWID" is null;
-    """
+#     insert into {pg_schema}.map_{source_table_name}_uid ("ROWID")
+#     select t."ROWID"
+#     from {pg_schema}.{source_table_name} t
+#     left join {pg_schema}.map_{source_table_name}_uid map
+#         on t."ROWID" = map."ROWID"
+#     where t."ROWID" is not null
+#     and map."ROWID" is null;
+#     """
 
-    pg.execute(sql)
+#     pg.execute(sql)
 
 
 def list_view_names(vw_def_dpath: typing.Union[str, pathlib.Path]) -> list:
