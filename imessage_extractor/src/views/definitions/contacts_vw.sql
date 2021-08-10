@@ -1,9 +1,9 @@
 drop view if exists {pg_schema}.contacts_vw;
 create view {pg_schema}.contacts_vw as
 
-select chat_identifier,
-      contact_name,
-      source
+select chat_identifier
+       , contact_name
+       , source
 from (
     select chat_identifier,
         contact_name,
@@ -25,4 +25,4 @@ from (
     ) t1
 ) t2
 where rank = 1
-order by chat_identifier
+order by contact_name
