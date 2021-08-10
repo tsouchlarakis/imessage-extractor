@@ -128,24 +128,23 @@ def refresh_message_tokens(pg: pydoni.Postgres,
     logger.debug(f'Batch size: {bold(batch_size)}')
 
     if pg.table_exists(pg_schema, table_name):
-      # Filter out messages that are already in the message <> tokens mapping table if
-      # it exists
-      join_clause = f"""
-      left join {pg_schema}.{table_name} t
-            on m.message_id = t.message_id
-           and t.message_id is null  -- Not in existing message <> emoji map
-      """
+        # Filter out messages that are already in the message <> tokens mapping table if it exists
+        rebuild = False
+        join_clause = f'left join {pg_schema}.{table_name} t on m.message_id = t.message_id'
+        and_condition = 'and t.message_id is null  -- Not in existing message <> tokens map'
     else:
-      join_clause = ''
+        rebuild = True
+        join_clause = ''
+        and_condition = ''
 
     sql = f"""
-    select message_id, "text"
-    from {pg_schema}.message_vw
+    select m.message_id, m."text"
+    from {pg_schema}.message_vw m
     {join_clause}
-    where is_text = true  -- Not an emote reaction, attachment, or other message with no text
-    order by message_id
+    where m.is_text = true  -- Not an emote reaction, attachment, or other message with no text
+      {and_condition}
+    order by m.message_id
     """
-    logger.debug(sql)
     message = pg.read_sql(sql)
     logger.debug(f'Tokenizing {len(message)} messages')
 
@@ -154,12 +153,12 @@ def refresh_message_tokens(pg: pydoni.Postgres,
     else:
         target_indices = [list(message.index)]
 
-    emoji_lst = pg.read_sql('select emoji from imessage.emoji_text_map').squeeze().tolist()
+    emoji_lst = pg.read_sql(f'select emoji from {pg_schema}.emoji_text_map').squeeze().tolist()
 
     total_tokens_inserted = 0
+    message_tokens = pd.DataFrame(columns=[k for k, v in columnspec.items()])
     for i, targets in enumerate(target_indices):
-        logger.debug(f'Tokenizing batch {i + 1} of {len(target_indices)}', arrow='white')
-        message_tokens = pd.DataFrame(columns=[k for k, v in columnspec.items()])
+        logger.debug(f'Tokenizing batch {i + 1} of {len(target_indices)}')
         message_subset = message.loc[message.index.isin(targets)]
 
         for i, row in message_subset.iterrows():
@@ -196,4 +195,8 @@ def refresh_message_tokens(pg: pydoni.Postgres,
                               index=False,
                               if_exists='append')
 
-    logger.info(f'Built "{bold(pg_schema)}"."{bold(table_name)}", shape: {message_tokens.shape}', arrow='white')
+    if len(message_tokens):
+        participle = 'Rebuilt' if rebuild else 'Appended'
+        logger.info(f'{participle} "{bold(pg_schema)}"."{bold(table_name)}", shape: {message_tokens.shape}', arrow='white')
+    else:
+        logger.info(f'No messages to add to "{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
