@@ -12,6 +12,8 @@ from os import stat
 from os.path import join, dirname, isfile, splitext, abspath
 
 
+vw_dpath = abspath(join(dirname(__file__), 'views'))
+vw_def_dpath = join(vw_dpath, 'definitions')
 table_info_json_fpath = abspath(join(dirname(__file__), 'tables', 'chatdb_table_info.json'))
 staged_table_dpath = abspath(join(dirname(__file__), 'tables', 'staging'))
 
@@ -208,15 +210,21 @@ class ChatDbTable(object):
                  table_name: str,
                  write_mode: str,
                  primary_key: typing.Union[str, list],
+                 max_pg_primary_key_value: typing.Union[int, tuple, None],
                  pg_schema: str,
-                 references: typing.Union[None, list]) -> None:
+                 references: typing.Union[None, list],
+                 rebuild: bool,
+                 logger: logging.Logger) -> None:
         self.sqlite_con = sqlite_con
         self.sqlite_cursor = self.sqlite_con.cursor()
         self.table_name = table_name
         self.write_mode = write_mode
         self.primary_key = primary_key
+        self.max_pg_primary_key_value = max_pg_primary_key_value
         self.pg_schema = pg_schema
         self.references = references
+        self.rebuild = rebuild
+        self.logger = logger
         self.shape = self._get_shape()
         self.create_sql = self._get_create_sql()
         self.csv_fpath = None
@@ -250,14 +258,43 @@ class ChatDbTable(object):
         """
         Save table to a .csv file.
         """
-        df = pd.read_sql(f'SELECT * FROM {self.table_name}', self.sqlite_con)
-        # df.to_csv(file_name, index=False)  # TODO: uncomment
+        self.logger.debug(f'Saving table {bold(self.table_name)} to {path(file_name)}')
+
+        where_clause = ''
+        if not self.rebuild:
+            if self.max_pg_primary_key_value is not None:
+                if isinstance(self.primary_key, list):  # Multiple primary keys
+                    pkey = list(self.primary_key)
+                    max_pkey = list(self.max_pg_primary_key_value)
+                else:
+                    pkey = pydoni.ensurelist(self.primary_key)
+                    max_pkey = pydoni.ensurelist(self.max_pg_primary_key_value)
+
+                assert len(max_pkey) == len(pkey), \
+                    f'Values `max_pkey` ({str(max_pkey)}) and `pkey` ({str(pkey)}) are of unequal length'
+
+                where_lst = []
+                for k, v in zip(pkey, max_pkey):
+                    where_lst.append(f'"{k}" > {v}')
+                    self.logger.debug(f'Querying SQLite only above "{k}" > {v}')
+
+                where_clause = 'WHERE ' + ' AND'.join(where_lst)
+
+        if where_clause == '':
+            self.logger.debug(f'Querying full table')
+
+        df = pd.read_sql(f'SELECT * FROM {self.table_name} {where_clause}', self.sqlite_con)
+
+        df.to_csv(file_name, index=False)
+        self.logger.debug(f'Saved dataframe to disk of shape {bold(df.shape)}')
         self.csv_fpath = file_name
 
     def save_to_postgres(self, pg: pydoni.Postgres, pg_schema: str) -> None:
         """
         Save table to Postgres.
         """
+        self.logger.debug(f'Saving table {bold(self.table_name)} to Postgres')
+
         if self.csv_fpath is None:
             raise FileNotFoundError(pydoni.advanced_strip(f"""
             Must create {path(self.csv_fpath)} before inserting to Postgres
@@ -265,18 +302,34 @@ class ChatDbTable(object):
         else:
             assert isfile(self.csv_fpath), f'Expected file {path(self.csv)} does not exist'
 
-        # Create table
-        pg.drop_table(pg_schema, self.table_name, if_exists=True)
-        pg.execute(self.create_sql)
+        # if self.rebuild:
+        #     # Drop and re-create table
+        #     pg.drop_table(pg_schema, self.table_name, if_exists=True)
+        #     self.logger.debug(f'Rebuilding, so dropped table {bold(self.table_name)}')
+        #     pg.execute(self.create_sql)
+        #     self.logger.debug(f'Re-created empty table {bold(self.table_name)}')
+
+        if self.write_mode == 'replace':
+            # Ensure that table is empty before copying. This logic can be executed
+            # with or without `rebuild`, so the user can control which tables are fully
+            # rebuilt with each run by editing the `write_mode` in chatdb_table_info.json.
+            pg.drop_table(pg_schema, self.table_name, if_exists=True, cascade=True)
+            self.logger.debug(f'Table has `write_mode="replace"`, so dropped table')
+
+        if not pg.table_exists(pg_schema, self.table_name):
+            pg.execute(self.create_sql)
+            self.logger.debug(f'Re-created empty table')
 
         # Save table to Postgres
         load_sql = pydoni.advanced_strip(f"""
         COPY "{pg_schema}"."{self.table_name}"
-        FROM '{self.csv_fpath}'
-        (DELIMITER ',',
-        FORMAT CSV,
-        HEADER)
+        FROM '{self.csv_fpath}' (
+            DELIMITER ',',
+            FORMAT CSV,
+            HEADER
+        )
         """)
+        self.logger.debug(load_sql)
         pg.execute(load_sql)
 
 
@@ -284,11 +337,44 @@ class ChatDbExtract(object):
     """
     Store dictionary of `ChatDbTable` objects.
     """
-    def __init__(self, sqlite_con, pg_schema: str, logger: logging.Logger) -> None:
+    def __init__(self,
+                 sqlite_con: sqlite3.Connection,
+                 pg: pydoni.Postgres,
+                 pg_schema: str,
+                 logger: logging.Logger,
+                 rebuild: bool) -> None:
         self.sqlite_con = sqlite_con
+        self.pg = pg  # Passed if saving data to Postgres, otherwise None
         self.pg_schema = pg_schema
+        self.rebuild = rebuild
         self.logger = logger
         self.table_objects = self._extract()
+
+    def _get_max_pg_primary_key_value(self,
+                                      table_name: str,
+                                      primary_key: typing.Union[str, list, None]) -> typing.Union[int, tuple, None]:
+        """
+        Get the maximum value of a numeric, auto-incrementing primary key column (i.e. ROWID).
+        This will allow us to only query SQLite for records with primary key values greater
+        (more recent) than the highest that currently exists in Postgres. Of course, this will
+        only be called if saving data to Postgres, and if `rebuild` is False.
+        """
+        pkey = pydoni.ensurelist(primary_key)
+        max_values = []
+        for val in pkey:
+            if 'int' in self.pg.col_dtypes(self.pg_schema, table_name)[val]:
+                max_val = self.pg.read_sql(f'select max("{val}") from {self.pg_schema}.{table_name}')
+                max_val = max_val.squeeze()
+                max_values.append(max_val)
+
+        if len(max_values) > 1:
+            max_values = tuple(max_values)
+        elif len(max_values) == 1:
+            max_values = max_values[0]
+        else:
+            max_values = None
+
+        return max_values
 
     def _extract(self) -> dict:
         """
@@ -319,11 +405,24 @@ class ChatDbExtract(object):
         self.logger.info('Reading chat.db source table metadata')
         table_objects = {}
         for table_name, table_data in table_info.items():
+            max_pg_pkey_values = None  # Default case
+            if not self.rebuild:  # Not rebuilding pipeline
+                if self.pg_schema is not None:  # Saving data to Postgres
+                    if table_data['primary_key'] is not None:  # Primary key column exists
+                        if self.pg.table_exists(self.pg_schema, table_name):  # Table exists in Postgres
+                            max_pg_pkey_values = self._get_max_pg_primary_key_value(table_name, table_data['primary_key'])
+                            self.logger.debug(f'`max_pg_pkey_values`: {str(max_pg_pkey_values)}')
+
+            assert table_data['write_mode'] in ['replace', 'append']
+
             table_object = ChatDbTable(sqlite_con=self.sqlite_con,
                                        table_name=table_name,
                                        write_mode=table_data['write_mode'],
                                        primary_key=table_data['primary_key'],
+                                       max_pg_primary_key_value=max_pg_pkey_values,
                                        references=table_data['references'],
+                                       rebuild=self.rebuild,
+                                       logger=self.logger,
                                        pg_schema=self.pg_schema)
 
             table_objects[table_name] = table_object
@@ -355,6 +454,11 @@ class ChatDbExtract(object):
 
         while len(inserted_journal) < len(self.table_objects):
             for table_name, table_object in self.table_objects.items():
+                if self.rebuild or table_object.write_mode == 'replace':
+                    participle = 'Rebuilt'
+                else:
+                    participle = 'Refreshed'
+
                 if table_name not in inserted_journal:
                     if table_object.references is not None:
                         if len([t for t in table_object.references if t not in inserted_journal]):
@@ -366,16 +470,17 @@ class ChatDbExtract(object):
                             # been saved to Postgres, so we can now insert this table
                             table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                             inserted_journal.append(table_name)
-                            logger.info(f'Rebuilt Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
+                            logger.info(f'{participle} Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
                     else:
                         # No references found for this table, we can insert it right away
                         # since there are no dependencies to worry about
                         table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                         inserted_journal.append(table_name)
-                        logger.info(f'Rebuilt Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
+                        logger.info(f'{participle} Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
                 else:
                     # This table has already been saved to Postgres, so we can skip it
                     pass
+
 
 
 class View(object):
@@ -383,64 +488,157 @@ class View(object):
     Store information and operations on a target Postgres iMessage database view.
     """
     def __init__(self,
-                 vw_name: str,
-                 vw_dpath: typing.Union[str, pathlib.Path],
-                 reference: typing.Union[list, None],
                  pg_schema: str,
+                 vw_name: str,
                  pg: pydoni.Postgres,
                  logger: logging.Logger) -> None:
         self.pg_schema = pg_schema
-        self.vw_name = splitext(vw_name)[0]  # Handles the case that vw_name contains a file extension
-        self.reference = reference
+        self.vw_name = vw_name
         self.pg = pg
         self.logger = logger
 
-        self.fpath = join(vw_dpath, self.vw_name + '.sql')
+        self.fpath = join(vw_dpath, 'definitions', self.vw_name + '.sql')
         if not isfile(self.fpath):
-            raise FileNotFoundError(f'View {bold(self.vw_name)} definition expected at {path(self.fpath)} but not found')
+            raise FileNotFoundError(pydoni.advanced_strip(
+                f"""View {bold(self.vw_name)} definition expected at {path(self.fpath)}
+                but not found"""))
 
         try:
             with open(self.fpath, 'r') as f:
                 self.def_sql = f.read().format(pg_schema=pg_schema)
         except Exception as e:
             raise Exception(pydoni.advanced_strip(
-                f"""View definition {bold(self.vw_name)} is malformed. There is
-                one or more format string enclosed in {{}} in the definition
+                f"""View definition exists but {bold(self.vw_name)} is malformed.
+                There is one or more format string enclosed in {{}} in the definition
                 {path(self.fpath)} that is incompatible with local variables
                 stored in each instantiation of the `View` class (stored in
                 objects.py). Either modify the class __init__ to contain this
                 variable if it is necessary, else remove it from the view
                 definition SQL. Original error message: {str(e)}'"""))
 
-    def drop(self) -> None:
-        """
-        Drop the target view if it exists.
-        """
-        if self.pg.view_exists(self.pg_schema, self.vw_name):
-            self.pg.drop_view(self.pg_schema, self.vw_name)
-            self.logger.info(f'Removed view {bold(self.vw_name)}')
+        vw_info_chatdb_dependent_fpath = join(vw_dpath, 'view_info_chatdb_dependent.json')
+        with open(vw_info_chatdb_dependent_fpath, 'r') as f:
+            vw_info_chatdb_dependent = json.load(f)
 
-    def create(self) -> None:
-        """
-        Execute view definition SQL.
-        """
-        if isinstance(self.reference, list):
-            # If this view depends on other objects, let's make sure those objects
-            # exist before proceeding with view definition
-            schema_objects = self.pg.read_sql(f"""
-            select table_name
-            from information_schema.tables
-            where table_schema = '{self.pg_schema}'
-            """).tolist()
-            missing_refs = []
-            for ref in self.reference:
-                if ref not in schema_objects:
-                    missing_refs.append(ref)
+        vw_info_staging_dependent_fpath = join(vw_dpath, 'view_info_staging_dependent.json')
+        with open(vw_info_staging_dependent_fpath, 'r') as f:
+            vw_info_staging_dependent = json.load(f)
 
-            if len(missing_refs) > 0:
-                raise Exception(f'Missing reference(s) for view {bold(self.vw_name)}: {str(missing_refs)}')
+        if vw_name in vw_info_chatdb_dependent and vw_name in vw_info_staging_dependent:
+            raise KeyError(pydoni.advanced_strip(
+                f"""View {bold(self.vw_name)} defined in both
+                {path(vw_info_chatdb_dependent_fpath)} and {path(vw_info_staging_dependent)}"""))
 
-        self.pg.execute(self.def_sql)
+        self.is_chatdb_dependent = vw_name in vw_info_chatdb_dependent
+        self.is_staging_dependent = vw_name in vw_info_staging_dependent
+
+        if not self.is_chatdb_dependent and not self.is_staging_dependent:
+            raise KeyError(pydoni.advanced_strip(
+                f"""View {bold(self.vw_name)} not defined in either
+                {path(vw_info_chatdb_dependent_fpath)} or {path(vw_info_staging_dependent)}"""))
+
+        if self.is_chatdb_dependent:
+            self.view_info = vw_info_chatdb_dependent[vw_name]
+        elif self.is_staging_dependent:
+            self.view_info = vw_info_staging_dependent[vw_name]
+        else:
+            raise Exception(f'Unexpected error initializing {bold(self.vw_name)}')
+
+        self.references = self.view_info['reference']
+        if not isinstance(self.references, list):
+            expected_fpath = vw_info_chatdb_dependent_fpath if self.is_chatdb_dependent else vw_info_staging_dependent_fpath
+            raise ValueError(f'References for {bold(self.vw_name)} defined in {path(expected_fpath)} must be a list')
+
+        if isinstance(self.references, list) and len(self.references) > 0:
+            self.has_references = True
+        else:
+            self.has_references = False
+
+        self.references_exist = self.check_references()
+        self.nonexistent_references = self.list_nonexistent_references()
+
+    def check_references(self) -> bool:
+        """
+        Check whether ALL reference objects (views or tables) for a given view exist.
+        """
+        if self.has_references:
+            return all([self.pg.table_or_view_exists(self.pg_schema, ref) for ref in self.references])
+        else:
+            return True
+
+    def list_nonexistent_references(self) -> list:
+        """
+        List the nonexistent references for a given view.
+        """
+        if self.has_references:
+            return [ref for ref in self.references if not self.pg.table_or_view_exists(self.pg_schema, ref)]
+        else:
+            return []
+
+    def drop(self, if_exists: bool=False, cascade: bool=False) -> None:
+        """
+        Drop the target view.
+        """
+        if if_exists:
+            if self.pg.view_exists(self.pg_schema, self.vw_name):
+                self.pg.drop_view(self.pg_schema, self.vw_name, cascade=cascade)
+                self.logger.info(f'Dropped view {bold(self.vw_name)}')
+        else:
+            self.pg.drop_view(self.pg_schema, self.vw_name, cascade=cascade)
+            self.logger.info(f'Dropped view {bold(self.vw_name)}')
+
+
+    def create(self, cascade: bool=False) -> None:
+        """
+        Define a view with or without cascade. Views may be dependent on other views or tables,
+        and as such, as we cannot simply execute a view definition since a dependency of that
+        view might not exist yet. Instead, we will define views in a manner that ensures
+        that all dependencies for a particular view are created before executing that view's
+        definition.
+
+        We will iterate through each view in the view_info*.json file, and for each view,
+        check each of its dependencies (if any) to ensure that they exist. If one or more
+        do not, we must navigate to that view in the view_info*.json file and ensure that
+        all of that view's dependencies exist. If one or more do not yet exist, we must then
+        continue navigating down the tree of dependencies until we can create all of them.
+
+        For example, suppose view A depends on view B and view C, and view B depends on view D.
+        We will attempt to create view A, but it depends on two non-existent views, B and C. We
+        then navigate to view B and find that it depends on view D. We create view D for which
+        all dependencies exist. Then we can create view B. We then check view C, and find that
+        we are able to create it without issue. At this point, all dependencies for view A
+        exist and we can create view A.
+        """
+        if not cascade:
+            self.pg.execute(self.def_sql)
+        else:
+            self.logger.debug(f'Requested definition for {bold(self.vw_name)}')
+            if self.pg.view_exists(self.pg_schema, self.vw_name):
+                self.logger.debug('View already exists')
+            else:
+                if self.references_exist:
+                    self.logger.debug('All references exist, creating the view')
+                    self.pg.execute(self.def_sql)
+                    self.logger.debug('Defined view successfully')
+                    self.logger.info(f'Defined Postgres"{bold(self.pg_schema)}"."{bold(self.vw_name)}"', arrow='white')
+                else:
+                    self.logger.debug(pydoni.advanced_strip(
+                        f"""Cannot create the view because of nonexistent
+                        references: {str(self.nonexistent_references)}. Attempting to
+                        define them now"""))
+
+                    for ref in self.nonexistent_references:
+                        # Recursively create each reference
+                        View(pg_schema=self.pg_schema,
+                             vw_name=ref,
+                             pg=self.pg,
+                             logger=self.logger).create(cascade=True)
+
+                    # At this point, we have created all of the refrences for this view,
+                    # so we should be able to simply create it as normal
+                    self.pg.execute(self.def_sql)
+                    self.logger.debug('Created all nonexistent references and defined view successfully')
+                    self.logger.info(f'Defined Postgres"{bold(self.pg_schema)}"."{bold(self.vw_name)}"', arrow='white')
 
 
 class StagingTable(object):
@@ -465,7 +663,7 @@ class StagingTable(object):
             if self.table_name in json_data.keys():
                 json_data = json_data[self.table_name]
             else:
-                raise KeyError(f'Table {bold(table_name)} expected as a key in staging_table_info.json but not found')
+                raise KeyError(f'Table {table_name} expected as a key in staging_table_info.json but not found')
 
         self.columnspec = json_data['columnspec']
         self.primary_key = json_data['primary_key']
