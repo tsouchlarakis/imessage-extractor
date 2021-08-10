@@ -5,22 +5,22 @@
         "references": null
     },
     "attachment": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": "ROWID",
         "references": null
     },
     "chat": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": "ROWID",
         "references": null
     },
     "chat_handle_join": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": ["chat_id", "handle_id"],
         "references": ["chat", "handle"]
     },
     "chat_message_join": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": ["chat_id", "message_id"],
         "references": ["chat", "message"]
     },
@@ -30,7 +30,7 @@
         "references": null
     },
     "handle": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": "ROWID",
         "references": null
     },
@@ -40,17 +40,17 @@
         "references": null
     },
     "message": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": "ROWID",
         "references": null
     },
     "message_attachment_join": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": ["message_id", "attachment_id"],
         "references": ["message", "attachment"]
     },
     "message_processing_task": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": "ROWID",
         "references": null
     },
@@ -65,17 +65,17 @@
         "references": null
     },
     "sync_deleted_attachments": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": "ROWID",
         "references": null
     },
     "sync_deleted_chats": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": "ROWID",
         "references": null
     },
     "sync_deleted_messages": {
-        "write_mode": "replace",
+        "write_mode": "append",
         "primary_key": "ROWID",
         "references": null
     }
