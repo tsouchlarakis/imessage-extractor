@@ -9,8 +9,8 @@ import sqlite3
 import time
 import typing
 from .objects import ChatDbExtract, View
-from .verbosity import print_startup_message, logger_setup, path, bold
 from .tables.staging import build_staging_tables
+from .verbosity import print_startup_message, logger_setup, path, bold
 from os import makedirs, listdir
 from os.path import expanduser, isfile, isdir, splitext, abspath, dirname, join, basename
 
@@ -106,23 +106,25 @@ def build_custom_tables(logger: logging.Logger, pg: pydoni.Postgres, pg_schema: 
 
             for csv_fpath in custom_table_csv_fpaths:
                 table_name = splitext(basename(csv_fpath))[0]
-                assert table_name in schemas.keys(), \
-                    pydoni.advanced_strip(f"""Attempting to define custom table {bold(table_name)},
-                    the table data .csv file exists at {path(csv_fpath)} but a column
-                    specification does not exist in {path(schemas_fpath)} for that table.
-                    Add a key in that JSON file with the same name as the .csv file
-                    with a corresponding value that is a dictionary with a name: dtype pair
-                    for each column in the .csv file. For example, if the .csv file has
-                    columns ['id', 'message'], then add an entry to that JSON file:
-                    "{table_name}": {{"id": "INTEGER", "message": "TEXT"}}""")
+                if table_name not in schemas:
+                    raise KeyError(pydoni.advanced_strip(
+                        f"""Attempting to define custom table {bold(table_name)},
+                        the table data .csv file exists at {path(csv_fpath)} but a column
+                        specification does not exist in {path(schemas_fpath)} for that table.
+                        Add a key in that JSON file with the same name as the .csv file
+                        with a corresponding value that is a dictionary with a name: dtype pair
+                        for each column in the .csv file. For example, if the .csv file has
+                        columns ['id', 'message'], then add an entry to that JSON file:
+                        "{table_name}": {{"id": "INTEGER", "message": "TEXT"}}"""))
 
             for table_name in schemas.keys():
                 expected_csv_fpath = join(custom_table_dpath, table_name + '.csv')
-                assert isfile(expected_csv_fpath), \
-                    pydoni.advanced_strip(f"""Attempting to define custom table {bold(table_name)},
-                    but the table data .csv file does not exist at {path(expected_csv_fpath)}.
-                    Please create this .csv file or remove the key in {path(schemas_fpath)}.
-                    """)
+                if not isfile(expected_csv_fpath):
+                    raise FileNotFoundError(pydoni.advanced_strip(
+                        f"""Attempting to define custom table {bold(table_name)},
+                        but the table data .csv file does not exist at
+                        {path(expected_csv_fpath)}. Please create this .csv file or
+                        remove the key in {path(schemas_fpath)}."""))
 
             # Now that we know there exists a .csv and a JSON key for each custom table,
             # we can proceed with validating that the table schemas defined in the JSON file
@@ -158,16 +160,16 @@ def build_custom_tables(logger: logging.Logger, pg: pydoni.Postgres, pg_schema: 
         else:
             raise FileNotFoundError(f'Could not find custom table schemas file {schemas_fpath}')
     else:
-        logger.warning(pydoni.advanced_strip(f"""
-        No custom table data exists, so no custom tables were created. This is perfectly
-        okay and does not affect the running of this pipeline, however know that if you'd
-        like to add a table to this pipeline, you can manually create a .csv file and
-        place it in the {path(custom_table_dpath, 'table_data')} folder. The resulting
-        table will be dropped and re-created with each run of this pipeline, and will
-        be named identically to how you choose to name the .csv file. NOTE: each .csv file
-        must be accompanied by a .json file that specifies the table schema, or else
-        an error will be thrown. That table schema should be in the format:
-        {{column_name1: postgres_data_type1, column_name2: postgres_data_type2, ...}}"""))
+        logger.warning(pydoni.advanced_strip(
+            f"""No custom table data exists, so no custom tables were created. This is perfectly
+            okay and does not affect the running of this pipeline, however know that if you'd
+            like to add a table to this pipeline, you can manually create a .csv file and
+            place it in the {path(custom_table_dpath, 'table_data')} folder. The resulting
+            table will be dropped and re-created with each run of this pipeline, and will
+            be named identically to how you choose to name the .csv file. NOTE: each .csv file
+            must be accompanied by a .json file that specifies the table schema, or else
+            an error will be thrown. That table schema should be in the format:
+            {{column_name1: postgres_data_type1, column_name2: postgres_data_type2, ...}}"""))
 
 
 def validate_vw_info(vw_names: str) -> None:
@@ -290,14 +292,18 @@ def go(chat_db_path,
             pg.drop_schema(pg_schema, if_exists=True, cascade=True)
             pg.create_schema(pg_schema)
             # pg.drop_schema_and_recreate(pg_schema, if_exists=True, cascade=True)  # TODO: uncomment on new pydoni release
+
             logger.info(f'Re-created schema from scratch')
-            logger.info(pydoni.advanced_strip(f"""{bold("rebuild")} is set to {bold("False")},
-            so re-created schema "{bold(pg_schema)}" from scratch"""))
+            logger.info(pydoni.advanced_strip(
+                f"""{bold("rebuild")} is set to {bold("False")},
+                so re-created schema "{bold(pg_schema)}" from scratch"""))
         else:
             # Drop views in the Postgres schema since they may be dependent on tables
             # that require rebuilding. They will all be re-created later
-            logger.info(pydoni.advanced_strip(f'''{bold("rebuild")} is set to {bold("False")},
-            so only appending new information from chat.db to "{bold(pg_schema)}"'''))
+            logger.info(pydoni.advanced_strip(
+                f'''{bold("rebuild")} is set to {bold("False")},
+                so only appending new information from chat.db to "{bold(pg_schema)}"'''))
+
             vw_names = list_view_names(vw_def_dpath)
             for vw_name in vw_names:
                 logger.debug(f'Dropping view {bold(vw_name)}')

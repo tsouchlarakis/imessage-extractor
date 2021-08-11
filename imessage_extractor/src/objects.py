@@ -2,20 +2,19 @@ import click
 import json
 import logging
 import pandas as pd
-import pathlib
 import pydoni
 import re
 import sqlite3
 import typing
 from .verbosity import bold, path
 from os import stat
-from os.path import join, dirname, isfile, splitext, abspath
+from os.path import join, dirname, isfile, abspath
 
 
-vw_dpath = abspath(join(dirname(__file__), 'views'))
 vw_def_dpath = join(vw_dpath, 'definitions')
-table_info_json_fpath = abspath(join(dirname(__file__), 'tables', 'chatdb_table_info.json'))
+vw_dpath = abspath(join(dirname(__file__), 'views'))
 staged_table_dpath = abspath(join(dirname(__file__), 'tables', 'staging'))
+table_info_json_fpath = abspath(join(dirname(__file__), 'tables', 'chatdb_table_info.json'))
 
 
 class CreateTableSQL(object):
@@ -264,10 +263,12 @@ class ChatDbTable(object):
         if not self.rebuild:
             if self.max_pg_primary_key_value is not None:
                 if isinstance(self.primary_key, list):  # Multiple primary keys
-                    assert len(self.primary_key) > 1, \
-                        pydoni.advanced_strip(f"""Primary keys for table {bold(self.table_name)}
-                        are a list but are of length 1. Change the primary key definition in
-                        {path('chatdb_table_info.json')} to be a string, rather than a list.""")
+                    if len(self.primary_key) <= 1:
+                        raise ValueError(pydoni.advanced_strip(
+                            f"""Primary keys for table {bold(self.table_name)}
+                            are a list but are of length 1. Change the primary key
+                            definition in {path('chatdb_table_info.json')} to be a string,
+                            rather than a list."""))
 
                     pkey = list(self.primary_key)
                     max_pkey = list(self.max_pg_primary_key_value)
@@ -307,13 +308,6 @@ class ChatDbTable(object):
         else:
             assert isfile(self.csv_fpath), f'Expected file {path(self.csv)} does not exist'
 
-        # if self.rebuild:
-        #     # Drop and re-create table
-        #     pg.drop_table(pg_schema, self.table_name, if_exists=True)
-        #     self.logger.debug(f'Rebuilding, so dropped table {bold(self.table_name)}')
-        #     pg.execute(self.create_sql)
-        #     self.logger.debug(f'Re-created empty table {bold(self.table_name)}')
-
         if self.write_mode == 'replace':
             # Ensure that table is empty before copying. This logic can be executed
             # with or without `rebuild`, so the user can control which tables are fully
@@ -332,8 +326,7 @@ class ChatDbTable(object):
             DELIMITER ',',
             FORMAT CSV,
             HEADER
-        )
-        """)
+        )""")
         self.logger.debug(load_sql)
         pg.execute(load_sql)
 
@@ -447,10 +440,10 @@ class ChatDbExtract(object):
             output_file_name = join(dir_name, table_name + ext)
             table_object.save_to_csv(output_file_name)
             file_size_str = pydoni.human_filesize(stat(output_file_name).st_size)
-            logger.info(f"""
-            Saved SQLite:{bold(table_name)} to {path(table_name + ext)}
-            ({file_size_str}), shape {table_object.shape}
-            """, arrow='white')
+            logger.info(
+                f"""Saved SQLite:{bold(table_name)} to {path(table_name + ext)}
+                ({file_size_str}), shape {table_object.shape}
+                """, arrow='white')
 
     def save_to_postgres(self, pg: pydoni.Postgres, pg_schema: str, logger: logging.Logger) -> None:
         """
