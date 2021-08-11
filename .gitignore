@@ -11,5 +11,5 @@ dist/
 Icon
 Icon?
 tests/test_data
-imessage_extractor/custom_tables/*.csv
-imessage_extractor/custom_tables/custom_table_schemas.json
+imessage_extractor/src/custom_tables/*.csv
+imessage_extractor/src/custom_tables/custom_table_schemas.json
