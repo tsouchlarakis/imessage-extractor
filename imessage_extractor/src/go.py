@@ -153,7 +153,7 @@ def build_custom_tables(logger: logging.Logger, pg: pydoni.Postgres, pg_schema: 
                               index=False,
                               if_exists='replace')
 
-                logger.info(f'Rebuilt Postgres:{bold(table_name)}', arrow='white')
+                logger.info(f'Rebuilt Postgres:{bold(table_name)}', arrow='magenta')
 
         else:
             raise FileNotFoundError(f'Could not find custom table schemas file {schemas_fpath}')
@@ -291,10 +291,13 @@ def go(chat_db_path,
             pg.create_schema(pg_schema)
             # pg.drop_schema_and_recreate(pg_schema, if_exists=True, cascade=True)  # TODO: uncomment on new pydoni release
             logger.info(f'Re-created schema from scratch')
+            logger.info(pydoni.advanced_strip(f"""{bold("rebuild")} is set to {bold("False")},
+            so re-created schema "{bold(pg_schema)}" from scratch"""))
         else:
             # Drop views in the Postgres schema since they may be dependent on tables
             # that require rebuilding. They will all be re-created later
-            logger.info(f'Appending new information to {bold(pg_schema)}')
+            logger.info(pydoni.advanced_strip(f'''{bold("rebuild")} is set to {bold("False")},
+            so only appending new information from chat.db to "{bold(pg_schema)}"'''))
             vw_names = list_view_names(vw_def_dpath)
             for vw_name in vw_names:
                 logger.debug(f'Dropping view {bold(vw_name)}')
@@ -331,7 +334,6 @@ def go(chat_db_path,
         for vw_name in chatdb_dependent_vw_names:
             view = View(pg_schema=pg_schema, vw_name=vw_name, pg=pg, logger=logger)
             view.create(cascade=True)
-            logger.info(f'Defined Postgres:"{bold(pg_schema)}"."{bold(vw_name)}"')
 
         #
         # Staging tables
@@ -346,9 +348,11 @@ def go(chat_db_path,
     else:
         logger.info('User opted not to save tables to a Postgres database')
 
+    logger.info('Cleanup')
+
     if save_csv is None:
         shutil.rmtree(save_csv_dpath)
-        logger.info(f'Removed temporary directory {path(save_csv_dpath)}')
+        logger.info(f'Removed temporary directory {path(save_csv_dpath)}', arrow='red')
 
     diff_formatted = pydoni.fmt_seconds(time.time() - start_ts, units='auto', round_digits=2)
     elapsed_time = f"{diff_formatted['value']} {diff_formatted['units']}"
