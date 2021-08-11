@@ -13,13 +13,13 @@ def build_staging_tables(pg: pydoni.Postgres, pg_schema: str, logger: logging.Lo
     this script, and add an entry in the `refresh_map` for each table that you'd
     like to refresh.
     """
-    logger.info('Building staged tables')
+    logger.info('Building staging tables')
 
     refresh_map = dict(
         emoji_text_map=refresh_emoji_text_map,
         message_tokens=refresh_message_tokens,
         tokens=refresh_tokens,
-        stats_by_contact=refresh_stats_by_contact,
+        # stats_by_contact=refresh_stats_by_contact,
     )
 
     for table_name, refresh_function in refresh_map.items():
