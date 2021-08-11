@@ -264,6 +264,11 @@ class ChatDbTable(object):
         if not self.rebuild:
             if self.max_pg_primary_key_value is not None:
                 if isinstance(self.primary_key, list):  # Multiple primary keys
+                    assert len(self.primary_key) > 1, \
+                        pydoni.advanced_strip(f"""Primary keys for table {bold(self.table_name)}
+                        are a list but are of length 1. Change the primary key definition in
+                        {path('chatdb_table_info.json')} to be a string, rather than a list.""")
+
                     pkey = list(self.primary_key)
                     max_pkey = list(self.max_pg_primary_key_value)
                 else:
@@ -429,7 +434,7 @@ class ChatDbExtract(object):
             self.logger.info(pydoni.advanced_strip(f"""
             Read SQLite:{click.style(table_name, bold=True)},
             shape: {table_object.shape},
-            primary key: {str(table_data['primary_key'])}"""), arrow='white')
+            primary key: {str(table_data['primary_key'])}"""), arrow='black')
 
         return table_objects
 
@@ -442,7 +447,10 @@ class ChatDbExtract(object):
             output_file_name = join(dir_name, table_name + ext)
             table_object.save_to_csv(output_file_name)
             file_size_str = pydoni.human_filesize(stat(output_file_name).st_size)
-            logger.info(f'Saved SQLite:{bold(table_name)} to {path(table_name + ext)} ({file_size_str})', arrow='white')
+            logger.info(f"""
+            Saved SQLite:{bold(table_name)} to {path(table_name + ext)}
+            ({file_size_str}), shape {table_object.shape}
+            """, arrow='white')
 
     def save_to_postgres(self, pg: pydoni.Postgres, pg_schema: str, logger: logging.Logger) -> None:
         """
@@ -470,13 +478,13 @@ class ChatDbExtract(object):
                             # been saved to Postgres, so we can now insert this table
                             table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                             inserted_journal.append(table_name)
-                            logger.info(f'{participle} Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
+                            logger.info(f'{participle} Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='cyan')
                     else:
                         # No references found for this table, we can insert it right away
                         # since there are no dependencies to worry about
                         table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                         inserted_journal.append(table_name)
-                        logger.info(f'{participle} Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
+                        logger.info(f'{participle} Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='cyan')
                 else:
                     # This table has already been saved to Postgres, so we can skip it
                     pass
@@ -620,7 +628,7 @@ class View(object):
                     self.logger.debug('All references exist, creating the view')
                     self.pg.execute(self.def_sql)
                     self.logger.debug('Defined view successfully')
-                    self.logger.info(f'Defined Postgres"{bold(self.pg_schema)}"."{bold(self.vw_name)}"', arrow='white')
+                    self.logger.info(f'Defined Postgres:"{bold(self.pg_schema)}"."{bold(self.vw_name)}"', arrow='cyan')
                 else:
                     self.logger.debug(pydoni.advanced_strip(
                         f"""Cannot create the view because of nonexistent
@@ -638,7 +646,7 @@ class View(object):
                     # so we should be able to simply create it as normal
                     self.pg.execute(self.def_sql)
                     self.logger.debug('Created all nonexistent references and defined view successfully')
-                    self.logger.info(f'Defined Postgres"{bold(self.pg_schema)}"."{bold(self.vw_name)}"', arrow='white')
+                    self.logger.info(f'Defined Postgres:"{bold(self.pg_schema)}"."{bold(self.vw_name)}"', arrow='cyan')
 
 
 class StagingTable(object):
