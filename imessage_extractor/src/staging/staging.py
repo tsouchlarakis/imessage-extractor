@@ -1,12 +1,12 @@
 import logging
 import pandas as pd
 import pydoni
-from ...objects import StagingTable
-from ...verbosity import bold
-from .definitions.emoji_text_map import refresh_emoji_text_map
-from .definitions.message_tokens import refresh_message_tokens
-from .definitions.stats_by_contact import refresh_stats_by_contact
-from .definitions.tokens import refresh_tokens
+from ..helpers.objects import StagingTable
+from ..helpers.verbosity import bold
+from .tables.emoji_text_map import refresh_emoji_text_map
+from .tables.message_tokens import refresh_message_tokens
+from .tables.stats_by_contact import refresh_stats_by_contact
+from .tables.tokens import refresh_tokens
 
 
 def build_staging_tables(pg: pydoni.Postgres, pg_schema: str, logger: logging.Logger) -> None:

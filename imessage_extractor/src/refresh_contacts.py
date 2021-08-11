@@ -2,7 +2,7 @@ import click
 import logging
 import pandas as pd
 import re
-from .verbosity import logger_setup, path, code
+from .helpers.verbosity import logger_setup, path, code
 from os.path import expanduser, abspath, join, dirname
 from send2trash import send2trash
 

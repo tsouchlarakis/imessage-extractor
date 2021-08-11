@@ -8,9 +8,9 @@ import shutil
 import sqlite3
 import time
 import typing
-from .objects import ChatDbExtract, View
-from .tables.staging import build_staging_tables
-from .verbosity import print_startup_message, logger_setup, path, bold
+from .helpers.objects import ChatDbExtract, View
+from .staging.staging import build_staging_tables
+from .helpers.verbosity import print_startup_message, logger_setup, path, bold
 from os import makedirs, listdir
 from os.path import expanduser, isfile, isdir, splitext, abspath, dirname, join, basename
 
