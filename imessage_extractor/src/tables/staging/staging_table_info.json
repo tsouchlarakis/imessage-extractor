@@ -72,6 +72,6 @@
             "top_token_last_use_dt": "date"
         },
         "primary_key": "contact_name",
-        "references": ["contact_token_usage_vw", "emoji_text_map"]
+        "references": ["contact_token_usage_vw", "emoji_text_map", "message_vw"]
     }
 }
