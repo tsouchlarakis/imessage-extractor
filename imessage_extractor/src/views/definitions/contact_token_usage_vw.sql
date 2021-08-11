@@ -39,5 +39,5 @@ group by contact_name
          , is_from_me
          , "token"
          , "language"
-having count(*) > 1
+-- having count(*) > 1
 order by contact_name , count(*) desc
