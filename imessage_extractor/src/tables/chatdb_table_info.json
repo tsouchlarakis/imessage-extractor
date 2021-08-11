@@ -15,13 +15,13 @@
         "references": null
     },
     "chat_handle_join": {
-        "write_mode": "append",
+        "write_mode": "replace",
         "primary_key": ["chat_id", "handle_id"],
         "references": ["chat", "handle"]
     },
     "chat_message_join": {
         "write_mode": "append",
-        "primary_key": ["chat_id", "message_id"],
+        "primary_key": "message_id",
         "references": ["chat", "message"]
     },
     "deleted_messages": {
