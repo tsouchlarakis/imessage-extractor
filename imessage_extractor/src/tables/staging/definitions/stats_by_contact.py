@@ -17,7 +17,7 @@ def refresh_stats_by_contact(pg: pydoni.Postgres,
     most recent message date, etc.).
     """
     # Get message stats per contact
-    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
+    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
 
     message = pg.read_sql(f"""
     select message_id
@@ -184,6 +184,6 @@ def refresh_stats_by_contact(pg: pydoni.Postgres,
                  con=pg.dbcon,
                  schema=pg_schema,
                  index=False,
-                 if_exists='append')
+                 if_exists='replace')
 
-    logger.info(f'Built "{bold(pg_schema)}"."{bold(table_name)}", shape: {stats.shape}', arrow='white')
+    logger.info(f'Rebuilt "{bold(pg_schema)}"."{bold(table_name)}", shape: {stats.shape}', arrow='yellow')

@@ -14,7 +14,7 @@ def refresh_emoji_text_map(pg: pydoni.Postgres,
     """
     Refresh table emoji_text_map.
     """
-    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
+    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
 
     emoji_table = pd.DataFrame(emoji.UNICODE_EMOJI['en'], index=[0])
     emoji_table = emoji_table.T.reset_index().rename(columns={'index': 'emoji', 0: 'plain_text'})
@@ -26,4 +26,4 @@ def refresh_emoji_text_map(pg: pydoni.Postgres,
                        index=False,
                        if_exists='replace')
 
-    logger.info(f'Rebuilt "{bold(pg_schema)}"."{bold(table_name)}", shape: {emoji_table.shape}', arrow='white')
+    logger.info(f'Rebuilt "{bold(pg_schema)}"."{bold(table_name)}", shape: {emoji_table.shape}', arrow='yellow')

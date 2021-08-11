@@ -30,7 +30,7 @@ def refresh_tokens(pg: pydoni.Postgres,
     """
     Map each unique token to descriptor columns (stem, lemma, length, language, etc.).
     """
-    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
+    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
 
     message_tokens_table_name = 'message_tokens'
     emoji_text_map_table_name = 'emoji_text_map'
@@ -87,7 +87,7 @@ def refresh_tokens(pg: pydoni.Postgres,
                           if_exists='append')
 
         participle = 'Rebuilt' if rebuild else 'Appended'
-        logger.info(f'{participle} "{bold(pg_schema)}"."{bold(table_name)}", shape: {new_tokens.shape}')
+        logger.info(f'{participle} "{bold(pg_schema)}"."{bold(table_name)}", shape: {new_tokens.shape}', arrow='yellow')
 
     else:
-        logger.info(f'No new tokens to add to "{bold(pg_schema)}"."{bold(table_name)}"', arrow='white')
+        logger.info(f'No new tokens to add to "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
