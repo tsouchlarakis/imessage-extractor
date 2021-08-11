@@ -90,9 +90,9 @@ def build_custom_tables(logger: logging.Logger, pg: pydoni.Postgres, pg_schema: 
     'custom_tables' folder.
     """
     custom_table_fpaths = [abspath(x) for x in listdir(custom_table_dpath) if not x.startswith('.')]
-    any_manual_tabe_defs_exist = len(custom_table_fpaths) > 0
+    any_manual_table_defs_exist = len(custom_table_fpaths) > 0
 
-    if any_manual_tabe_defs_exist:
+    if any_manual_table_defs_exist:
         logger.info('Building optional custom tables')
         schemas_fpath = join(custom_table_dpath, 'custom_table_schemas.json')
         if isfile(schemas_fpath):
@@ -137,12 +137,16 @@ def build_custom_tables(logger: logging.Logger, pg: pydoni.Postgres, pg_schema: 
                 for col_name, col_dtype in schema_dct.items():
                     # Validate that column specified in JSON config actually exists
                     # in the .csv file
-                    assert col_name in csv_df.columns, \
-                        f'Column {bold(col_name)} specified in {path(schemas_fpath)} but does not exist in {path(csv_fpath)}'
+                    if col_name not in csv_df.columns:
+                        raise KeyError(pydoni.advanced_strip(
+                            f"""Column {bold(col_name)} specified in {path(schemas_fpath)}
+                            but does not exist in {path(csv_fpath)}"""))
 
                 for col_name in csv_df.columns:
-                    assert col_name in schema_dct.keys(), \
-                        f'Column {bold(col_name)} exists in {path(csv_fpath)} but does not exist in {path(schemas_fpath)}'
+                    if col_name not in schema_dct:
+                        raise KeyError(pydoni.advanced_strip(
+                            f"""Column {bold(col_name)} exists in {path(csv_fpath)} but
+                            does not exist in {path(schemas_fpath)}"""))
 
                 # At this point, we've validated that there is total alignment between
                 # this table and its respective columns specified in the JSON config file
@@ -192,15 +196,16 @@ def validate_vw_info(vw_names: str) -> None:
     for vw_name in vw_names:
         view_names_all = list(vw_info_chat_db_dependent.keys()) + list(vw_info_staging_dependent.keys())
         if vw_name not in view_names_all:
-            raise Exception(pydoni.advanced_strip(f"""
-            View definition {bold(vw_name)} found at {path(join(vw_def_dpath, vw_name + ".sql"))}
-            but not accounted for in {path("view_info.json")}"""))
+            raise ValueError(pydoni.advanced_strip(
+                f"""View definition {bold(vw_name)} found at
+                {path(join(vw_def_dpath, vw_name + ".sql"))}
+                but not accounted for in {path("view_info.json")}"""))
 
     for vw_name in view_names_all:
         if vw_name not in vw_names:
-            raise Exception(pydoni.advanced_strip(f"""
-            View definition {bold(vw_name)} found in {path("view_info.json")} but not
-            accounted for at {path(join(vw_def_dpath, vw_name + ".sql"))}"""))
+            raise ValueError(pydoni.advanced_strip(
+                f"""View definition {bold(vw_name)} found in {path("view_info.json")}
+                but not accounted for at {path(join(vw_def_dpath, vw_name + ".sql"))}"""))
 
 
 @click.option('--chat-db-path', type=str, default=expanduser('~/Library/Messages/chat.db'),
@@ -343,6 +348,18 @@ def go(chat_db_path,
 
         #
         # Staging tables
+        #
+        # At this point in the workflow, all data from chat.db has been loaded into Postgres
+        # and custom tables (which are overwritten with each run of the workflow) have been
+        # build. In addition all views that are reliant ONLY on those chat.db tables have
+        # been defined.
+        #
+        # We'll now begin the process of defining staging tables and views, the dependencies
+        # for which are much more fluid, in that a staging view might be dependent on another
+        # staging table, which in turn might have a dependency on a different staging
+        # view. Because dependencies among staging tables and views may be of arbitrary depth,
+        # they require a specific order in which they may be defined.
+        #
         #
 
         build_staging_tables(pg=pg, pg_schema=pg_schema, logger=logger)

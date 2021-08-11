@@ -11,10 +11,30 @@ from os import stat
 from os.path import join, dirname, isfile, abspath
 
 
-vw_def_dpath = join(vw_dpath, 'definitions')
 vw_dpath = abspath(join(dirname(__file__), 'views'))
+vw_def_dpath = join(vw_dpath, 'definitions')
 staged_table_dpath = abspath(join(dirname(__file__), 'tables', 'staging'))
 table_info_json_fpath = abspath(join(dirname(__file__), 'tables', 'chatdb_table_info.json'))
+schemas_fpath = join(custom_table_dpath, 'custom_table_schemas.json')
+
+
+class Attribute():
+    pass
+
+
+class WorkflowConfig(object):
+    """
+    Store configuration variables for iMessage Extractor workflow.
+    """
+    def __init__(self) -> None:
+        self.dir = Attribute()
+        self.dir.home = dirname(__file__)
+        self.dir.qc = join(self.dir.home, 'quality_control')
+        self.dir.tables = join(self.dir.home, 'quality_control')
+        self.dir.qc = join(self.dir.home, 'quality_control')
+        self.dir.qc = join(self.dir.home, 'quality_control')
+
+        self.file = Attribute()
 
 
 class CreateTableSQL(object):
@@ -483,7 +503,6 @@ class ChatDbExtract(object):
                     pass
 
 
-
 class View(object):
     """
     Store information and operations on a target Postgres iMessage database view.
@@ -704,3 +723,21 @@ class StagingTable(object):
                               table_name=self.table_name,
                               columnspec=self.columnspec,
                               logger=self.logger)
+
+
+class CustomTable(object):
+    """
+    Store information and operations on user-defined custom tables.
+    """
+    def __init__(self,
+                 pg_schema: str,
+                 table_name: str,
+                 pg: pydoni.Postgres,
+                 logger: logging.Logger) -> None:
+        self.pg_schema = pg_schema
+        self.table_name = table_name
+        self.pg = pg
+        self.logger = logger
+
+
+
