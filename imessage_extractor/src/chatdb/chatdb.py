@@ -7,7 +7,8 @@ import sqlite3
 import pathlib
 import typing
 from ..helpers.config import WorkflowConfig
-from ..helpers.verbosity import bold, path
+from ..helpers.verbosity import bold, path, code
+# from ..staging.staging import StagingView
 from os import stat
 from os.path import isfile, join, expanduser
 from pydoni import advanced_strip, Postgres, ensurelist, human_filesize
@@ -368,7 +369,7 @@ class ChatDbTable(object):
 
         df.to_csv(output_fpath, index=False)
 
-        self.logger.debug(f'Saved dataframe to disk, shape {bold(df.shape)}')
+        self.logger.debug(f'Saved dataframe to disk, shape {df.shape}')
         self.csv_fpath = output_fpath
 
     def save_to_postgres(self, pg: Postgres, pg_schema: str) -> None:
@@ -389,7 +390,7 @@ class ChatDbTable(object):
             # with or without `rebuild`, so the user can control which tables are fully
             # rebuilt with each run by editing the `write_mode` in chatdb_table_info.json.
             pg.drop_table(pg_schema, self.table_name, if_exists=True, cascade=True)
-            self.logger.debug(f'Table has `write_mode="replace"`, so dropped table')
+            self.logger.debug(f"""Table has {code('write_mode="replace"')}, so dropped table""")
 
         if not pg.table_exists(pg_schema, self.table_name):
             pg.execute(self.create_sql)
@@ -403,7 +404,7 @@ class ChatDbTable(object):
             format csv,
             header
         )""")
-        self.logger.debug(load_sql)
+        self.logger.debug(code(load_sql))
         pg.execute(load_sql)
 
 
@@ -413,14 +414,35 @@ class View(object):
     """
     def __init__(self,
                  vw_name: str,
-                 vw_info: dict,
+                 vw_type: str,
                  logger: logging.Logger,
                  cfg: 'WorkflowConfig') -> None:
         self.vw_name = vw_name
+        self.vw_type = vw_type
         self.logger = logger
         self.cfg = cfg
 
-        self.references = vw_info['reference']
+        if vw_type == 'chatdb':
+            self.def_fpath = join(self.cfg.dir.chatdb_views, self.vw_name + '.sql')
+            with open(self.cfg.file.chatdb_view_info, 'r') as f:
+                vw_info = json.load(f)
+
+        elif vw_type == 'staging':
+            self.def_fpath = join(self.cfg.dir.staging_views, self.vw_name + '.sql')
+            with open(self.cfg.file.staging_vw_info, 'r') as f:
+                vw_info = json.load(f)
+
+        else:
+            raise ValueError(f'Unknown view type "{vw_type}". Must be one of "chatdb" or "staging".')
+
+        self.def_sql = self.read_def_sql(self.def_fpath)
+
+        if self.vw_name not in vw_info:
+            raise KeyError(f'View "{self.vw_name}" not found in "{self.cfg.file.chatdb_vw_info}"')
+
+        self.vw_info = vw_info[self.vw_name]
+
+        self.references = self.vw_info['reference']
         if not isinstance(self.references, list):
             raise ValueError(advanced_strip(f"References for {bold(self.vw_name)} must be a list"))
 
@@ -429,7 +451,26 @@ class View(object):
         else:
             self.has_references = False
 
-    def _read_def_sql(self, def_fpath: str) -> str:
+        self._validate_view_definition()
+
+    def _validate_view_definition(self) -> None:
+        """
+        Validate that this view has a key: value pair in *_view_info.json and a corresponding
+        .sql file.
+        """
+        if not isfile(self.def_fpath):
+            raise FileNotFoundError(advanced_strip(
+                f"View definition {bold(self.vw_name)} expected at {path(self.def_fpath)}"))
+
+        with open(self.cfg.file.chatdb_view_info, 'r') as f:
+            vw_info = json.load(f)
+
+        if self.vw_name not in vw_info:
+            raise ValueError(advanced_strip(
+                f"""View definition {bold(self.vw_name)}
+                expected as key: value pair in {path(self.cfg.file.chatdb_view_info)}"""))
+
+    def read_def_sql(self, def_fpath: str) -> str:
         """
         Read a .sql file containing a definition of a Postgres view.
         """
@@ -475,7 +516,9 @@ class View(object):
             pg.drop_view(self.cfg.pg_schema, self.vw_name, cascade=cascade)
             self.logger.info(f'Dropped view {bold(self.vw_name)}')
 
-    def create(self, pg: Postgres, cascade: bool=False) -> None:
+    def create(self,
+               pg: Postgres,
+               cascade: bool=False) -> None:
         """
         Define a view with or without cascade. Views may be dependent on other views or tables,
         and as such, as we cannot simply execute a view definition since a dependency of that
@@ -499,10 +542,13 @@ class View(object):
         if not cascade:
             pg.execute(self.def_sql)
         else:
-            self.logger.debug(f'Requested definition for {bold(self.vw_name)}')
+            self.logger.debug(f'Requested cascaded definition for {bold(self.vw_name)}')
             if pg.view_exists(self.cfg.pg_schema, self.vw_name):
                 self.logger.debug('View already exists')
             else:
+                if not hasattr(self, 'references_exist'):
+                    self.check_references(pg)
+
                 if self.references_exist:
                     self.logger.debug('All references exist, creating the view')
                     pg.execute(self.def_sql)
@@ -511,15 +557,15 @@ class View(object):
                 else:
                     self.logger.debug(advanced_strip(
                         f"""Cannot create the view because of nonexistent
-                        references: {str(self.nonexistent_references)}. Attempting to
-                        define them now"""))
+                        references: {str(self.nonexistent_references)}"""))
 
                     for ref in self.nonexistent_references:
-                        # Recursively create each reference
-                        View(pg_schema=self.cfg.pg_schema,
-                             vw_name=ref,
-                             pg=self.pg,
-                             logger=self.logger).create(cascade=True)
+                        ref_vw_obj = View(vw_name=ref,
+                                          vw_type=self.vw_type,
+                                          logger=self.logger,
+                                          cfg=self.cfg)
+
+                        ref_vw_obj.create(pg=pg, cascade=True)
 
                     # At this point, we have created all of the refrences for this view,
                     # so we should be able to simply create it as normal
@@ -528,43 +574,26 @@ class View(object):
                     self.logger.info(f'Defined Postgres:"{bold(self.cfg.pg_schema)}"."{bold(self.vw_name)}"', arrow='cyan')
 
 
-class ChatDbView(View):
-    """
-    Store information and operations on a target Postgres iMessage database view
-    based only on chat.db and/or custom tables.
-    """
-    def __init__(self,
-                 vw_name: str,
-                 vw_info: dict,
-                 logger: logging.Logger,
-                 cfg: 'WorkflowConfig') -> None:
-        self.vw_name = vw_name
-        self.logger = logger
-        self.cfg = cfg
-        self.def_fpath = join(self.cfg.dir.chatdb_views, self.vw_name + '.sql')
+# class ChatDbView(View):
+#     """
+#     Store information and operations on a target Postgres iMessage database view
+#     based only on chat.db and/or custom tables.
+#     """
+#     def __init__(self,
+#                  vw_name: str,
+#                  vw_info: dict,
+#                  logger: logging.Logger,
+#                  cfg: 'WorkflowConfig') -> None:
+#         self.vw_name = vw_name
+#         self.logger = logger
+#         self.cfg = cfg
+#         self.def_fpath = join(self.cfg.dir.chatdb_views, self.vw_name + '.sql')
+#         self.def_sql = self.read_def_sql(self.def_fpath)
 
-        View.__init__(self,
-                      vw_name=self.vw_name,
-                      vw_info=vw_info,
-                      logger=self.logger,
-                      cfg=self.cfg)
+#         View.__init__(self,
+#                       vw_name=self.vw_name,
+#                       vw_info=vw_info,
+#                       logger=self.logger,
+#                       cfg=self.cfg)
 
-        self._validate_view_definition()
-
-    def _validate_view_definition(self) -> None:
-        """
-        Validate that this view has a key: value pair in *_view_info.json and a corresponding
-        .sql file.
-        """
-        if not isfile(self.def_fpath):
-            raise FileNotFoundError(advanced_strip(
-                f"""Chatdb view definition {bold(self.vw_name)}
-                expected at {path(self.def_fpath)}"""))
-
-        with open(self.cfg.file.chatdb_view_info, 'r') as f:
-            vw_info = json.load(f)
-
-        if self.vw_name not in vw_info:
-            raise ValueError(advanced_strip(
-                f"""Chatdb view definition {bold(self.vw_name)}
-                expected as key: value pair in {path(self.cfg.file.chatdb_view_info)}"""))
+#         self._validate_view_definition()

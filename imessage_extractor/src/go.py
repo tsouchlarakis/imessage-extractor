@@ -4,15 +4,14 @@ import logging
 import pathlib
 import shutil
 import time
-import typing
 from pydoni import advanced_strip, fmt_seconds, human_filesize, Postgres
-from .chatdb.chatdb import ChatDb, ChatDbTable, ChatDbView, parse_pg_credentials
+from .chatdb.chatdb import ChatDb, ChatDbTable, View, parse_pg_credentials
 from .custom_tables.custom_tables import CustomTable, build_custom_tables
 from .helpers.config import WorkflowConfig
 from .helpers.verbosity import print_startup_message, logger_setup, path, bold, code
-from .staging.staging import StagingView, build_staging_tables
-from os import makedirs, listdir, stat
-from os.path import expanduser, isdir, splitext, abspath, dirname, join, basename
+from .staging.staging import build_staging_tables
+from os import makedirs, stat
+from os.path import expanduser, isdir, join
 
 
 # vw_dpath = abspath(join(dirname(__file__), 'views'))
@@ -21,36 +20,36 @@ from os.path import expanduser, isdir, splitext, abspath, dirname, join, basenam
 logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
 
 
-def validate_vw_info(vw_names: str) -> None:
-    """
-    Validate that the .sql view files in the `vw_def_dpath` folder are compatible with
-    corresponding view metadata in the vw_info_*.json files.
-    """
-    # Views that can be defined after chat.db tables are loaded
-    with open(join(vw_dpath, 'view_info_chatdb_dependent.json'), 'r') as f:
-        vw_info_chat_db_dependent = json.load(f)
+# def validate_vw_info(vw_names: str) -> None:
+#     """
+#     Validate that the .sql view files in the `vw_def_dpath` folder are compatible with
+#     corresponding view metadata in the vw_info_*.json files.
+#     """
+#     # Views that can be defined after chat.db tables are loaded
+#     with open(join(vw_dpath, 'view_info_chatdb_dependent.json'), 'r') as f:
+#         vw_info_chat_db_dependent = json.load(f)
 
-    # Views that depend on tables created downstream in this pipeline
-    with open(join(vw_dpath, 'view_info_staging_dependent.json'), 'r') as f:
-        vw_info_staging_dependent = json.load(f)
+#     # Views that depend on tables created downstream in this pipeline
+#     with open(join(vw_dpath, 'view_info_staging_dependent.json'), 'r') as f:
+#         vw_info_staging_dependent = json.load(f)
 
-    # Validate that all views defined in vw_info*.json also contain a definition .sql
-    # file in the views/ folder, and that all views with definition .sql files in the
-    # views/ folder also have a corresponding key in the vw_info*.json file.
+#     # Validate that all views defined in vw_info*.json also contain a definition .sql
+#     # file in the views/ folder, and that all views with definition .sql files in the
+#     # views/ folder also have a corresponding key in the vw_info*.json file.
 
-    for vw_name in vw_names:
-        view_names_all = list(vw_info_chat_db_dependent.keys()) + list(vw_info_staging_dependent.keys())
-        if vw_name not in view_names_all:
-            raise ValueError(advanced_strip(
-                f"""View definition {bold(vw_name)} found at
-                {path(join(vw_def_dpath, vw_name + ".sql"))}
-                but not accounted for in {path("view_info.json")}"""))
+#     for vw_name in vw_names:
+#         view_names_all = list(vw_info_chat_db_dependent.keys()) + list(vw_info_staging_dependent.keys())
+#         if vw_name not in view_names_all:
+#             raise ValueError(advanced_strip(
+#                 f"""View definition {bold(vw_name)} found at
+#                 {path(join(vw_def_dpath, vw_name + ".sql"))}
+#                 but not accounted for in {path("view_info.json")}"""))
 
-    for vw_name in view_names_all:
-        if vw_name not in vw_names:
-            raise ValueError(advanced_strip(
-                f"""View definition {bold(vw_name)} found in {path("view_info.json")}
-                but not accounted for at {path(join(vw_def_dpath, vw_name + ".sql"))}"""))
+#     for vw_name in view_names_all:
+#         if vw_name not in vw_names:
+#             raise ValueError(advanced_strip(
+#                 f"""View definition {bold(vw_name)} found in {path("view_info.json")}
+#                 but not accounted for at {path(join(vw_def_dpath, vw_name + ".sql"))}"""))
 
 
 @click.option('--chat-db-path', type=str, default=expanduser('~/Library/Messages/chat.db'),
@@ -252,19 +251,19 @@ def go(chat_db_path,
         # Chat.db dependent views
         #
 
-        # for vw_name, vw_info in cfg.file.staging_view_info.items():
-        validate_vw_info(vw_names)
-        logger.debug('View .sql files validated and are compatible with vw_info_*.json files')
-
         logger.info(f'Defining Postgres views that are only dependent on chat.db tables')
-        with open(join(vw_dpath, 'view_info_chatdb_dependent.json'), 'r') as f:
-            vw_info_chatdb_dependent = json.load(f)
 
-        chatdb_dependent_vw_names = [x for x in vw_names if x in vw_info_chatdb_dependent]
+        with open(cfg.file.chatdb_view_info, 'r') as f:
+            chatdb_vw_info = json.load(f)
 
-        for vw_name in chatdb_dependent_vw_names:
-            view = View(pg_schema=cfg.pg_schema, vw_name=vw_name, pg=pg, logger=logger)
-            view.create(cascade=True)
+        for vw_name, vw_info in chatdb_vw_info.items():
+            # validate_vw_info(vw_names)
+            # logger.debug('View .sql files validated and are compatible with vw_info_*.json files')
+
+            for vw_name, vw_info in chatdb_vw_info.items():
+                if not pg.view_exists(cfg.pg_schema, vw_name):
+                    view = View(vw_name=vw_name, vw_type='chatdb', logger=logger, cfg=cfg)
+                    view.create(pg=pg, cascade=True)
 
         #
         # Staging tables
@@ -281,6 +280,8 @@ def go(chat_db_path,
         # they require a specific order in which they may be defined.
         #
         #
+
+        exit()
 
         build_staging_tables(pg=pg, pg_schema=cfg.pg_schema, logger=logger)
 

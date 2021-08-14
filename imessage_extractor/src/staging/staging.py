@@ -26,6 +26,7 @@ class StagingView(View):
         self.logger = logger
         self.cfg = cfg
         self.def_fpath = join(self.cfg.file.staging_views, self.vw_name + '.sql')
+        self.def_sql = self.read_def_sql(self.def_fpath)
 
         View.__init__(self,
                       vw_name=self.vw_name,
