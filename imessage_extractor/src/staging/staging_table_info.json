@@ -5,7 +5,7 @@
             "plain_text": "text"
         },
         "primary_key": "emoji",
-        "references": null
+        "reference": null
     },
     "message_tokens": {
         "columnspec": {
@@ -16,7 +16,7 @@
             "pos_simple": "text"
         },
         "primary_key": "message_id",
-        "references": ["message_vw", "emoji_text_map"]
+        "reference": ["message_vw", "emoji_text_map"]
     },
     "tokens": {
         "columnspec": {
@@ -29,7 +29,7 @@
             "is_emoji": "bool"
         },
         "primary_key": "message_id",
-        "references": ["message_tokens", "emoji_text_map"]
+        "reference": ["message_tokens", "emoji_text_map"]
     },
     "stats_by_contact": {
         "columnspec": {
@@ -72,6 +72,6 @@
             "top_token_last_use_dt": "date"
         },
         "primary_key": "contact_name",
-        "references": ["contact_token_usage_vw", "emoji_text_map", "message_vw"]
+        "reference": ["contact_token_usage_vw", "emoji_text_map", "message_vw"]
     }
 }

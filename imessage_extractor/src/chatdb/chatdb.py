@@ -506,13 +506,16 @@ class View(object):
         """
         Drop the target view.
         """
+        if not hasattr(self, 'references_exist'):
+            self.check_references(pg)
+
         if if_exists:
             if pg.view_exists(self.cfg.pg_schema, self.vw_name):
                 pg.drop_view(self.cfg.pg_schema, self.vw_name, cascade=cascade)
-                self.logger.info(f'Dropped view {bold(self.vw_name)}')
+                self.logger.info(f'Dropped view (cascade {code(cascade)}) {bold(self.vw_name)}', arrow='red')
         else:
             pg.drop_view(self.cfg.pg_schema, self.vw_name, cascade=cascade)
-            self.logger.info(f'Dropped view {bold(self.vw_name)}')
+            self.logger.info(f'Dropped view (cascade {code(cascade)}) {bold(self.vw_name)}', arrow='red')
 
     def create(self,
                pg: Postgres,

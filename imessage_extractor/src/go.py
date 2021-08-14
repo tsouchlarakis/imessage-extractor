@@ -9,7 +9,7 @@ from .chatdb.chatdb import ChatDb, ChatDbTable, View, parse_pg_credentials
 from .custom_tables.custom_tables import CustomTable, build_custom_tables
 from .helpers.config import WorkflowConfig
 from .helpers.verbosity import print_startup_message, logger_setup, path, bold, code
-from .staging.staging import build_staging_tables
+from .staging.staging import build_staging_tables, assemble_staging_order
 from os import makedirs, stat
 from os.path import expanduser, isdir, join
 
@@ -179,23 +179,32 @@ def go(chat_db_path,
             # pg.drop_schema_and_recreate(pg_schema, if_exists=True, cascade=True)
 
             logger.info(advanced_strip(
-                f"""Parameter {code("rebuild")} is set to {bold("True")},
+                f"""Parameter {code("rebuild")} is set to {code("True")},
                 so re-created schema "{bold(cfg.pg_schema)}" from scratch"""))
         else:
             # Drop views in the Postgres schema since they may be dependent on tables
             # that require rebuilding. They will all be re-created later
             logger.info(advanced_strip(
-                f'''Parameter {code("rebuild")} is set to {bold("False")},
+                f'''Parameter {code("rebuild")} is set to {code("False")},
                 so only appending new information from chat.db to "{bold(cfg.pg_schema)}"'''))
 
             with open(cfg.file.chatdb_view_info, 'r') as json_file:
                 chatdb_view_info = json.load(json_file)
 
-            for vw_name, vw_info in chatdb_view_info.items():
-                logger.debug(f'Dropping view {bold(vw_name)}')
-                view = View(vw_name=vw_name, vw_type='chatdb', logger=logger, cfg=cfg)
-                view.check_references(pg=pg)
-                view.drop(pg=pg, if_exists=True, cascade=True)
+            for vw_name in chatdb_view_info:
+                if pg.view_exists(cfg.pg_schema, vw_name):
+                    logger.debug(f'Dropping chatdb view {bold(vw_name)}')
+                    view = View(vw_name=vw_name, vw_type='chatdb', logger=logger, cfg=cfg)
+                    view.drop(pg=pg, if_exists=True, cascade=True)
+
+            with open(cfg.file.staging_view_info, 'r') as json_file:
+                staging_view_info = json.load(json_file)
+
+            for vw_name in staging_view_info:
+                if pg.view_exists(cfg.pg_schema, vw_name):
+                    logger.debug(f'Dropping staging view {bold(vw_name)}')
+                    view = View(vw_name=vw_name, vw_type='staging', logger=logger, cfg=cfg)
+                    view.drop(pg=pg, if_exists=True, cascade=True)
 
         #
         # chat.db tables
@@ -243,9 +252,7 @@ def go(chat_db_path,
         # Custom tables
         #
 
-        build_custom_tables(pg=pg,
-                            logger=logger,
-                            cfg=cfg)
+        build_custom_tables(pg=pg, logger=logger, cfg=cfg)
 
         #
         # Chat.db dependent views
@@ -256,11 +263,7 @@ def go(chat_db_path,
         with open(cfg.file.chatdb_view_info, 'r') as f:
             chatdb_vw_info = json.load(f)
 
-        for vw_name, vw_info in chatdb_vw_info.items():
-            # validate_vw_info(vw_names)
-            # logger.debug('View .sql files validated and are compatible with vw_info_*.json files')
-
-            for vw_name, vw_info in chatdb_vw_info.items():
+            for vw_name in chatdb_vw_info:
                 if not pg.view_exists(cfg.pg_schema, vw_name):
                     view = View(vw_name=vw_name, vw_type='chatdb', logger=logger, cfg=cfg)
                     view.create(pg=pg, cascade=True)
@@ -281,13 +284,20 @@ def go(chat_db_path,
         #
         #
 
-        build_staging_tables(pg=pg, logger=logger, cfg=cfg)
+        # build_staging_tables(pg=pg, logger=logger, cfg=cfg)
 
-        #
-        # Staging table dependent views
-        #
+        staging_order = assemble_staging_order(pg=pg, cfg=cfg, logger=logger)
 
-        exit()
+        if cfg.rebuild:
+            # Create each object in the `staging_order` in order
+            pass
+
+        else:
+            # If we're not refreshing the pipeline, then the staging tables should
+            # already exist. Verify to make sure that is the case, then we can
+            # refresh the staging tables then re-create the views.
+            pass
+
 
     else:
         logger.info('User opted not to save tables to a Postgres database')

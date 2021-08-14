@@ -122,7 +122,7 @@ def refresh_message_tokens(pg: pydoni.Postgres,
     Parse messages into tokens and append to message tokens table, for messages that have
     not already been parsed into tokens.
     """
-    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
+    logger.info(f'Refreshing "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
 
     batch_size = 1500
     logger.debug(f'Batch size: {bold(batch_size)}')
@@ -145,7 +145,7 @@ def refresh_message_tokens(pg: pydoni.Postgres,
       {and_condition}
     order by m.message_id
     """
-    message = pg.read_sql(sql)
+    message = pg.read_sql(sql).head(100)  # TODO: remove this limit
     logger.debug(f'Tokenizing {len(message)} messages')
 
     if isinstance(batch_size, int):

@@ -28,7 +28,7 @@ def refresh_tokens(pg: pydoni.Postgres,
     """
     Map each unique token to descriptor columns (stem, lemma, length, language, etc.).
     """
-    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
+    logger.info(f'Refreshing "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
 
     message_tokens_table_name = 'message_tokens'
     emoji_text_map_table_name = 'emoji_text_map'

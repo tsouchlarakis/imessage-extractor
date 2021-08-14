@@ -17,7 +17,7 @@ def refresh_stats_by_contact(pg: pydoni.Postgres,
     most recent message date, etc.).
     """
     # Get message stats per contact
-    logger.info(f'Refreshing staging table "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
+    logger.info(f'Refreshing "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
 
     message = pg.read_sql(f"""
     select message_id
