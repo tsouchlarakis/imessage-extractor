@@ -1,179 +1,24 @@
 import click
 import json
 import logging
-import pandas as pd
 import pathlib
-import pydoni
 import shutil
-import sqlite3
 import time
 import typing
-from .helpers.objects import ChatDbExtract, View
-from .staging.staging import build_staging_tables
-from .helpers.verbosity import print_startup_message, logger_setup, path, bold
-from os import makedirs, listdir
-from os.path import expanduser, isfile, isdir, splitext, abspath, dirname, join, basename
+from pydoni import advanced_strip, fmt_seconds, human_filesize, Postgres
+from .chatdb.chatdb import ChatDb, ChatDbTable, ChatDbView, parse_pg_credentials
+from .custom_tables.custom_tables import CustomTable, build_custom_tables
+from .helpers.config import WorkflowConfig
+from .helpers.verbosity import print_startup_message, logger_setup, path, bold, code
+from .staging.staging import StagingView, build_staging_tables
+from os import makedirs, listdir, stat
+from os.path import expanduser, isdir, splitext, abspath, dirname, join, basename
 
 
-vw_dpath = abspath(join(dirname(__file__), 'views'))
-vw_def_dpath = join(vw_dpath, 'definitions')
-custom_table_dpath = abspath(join(dirname(__file__), '..', 'custom_tables'))
+# vw_dpath = abspath(join(dirname(__file__), 'views'))
+# vw_def_dpath = join(vw_dpath, 'definitions')
+# custom_table_dpath = abspath(join(dirname(__file__), '..', 'custom_tables'))
 logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
-
-
-def validate_parameters(params: dict) -> None:
-    """
-    Carry out assertions on parameters.
-    """
-    if params['save_csv'] is None:
-        if params['pg_schema'] is None:
-            raise ValueError('Must specify either --save-csv or --save-pg-schema')
-
-    if (params['pg_schema'] is not None and params['pg_credentials'] is None) \
-        or (params['pg_schema'] is None and params['pg_credentials'] is not None):
-            raise ValueError('Must specify both --pg-credentials and --save-pg-schema if one is specified')
-
-    # Log parameter values
-    params = {k: v for k, v in locals().items() if k not in ['logger', 'logging_level']}
-    for name, value in params.items():
-        logger.debug(f'{name}: {value}')
-
-
-def connect_to_chat_db(chat_db_path: typing.Union[str, pathlib.Path]) -> sqlite3.Connection:
-    """
-    Connect to local chat.db.
-    """
-    if isfile(chat_db_path):
-        try:
-            sqlite_con = sqlite3.connect(chat_db_path)
-            logger.info(f'Connected to chat.db {path(chat_db_path)}')
-            return sqlite_con
-        except Exception as e:
-            raise(Exception(pydoni.advanced_strip("""Unable to connect to SQLite! Could it be
-            that the executing environment does not have proper permissions? Perhaps wrapping
-            the command in an (Automator) application or script, and granting Full Disk
-            Access to that application or script might be a potential option""")))
-    else:
-        raise FileNotFoundError(f'The chat.db file expected at {path(chat_db_path)} could not be found')
-
-
-def parse_pg_credentials(pg_credentials: typing.Union[str, pathlib.Path]) -> tuple:
-    """
-    Parse Postgres connection credentials from either a string or a file.
-    """
-    if isfile(expanduser(pg_credentials)):
-        with open(expanduser(pg_credentials), 'r') as f:
-            pg_cred_str = f.read()
-    else:
-        pg_cred_str = pg_credentials
-
-    assert len(pg_cred_str.split(':')) == 5, \
-        pydoni.advanced_strip("""Invalid structure of supplied Postgres credentials.
-        Must be either a path to a local Postgres credentials file 'i.e. ~/.pgpass', OR
-        a string with the connection credentials. Must be in format
-        'hostname:port:db_name:user_name:password'.""")
-
-    hostname, port, db_name, pg_user, pw = pg_cred_str.split(':')
-    return hostname, port, db_name, pg_user, pw
-
-
-def list_view_names(vw_def_dpath: typing.Union[str, pathlib.Path]) -> list:
-    """
-    Find views in folder.
-    """
-    return [f.replace('.sql', '') for f in listdir(vw_def_dpath) if splitext(f)[1] == '.sql']
-
-
-def build_custom_tables(logger: logging.Logger, pg: pydoni.Postgres, pg_schema: str) -> None:
-    """
-    Build custom, user-maintained tables, the information for which is stored in the
-    'custom_tables' folder.
-    """
-    custom_table_fpaths = [abspath(x) for x in listdir(custom_table_dpath) if not x.startswith('.')]
-    any_manual_table_defs_exist = len(custom_table_fpaths) > 0
-
-    if any_manual_table_defs_exist:
-        logger.info('Building optional custom tables')
-        schemas_fpath = join(custom_table_dpath, 'custom_table_schemas.json')
-        if isfile(schemas_fpath):
-            custom_table_csv_fpaths = [x for x in custom_table_fpaths if splitext(x)[1] == '.csv']
-
-            # Validate that for each custom table, there exists both a .csv file with table
-            # data, and a key in custom_table_schemas.json with the same name as the .csv file
-
-            with open(schemas_fpath, 'r') as json_file:
-                schemas = json.load(json_file)
-
-            for csv_fpath in custom_table_csv_fpaths:
-                table_name = splitext(basename(csv_fpath))[0]
-                if table_name not in schemas:
-                    raise KeyError(pydoni.advanced_strip(
-                        f"""Attempting to define custom table {bold(table_name)},
-                        the table data .csv file exists at {path(csv_fpath)} but a column
-                        specification does not exist in {path(schemas_fpath)} for that table.
-                        Add a key in that JSON file with the same name as the .csv file
-                        with a corresponding value that is a dictionary with a name: dtype pair
-                        for each column in the .csv file. For example, if the .csv file has
-                        columns ['id', 'message'], then add an entry to that JSON file:
-                        "{table_name}": {{"id": "INTEGER", "message": "TEXT"}}"""))
-
-            for table_name in schemas.keys():
-                expected_csv_fpath = join(custom_table_dpath, table_name + '.csv')
-                if not isfile(expected_csv_fpath):
-                    raise FileNotFoundError(pydoni.advanced_strip(
-                        f"""Attempting to define custom table {bold(table_name)},
-                        but the table data .csv file does not exist at
-                        {path(expected_csv_fpath)}. Please create this .csv file or
-                        remove the key in {path(schemas_fpath)}."""))
-
-            # Now that we know there exists a .csv and a JSON key for each custom table,
-            # we can proceed with validating that the table schemas defined in the JSON file
-            # are compatible with the data contained the corresponding .csv files.
-
-            for table_name, schema_dct in schemas.items():
-                csv_fpath = join(custom_table_dpath, table_name + '.csv')
-                csv_df = pd.read_csv(csv_fpath)
-
-                for col_name, col_dtype in schema_dct.items():
-                    # Validate that column specified in JSON config actually exists
-                    # in the .csv file
-                    if col_name not in csv_df.columns:
-                        raise KeyError(pydoni.advanced_strip(
-                            f"""Column {bold(col_name)} specified in {path(schemas_fpath)}
-                            but does not exist in {path(csv_fpath)}"""))
-
-                for col_name in csv_df.columns:
-                    if col_name not in schema_dct:
-                        raise KeyError(pydoni.advanced_strip(
-                            f"""Column {bold(col_name)} exists in {path(csv_fpath)} but
-                            does not exist in {path(schemas_fpath)}"""))
-
-                # At this point, we've validated that there is total alignment between
-                # this table and its respective columns specified in the JSON config file
-                # and as .csv file in the `custom_table_dpath` itself. Now we can proceed
-                # to actually load the table into the Postgres schema.
-
-                csv_df.to_sql(name=table_name,
-                              con=pg.dbcon,
-                              schema=pg_schema,
-                              index=False,
-                              if_exists='replace')
-
-                logger.info(f'Rebuilt Postgres:{bold(table_name)}', arrow='magenta')
-
-        else:
-            raise FileNotFoundError(f'Could not find custom table schemas file {schemas_fpath}')
-    else:
-        logger.warning(pydoni.advanced_strip(
-            f"""No custom table data exists, so no custom tables were created. This is perfectly
-            okay and does not affect the running of this pipeline, however know that if you'd
-            like to add a table to this pipeline, you can manually create a .csv file and
-            place it in the {path(custom_table_dpath, 'table_data')} folder. The resulting
-            table will be dropped and re-created with each run of this pipeline, and will
-            be named identically to how you choose to name the .csv file. NOTE: each .csv file
-            must be accompanied by a .json file that specifies the table schema, or else
-            an error will be thrown. That table schema should be in the format:
-            {{column_name1: postgres_data_type1, column_name2: postgres_data_type2, ...}}"""))
 
 
 def validate_vw_info(vw_names: str) -> None:
@@ -196,14 +41,14 @@ def validate_vw_info(vw_names: str) -> None:
     for vw_name in vw_names:
         view_names_all = list(vw_info_chat_db_dependent.keys()) + list(vw_info_staging_dependent.keys())
         if vw_name not in view_names_all:
-            raise ValueError(pydoni.advanced_strip(
+            raise ValueError(advanced_strip(
                 f"""View definition {bold(vw_name)} found at
                 {path(join(vw_def_dpath, vw_name + ".sql"))}
                 but not accounted for in {path("view_info.json")}"""))
 
     for vw_name in view_names_all:
         if vw_name not in vw_names:
-            raise ValueError(pydoni.advanced_strip(
+            raise ValueError(advanced_strip(
                 f"""View definition {bold(vw_name)} found in {path("view_info.json")}
                 but not accounted for at {path(join(vw_def_dpath, vw_name + ".sql"))}"""))
 
@@ -215,7 +60,7 @@ def validate_vw_info(vw_names: str) -> None:
 @click.option('--pg-schema', type=str, default=None, required=False,
               help='Name of Postgres schema to save tables to.')
 @click.option('--pg-credentials', type=str, default=expanduser('~/.pgpass'), required=False,
-              help=pydoni.advanced_strip("""EITHER the path to a local Postgres credentials
+              help=advanced_strip("""EITHER the path to a local Postgres credentials
               file 'i.e. ~/.pgpass', OR a string with the connection credentials. Must
               be in format 'hostname:port:db_name:user:pg_pass'."""))
 @click.option('-r', '--rebuild', is_flag=True, default=False,
@@ -238,6 +83,10 @@ def go(chat_db_path,
     """
     params = locals()
 
+    #
+    # Workflow configuration
+    #
+
     # Configure logger
     if debug:
         logging_level = logging.DEBUG
@@ -245,23 +94,27 @@ def go(chat_db_path,
         logging_level = logging.INFO
     else:
         logging_level = logging.ERROR
-    logger = logger_setup(name='imessage-extractor', level=logging_level)
 
-    validate_parameters(params)
+    logger = logger_setup(name='imessage-extractor', level=logging_level)
 
     # Begin pipeline stopwatch
     start_ts = time.time()
 
+    # Get workflow configurations
+    cfg = WorkflowConfig(params=params, logger=logger)
+
     if verbose:
         print_startup_message(logger)
 
-    # Connect to the local chat.db
-    sqlite_con = connect_to_chat_db(chat_db_path=chat_db_path)
+    #
+    # Establish database connections
+    #
 
-    if pg_schema is not None:
-        # Get Postgres credentials and connect to database
-        hostname, port, db_name, pg_user, pw = parse_pg_credentials(pg_credentials)
-        pg = pydoni.Postgres(hostname=hostname,
+    chatdb = ChatDb(chat_db_path=chat_db_path, logger=logger)
+
+    if cfg.pg_schema is not None:
+        hostname, port, db_name, pg_user, pw = parse_pg_credentials(cfg.pg_credentials)
+        pg = Postgres(hostname=hostname,
                              port=port,
                              db_name=db_name,
                              pg_user=pg_user,
@@ -271,68 +124,135 @@ def go(chat_db_path,
 
     # Create a temporary folder to save the extracted data to if the user opted not
     # to save the outputted .csv files to a local folder
-    save_csv_dpath = expanduser('~/Desktop/.tmp_imessage_extractor') if save_csv is None else save_csv
+    save_csv_dpath = expanduser('~/Desktop/.tmp_imessage_extractor') if cfg.save_csv is None else cfg.save_csv
     if not isdir(save_csv_dpath):
         makedirs(save_csv_dpath)
         logger.info(f'Created temporary export directory {path(save_csv_dpath)}')
 
-    # Extract metadata for each table in chat.db
-    chat_db_extract = ChatDbExtract(sqlite_con=sqlite_con,
-                                    pg=pg,
-                                    pg_schema=pg_schema,
-                                    rebuild=rebuild,
-                                    logger=logger)
+    #
+    # Extract metadata for each table in chat.db. If `rebuild` is True, then we get
+    # all data in chat.db. If False and we're inserting into Postgres, then we query
+    # each chat.db table in Postgres if it exists and only query the chat.db table
+    # above the maximum numerical index in the Postgres table. This drastically reduces
+    # the computational time required, because we only need to upload *new* data to
+    # Postgres, instead of refreshing the full tables on each run.
+    #
+    # Then save tables to .csv files.
+    #
 
-    # Save tables to .csv files
-    logger.info(f'Saving tables to {path(save_csv_dpath)}')
-    chat_db_extract.save_to_csv(dir_name=save_csv_dpath, logger=logger)
+    with open(cfg.file.chatdb_table_info, 'r') as json_file:
+        chatdb_table_info = json.load(json_file)
+
+    chatdb_tables = {}
+
+    for table_name in list(chatdb_table_info.keys()):
+        table_object = ChatDbTable(table_name=table_name, logger=logger, cfg=cfg)
+        table_object.get_shape(sqlite_con=chatdb.sqlite_con)
+
+        if cfg.pg_schema is not None:
+            table_object.build_pg_create_table_sql(sqlite_con=chatdb.sqlite_con)
+            max_pg_pkey_value_dct = table_object.query_primary_key_max_pg_values(pg=pg)
+        else:
+            max_pg_pkey_value_dct = None
+
+        output_csv_fpath = join(save_csv_dpath, table_name + '.csv')
+        table_object.save_to_csv(output_fpath=output_csv_fpath,
+                                 sqlite_con=chatdb.sqlite_con,
+                                 max_pg_pkey_values=max_pg_pkey_value_dct)
+
+        file_size_str = human_filesize(stat(output_csv_fpath).st_size)
+        chatdb_tables[table_name] = table_object
+        logger.info(
+            f"""Saved SQLite:{bold(table_name)} to {path(table_name + '.csv')}
+            ({file_size_str}), shape {table_object.shape}
+            """, arrow='white')
 
     #
     # Refresh target Postgres schema
     #
 
-    if pg_schema is not None:
+    if cfg.pg_schema is not None:
         # Drop all objects in the Postgres schema in order to rebuild it from scratch
-        if rebuild:
-            pg.drop_schema(pg_schema, if_exists=True, cascade=True)
-            pg.create_schema(pg_schema)
-            # pg.drop_schema_and_recreate(pg_schema, if_exists=True, cascade=True)  # TODO: uncomment on new pydoni release
+        if cfg.rebuild:
+            pg.drop_schema(cfg.pg_schema, if_exists=True, cascade=True)
+            pg.create_schema(cfg.pg_schema)
+            # TODO: uncomment on new pydoni release
+            # pg.drop_schema_and_recreate(pg_schema, if_exists=True, cascade=True)
 
-            logger.info(f'Re-created schema from scratch')
-            logger.info(pydoni.advanced_strip(
-                f"""{bold("rebuild")} is set to {bold("False")},
-                so re-created schema "{bold(pg_schema)}" from scratch"""))
+            logger.info(advanced_strip(
+                f"""Parameter {code("rebuild")} is set to {bold("True")},
+                so re-created schema "{bold(cfg.pg_schema)}" from scratch"""))
         else:
             # Drop views in the Postgres schema since they may be dependent on tables
             # that require rebuilding. They will all be re-created later
-            logger.info(pydoni.advanced_strip(
-                f'''{bold("rebuild")} is set to {bold("False")},
-                so only appending new information from chat.db to "{bold(pg_schema)}"'''))
+            logger.info(advanced_strip(
+                f'''Parameter {code("rebuild")} is set to {bold("False")},
+                so only appending new information from chat.db to "{bold(cfg.pg_schema)}"'''))
 
-            vw_names = list_view_names(vw_def_dpath)
-            for vw_name in vw_names:
+            with open(cfg.file.chatdb_view_info, 'r') as json_file:
+                chatdb_view_info = json.load(json_file)
+
+            for vw_name, vw_info in chatdb_view_info.items():
                 logger.debug(f'Dropping view {bold(vw_name)}')
-                view = View(pg_schema=pg_schema, vw_name=vw_name, pg=pg, logger=logger)
-                view.drop(if_exists=True, cascade=True)
+                view = ChatDbView(vw_name=vw_name, vw_info=vw_info, logger=logger, cfg=cfg)
+                view.check_references(pg=pg)
+                view.drop(pg=pg, if_exists=True, cascade=True)
 
         #
         # chat.db tables
         #
 
-        logger.info(f'Saving tables to schema "{bold(pg_schema)}"')
-        chat_db_extract.save_to_postgres(pg=pg, pg_schema=pg_schema, logger=logger)
+        logger.info(f'Saving tables to schema "{bold(cfg.pg_schema)}"')
+
+        """
+        Save all tables to Postgres in such an order that foreign keys are resolved correctly.
+        For example, if a table depends on another table, then the other table must be created
+        before the dependent table.
+        """
+        inserted_journal = []  # Keep a log of all tables that have been saved to Postgres
+
+        while len(inserted_journal) < len(chatdb_tables):
+            for table_name, table_object in chatdb_tables.items():
+                if cfg.rebuild or table_object.write_mode == 'replace':
+                    participle = 'Rebuilt'
+                else:
+                    participle = 'Refreshed'
+
+                if table_name not in inserted_journal:
+                    if table_object.references is not None:
+                        if len([t for t in table_object.references if t not in inserted_journal]):
+                            # There is still one or more reference table that has not yet
+                            # been saved to Postgres. Continue to the next table.
+                            continue
+                        else:
+                            # All necessary reference tables for `table_name` have already
+                            # been saved to Postgres, so we can now insert this table
+                            table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
+                            inserted_journal.append(table_name)
+                            logger.info(f'{participle} Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='cyan')
+                    else:
+                        # No references found for this table, we can insert it right away
+                        # since there are no dependencies to worry about
+                        table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
+                        inserted_journal.append(table_name)
+                        logger.info(f'{participle} Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='cyan')
+                else:
+                    # This table has already been saved to Postgres, so we can skip it
+                    pass
 
         #
         # Custom tables
         #
 
-        build_custom_tables(logger=logger, pg=pg, pg_schema=pg_schema)
+        build_custom_tables(pg=pg,
+                            logger=logger,
+                            cfg=cfg)
 
         #
         # Chat.db dependent views
         #
 
-        vw_names = list_view_names(vw_def_dpath)
+        # for vw_name, vw_info in cfg.file.staging_view_info.items():
         validate_vw_info(vw_names)
         logger.debug('View .sql files validated and are compatible with vw_info_*.json files')
 
@@ -343,7 +263,7 @@ def go(chat_db_path,
         chatdb_dependent_vw_names = [x for x in vw_names if x in vw_info_chatdb_dependent]
 
         for vw_name in chatdb_dependent_vw_names:
-            view = View(pg_schema=pg_schema, vw_name=vw_name, pg=pg, logger=logger)
+            view = View(pg_schema=cfg.pg_schema, vw_name=vw_name, pg=pg, logger=logger)
             view.create(cascade=True)
 
         #
@@ -362,7 +282,7 @@ def go(chat_db_path,
         #
         #
 
-        build_staging_tables(pg=pg, pg_schema=pg_schema, logger=logger)
+        build_staging_tables(pg=pg, pg_schema=cfg.pg_schema, logger=logger)
 
         #
         # Staging table dependent views
@@ -373,10 +293,10 @@ def go(chat_db_path,
 
     logger.info('Cleanup')
 
-    if save_csv is None:
+    if cfg.save_csv is None:
         shutil.rmtree(save_csv_dpath)
         logger.info(f'Removed temporary directory {path(save_csv_dpath)}', arrow='red')
 
-    diff_formatted = pydoni.fmt_seconds(time.time() - start_ts, units='auto', round_digits=2)
+    diff_formatted = fmt_seconds(time.time() - start_ts, units='auto', round_digits=2)
     elapsed_time = f"{diff_formatted['value']} {diff_formatted['units']}"
     logger.info(f'iMessage Extractor workflow completed in {elapsed_time}')

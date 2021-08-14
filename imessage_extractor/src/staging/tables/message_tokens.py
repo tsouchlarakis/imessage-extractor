@@ -3,7 +3,7 @@ import logging
 import nltk
 import pandas as pd
 import pydoni
-from ....verbosity import bold
+from ...helpers.verbosity import bold
 from ..common import columns_match_expectation
 
 

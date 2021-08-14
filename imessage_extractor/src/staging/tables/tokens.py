@@ -1,10 +1,8 @@
 import logging
-
-import emoji
 import nltk
 import pydoni
 import string
-from ....verbosity import bold
+from ...helpers.verbosity import bold
 from ..common import columns_match_expectation
 from nltk.corpus import stopwords
 
