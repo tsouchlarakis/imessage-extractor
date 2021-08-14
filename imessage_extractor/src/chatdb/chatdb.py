@@ -1,17 +1,15 @@
-import click
 import json
 import logging
 import pandas as pd
+import pathlib
 import re
 import sqlite3
-import pathlib
 import typing
 from ..helpers.config import WorkflowConfig
 from ..helpers.verbosity import bold, path, code
-# from ..staging.staging import StagingView
 from os import stat
 from os.path import isfile, join, expanduser
-from pydoni import advanced_strip, Postgres, ensurelist, human_filesize
+from pydoni import advanced_strip, Postgres, ensurelist
 
 
 def parse_pg_credentials(pg_credentials: typing.Union[str, pathlib.Path]) -> tuple:
@@ -572,28 +570,3 @@ class View(object):
                     pg.execute(self.def_sql)
                     self.logger.debug('Created all nonexistent references and defined view successfully')
                     self.logger.info(f'Defined Postgres:"{bold(self.cfg.pg_schema)}"."{bold(self.vw_name)}"', arrow='cyan')
-
-
-# class ChatDbView(View):
-#     """
-#     Store information and operations on a target Postgres iMessage database view
-#     based only on chat.db and/or custom tables.
-#     """
-#     def __init__(self,
-#                  vw_name: str,
-#                  vw_info: dict,
-#                  logger: logging.Logger,
-#                  cfg: 'WorkflowConfig') -> None:
-#         self.vw_name = vw_name
-#         self.logger = logger
-#         self.cfg = cfg
-#         self.def_fpath = join(self.cfg.dir.chatdb_views, self.vw_name + '.sql')
-#         self.def_sql = self.read_def_sql(self.def_fpath)
-
-#         View.__init__(self,
-#                       vw_name=self.vw_name,
-#                       vw_info=vw_info,
-#                       logger=self.logger,
-#                       cfg=self.cfg)
-
-#         self._validate_view_definition()

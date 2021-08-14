@@ -193,7 +193,7 @@ def go(chat_db_path,
 
             for vw_name, vw_info in chatdb_view_info.items():
                 logger.debug(f'Dropping view {bold(vw_name)}')
-                view = ChatDbView(vw_name=vw_name, vw_info=vw_info, logger=logger, cfg=cfg)
+                view = View(vw_name=vw_name, vw_type='chatdb', logger=logger, cfg=cfg)
                 view.check_references(pg=pg)
                 view.drop(pg=pg, if_exists=True, cascade=True)
 
@@ -281,13 +281,13 @@ def go(chat_db_path,
         #
         #
 
-        exit()
-
-        build_staging_tables(pg=pg, pg_schema=cfg.pg_schema, logger=logger)
+        build_staging_tables(pg=pg, logger=logger, cfg=cfg)
 
         #
         # Staging table dependent views
         #
+
+        exit()
 
     else:
         logger.info('User opted not to save tables to a Postgres database')
