@@ -145,7 +145,7 @@ def refresh_message_tokens(pg: pydoni.Postgres,
       {and_condition}
     order by m.message_id
     """
-    message = pg.read_sql(sql).head(100)  # TODO: remove this limit
+    message = pg.read_sql(sql)
     logger.debug(f'Tokenizing {len(message)} messages')
 
     if isinstance(batch_size, int):
