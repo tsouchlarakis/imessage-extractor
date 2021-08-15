@@ -3,11 +3,11 @@ import logging
 import typing
 from collections import OrderedDict
 from numpy import e
+from ..chatdb.chatdb import View
 from ..helpers.config import WorkflowConfig
 from ..helpers.verbosity import bold, path
 from .tables.emoji_text_map import refresh_emoji_text_map
 from .tables.message_tokens import refresh_message_tokens
-from .tables.stats_by_contact import refresh_stats_by_contact
 from .tables.tokens import refresh_tokens
 from os.path import basename
 from pydoni import Postgres, advanced_strip, ensurelist
@@ -19,9 +19,9 @@ class StagingTable(object):
     data has been loaded into Postgres.
     """
     def __init__(self,
-                 pg: Postgres,
                  table_name: str,
                  refresh_function: typing.Callable,
+                 pg: Postgres,
                  logger: logging.Logger,
                  cfg: 'WorkflowConfig') -> None:
         self.pg = pg
@@ -29,6 +29,8 @@ class StagingTable(object):
         self.refresh_function = refresh_function
         self.logger = logger
         self.cfg = cfg
+
+        self.logger.debug(f'Initializing staging table {self.table_name}')
 
         with open(self.cfg.file.staging_table_info) as f:
             json_data = json.load(f)
@@ -41,24 +43,24 @@ class StagingTable(object):
 
         self.columnspec = json_data['columnspec']
         self.primary_key = json_data['primary_key']
-        self.references = json_data['references']
-        self.check_references(self.references)
+        self.reference = json_data['reference']
+        self.check_references(self.reference)
 
         assert isinstance(self.columnspec, dict), \
             f'Columnspec for {self.table_name} must be a dictionary'
         assert isinstance(self.primary_key, str) or isinstance(self.primary_key, list), \
             f'Primary key for {self.table_name} must be a string or list'
-        assert self.references is None or isinstance(self.references, list), \
+        assert self.reference is None or isinstance(self.reference, list), \
             f'References for {self.table_name} must be None or a list'
 
-    def check_references(self, references) -> None:
+    def check_references(self, reference) -> None:
         """
         Return True if all reference objects exist in Postgres schema, and return
         an error otherwise.
         """
-        if isinstance(references, list):
+        if isinstance(reference, list):
             missing_refs = []
-            for ref in references:
+            for ref in reference:
                 if not self.pg.table_or_view_exists(self.cfg.pg_schema, ref):
                     missing_refs.append(ref)
 
@@ -79,29 +81,28 @@ class StagingTable(object):
                               logger=self.logger)
 
 
-def build_staging_tables(pg: Postgres, logger: logging.Logger, cfg: WorkflowConfig) -> None:
-    """
-    Build each staged table sequentially. Import each table's refresh function into
-    this script, and add an entry in the `refresh_map` for each table that you'd
-    like to refresh.
-    """
-    logger.info('Building staging tables')
+# def build_staging_tables(pg: Postgres, logger: logging.Logger, cfg: WorkflowConfig) -> None:
+#     """
+#     Build each staged table sequentially. Import each table's refresh function into
+#     this script, and add an entry in the `refresh_map` for each table that you'd
+#     like to refresh.
+#     """
+#     logger.info('Building staging tables')
 
-    refresh_map = dict(
-        emoji_text_map=refresh_emoji_text_map,
-        message_tokens=refresh_message_tokens,
-        tokens=refresh_tokens,
-        # stats_by_contact=refresh_stats_by_contact,
-    )
+#     refresh_map = dict(
+#         emoji_text_map=refresh_emoji_text_map,
+#         message_tokens=refresh_message_tokens,
+#         tokens=refresh_tokens,
+#     )
 
-    for table_name, refresh_function in refresh_map.items():
-        table_obj = StagingTable(pg=pg,
-                                 table_name=table_name,
-                                 refresh_function=refresh_function,
-                                 logger=logger,
-                                 cfg=cfg)
+#     for table_name, refresh_function in refresh_map.items():
+#         table_obj = StagingTable(pg=pg,
+#                                  table_name=table_name,
+#                                  refresh_function=refresh_function,
+#                                  logger=logger,
+#                                  cfg=cfg)
 
-        table_obj.refresh()
+#         table_obj.refresh()
 
 
 def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Logger) -> OrderedDict:
@@ -132,7 +133,7 @@ def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Lo
 
     object_info_nonexistent_refs = {}
     for obj_name, obj_info in object_info.items():
-        if not obj_info['exists']:
+        if not obj_info['exists'] or obj_info['type'] == 'table':
             object_info_nonexistent_refs[obj_name] = dict(type=obj_info['type'], reference={})
             if obj_info['reference'] is not None:
                 reference = ensurelist(obj_info['reference'])
@@ -205,3 +206,54 @@ def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Lo
                     pass
 
     return staging_order
+
+
+def build_staging_tables_and_views(staging_order: OrderedDict,
+                                   pg: Postgres,
+                                   logger: logging.Logger,
+                                   cfg: WorkflowConfig) -> None:
+    """
+    Build each object specified in `staging_order` sequentially. Objects may be
+    tables or views.
+    """
+    if len(staging_order):
+        table_refresh_functions = dict(
+            emoji_text_map=refresh_emoji_text_map,
+            message_tokens=refresh_message_tokens,
+            tokens=refresh_tokens,
+        )
+
+        for item_name, item_type in staging_order.items():
+            if item_type == 'table':
+                if item_name not in table_refresh_functions:
+                    raise ValueError(advanced_strip(
+                        f"""Attempting to refresh table {bold(item_name)} (found in
+                        staging_table_info.json) but corresponding refresh function
+                        not found in `table_refresh_functions` dictionary. Please add
+                        the function to the `table_refresh_functions` dictionary, or remove
+                        it from staging_table_info.json.
+                        """))
+
+                table_object = StagingTable(
+                    table_name=item_name,
+                    refresh_function=table_refresh_functions[item_name],
+                    pg=pg,
+                    logger=logger,
+                    cfg=cfg
+                )
+
+                table_object.refresh()
+
+            elif item_type == 'view':
+                logger.info(f'Defining view "{bold(cfg.pg_schema)}"."{bold(item_name)}"', arrow='green')
+
+                view_object = View(
+                    vw_name=item_name,
+                    vw_type='staging',
+                    logger=logger,
+                    cfg=cfg
+                )
+
+                view_object.create(pg=pg, cascade=False)
+    else:
+        logger.warning('No staging tables or view definitions found')

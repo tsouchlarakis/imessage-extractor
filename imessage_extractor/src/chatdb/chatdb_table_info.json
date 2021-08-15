@@ -2,81 +2,81 @@
     "_SqliteDatabaseProperties": {
         "write_mode": "replace",
         "primary_key": "key",
-        "references": null
+        "reference": null
     },
     "attachment": {
         "write_mode": "append",
         "primary_key": "ROWID",
-        "references": null
+        "reference": null
     },
     "chat": {
         "write_mode": "append",
         "primary_key": "ROWID",
-        "references": null
+        "reference": null
     },
     "chat_handle_join": {
         "write_mode": "replace",
         "primary_key": ["chat_id", "handle_id"],
-        "references": ["chat", "handle"]
+        "reference": ["chat", "handle"]
     },
     "chat_message_join": {
         "write_mode": "append",
         "primary_key": "message_id",
-        "references": ["chat", "message"]
+        "reference": ["chat", "message"]
     },
     "deleted_messages": {
         "write_mode": "replace",
         "primary_key": "ROWID",
-        "references": null
+        "reference": null
     },
     "handle": {
         "write_mode": "append",
         "primary_key": "ROWID",
-        "references": null
+        "reference": null
     },
     "kvtable": {
         "write_mode": "replace",
         "primary_key": "ROWID",
-        "references": null
+        "reference": null
     },
     "message": {
         "write_mode": "append",
         "primary_key": "ROWID",
-        "references": null
+        "reference": null
     },
     "message_attachment_join": {
         "write_mode": "append",
         "primary_key": ["message_id", "attachment_id"],
-        "references": ["message", "attachment"]
+        "reference": ["message", "attachment"]
     },
     "message_processing_task": {
         "write_mode": "append",
         "primary_key": "ROWID",
-        "references": null
+        "reference": null
     },
     "sqlite_sequence": {
         "write_mode": "replace",
         "primary_key": "name",
-        "references": null
+        "reference": null
     },
     "sqlite_stat1": {
         "write_mode": "replace",
         "primary_key": ["tbl", "idx"],
-        "references": null
+        "reference": null
     },
     "sync_deleted_attachments": {
         "write_mode": "append",
         "primary_key": "ROWID",
-        "references": null
+        "reference": null
     },
     "sync_deleted_chats": {
         "write_mode": "append",
         "primary_key": "ROWID",
-        "references": null
+        "reference": null
     },
     "sync_deleted_messages": {
         "write_mode": "append",
         "primary_key": "ROWID",
-        "references": null
+        "reference": null
     }
 }

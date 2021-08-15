@@ -7,7 +7,6 @@ import sqlite3
 import typing
 from ..helpers.config import WorkflowConfig
 from ..helpers.verbosity import bold, path, code
-from os import stat
 from os.path import isfile, join, expanduser
 from pydoni import advanced_strip, Postgres, ensurelist
 
@@ -176,7 +175,7 @@ class ChatDbTable(object):
 
         def _add_schema_and_quotes_to_reference(column_defs_lst: list, pg_schema: str) -> list:
             """
-            Make sure all tables named in the REFERENCES portion of a columns's datatype string
+            Make sure all tables named in the REFERENCE portion of a columns's datatype string
             have the schema attached. In SQLite, all tables are referenced simply by their name
             but in Postgres we're loading data into a particular schema.
             """
@@ -427,7 +426,7 @@ class View(object):
 
         elif vw_type == 'staging':
             self.def_fpath = join(self.cfg.dir.staging_views, self.vw_name + '.sql')
-            with open(self.cfg.file.staging_vw_info, 'r') as f:
+            with open(self.cfg.file.staging_view_info, 'r') as f:
                 vw_info = json.load(f)
 
         else:
@@ -460,13 +459,18 @@ class View(object):
             raise FileNotFoundError(advanced_strip(
                 f"View definition {bold(self.vw_name)} expected at {path(self.def_fpath)}"))
 
-        with open(self.cfg.file.chatdb_view_info, 'r') as f:
+        if self.vw_type == 'staging':
+            vw_info_fpath = self.cfg.file.staging_view_info
+        elif self.vw_type == 'chatdb':
+            vw_info_fpath = self.cfg.file.chatdb_view_info
+
+        with open(vw_info_fpath, 'r') as f:
             vw_info = json.load(f)
 
         if self.vw_name not in vw_info:
             raise ValueError(advanced_strip(
-                f"""View definition {bold(self.vw_name)}
-                expected as key: value pair in {path(self.cfg.file.chatdb_view_info)}"""))
+                f"""View definition {bold(self.vw_name)} expected as key: value
+                pair in {path(vw_info_fpath)}"""))
 
     def read_def_sql(self, def_fpath: str) -> str:
         """

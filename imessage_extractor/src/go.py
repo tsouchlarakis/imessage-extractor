@@ -6,10 +6,10 @@ import shutil
 import time
 from pydoni import advanced_strip, fmt_seconds, human_filesize, Postgres
 from .chatdb.chatdb import ChatDb, ChatDbTable, View, parse_pg_credentials
-from .custom_tables.custom_tables import CustomTable, build_custom_tables
+from .custom_tables.custom_tables import build_custom_tables
 from .helpers.config import WorkflowConfig
 from .helpers.verbosity import print_startup_message, logger_setup, path, bold, code
-from .staging.staging import build_staging_tables, assemble_staging_order
+from .staging.staging import assemble_staging_order, build_staging_tables_and_views
 from os import makedirs, stat
 from os.path import expanduser, isdir, join
 
@@ -227,8 +227,8 @@ def go(chat_db_path,
                     participle = 'Refreshed'
 
                 if table_name not in inserted_journal:
-                    if table_object.references is not None:
-                        if len([t for t in table_object.references if t not in inserted_journal]):
+                    if table_object.reference is not None:
+                        if len([t for t in table_object.reference if t not in inserted_journal]):
                             # There is still one or more reference table that has not yet
                             # been saved to Postgres. Continue to the next table.
                             continue
@@ -258,7 +258,7 @@ def go(chat_db_path,
         # Chat.db dependent views
         #
 
-        logger.info(f'Defining Postgres views that are only dependent on chat.db tables')
+        logger.info(f'Defining views that are only dependent on chat.db tables')
 
         with open(cfg.file.chatdb_view_info, 'r') as f:
             chatdb_vw_info = json.load(f)
@@ -269,7 +269,7 @@ def go(chat_db_path,
                     view.create(pg=pg, cascade=True)
 
         #
-        # Staging tables
+        # Staging tables and views
         #
         # At this point in the workflow, all data from chat.db has been loaded into Postgres
         # and custom tables (which are overwritten with each run of the workflow) have been
@@ -282,22 +282,16 @@ def go(chat_db_path,
         # view. Because dependencies among staging tables and views may be of arbitrary depth,
         # they require a specific order in which they may be defined.
         #
-        #
 
-        # build_staging_tables(pg=pg, logger=logger, cfg=cfg)
+        logger.info(f'Staging Postgres tables and views')
 
         staging_order = assemble_staging_order(pg=pg, cfg=cfg, logger=logger)
+        logger.info(f'Staging order: {list(staging_order.keys())}')
 
-        if cfg.rebuild:
-            # Create each object in the `staging_order` in order
-            pass
-
-        else:
-            # If we're not refreshing the pipeline, then the staging tables should
-            # already exist. Verify to make sure that is the case, then we can
-            # refresh the staging tables then re-create the views.
-            pass
-
+        build_staging_tables_and_views(staging_order=staging_order,
+                                       pg=pg,
+                                       logger=logger,
+                                       cfg=cfg)
 
     else:
         logger.info('User opted not to save tables to a Postgres database')
