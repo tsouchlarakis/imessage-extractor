@@ -124,7 +124,7 @@ def refresh_message_tokens(pg: pydoni.Postgres,
     """
     logger.info(f'Refreshing "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
 
-    batch_size = 1500
+    batch_size = 2000
     logger.debug(f'Batch size: {bold(batch_size)}')
 
     if pg.table_exists(pg_schema, table_name):
@@ -182,18 +182,18 @@ def refresh_message_tokens(pg: pydoni.Postgres,
                     in staging_table_info.json for table {bold(table_name)}. Columns should be:
                     [message_id, token_idx, token, pos, pos_simple]."""))
 
-        # Make doubly sure that we're not attempting to insert any duplicate records (in case
-        # the message_tokens table might have changed from the start to finish of this command)
-        if pg.table_exists(pg_schema, table_name):
-            existing_message_tokens = pg.read_table(pg_schema, table_name)
-            message_tokens = message_tokens.loc[~message_tokens['message_id'].isin(existing_message_tokens['message_id'])]
+    # Make doubly sure that we're not attempting to insert any duplicate records (in case
+    # the message_tokens table might have changed from the start to finish of this command)
+    if pg.table_exists(pg_schema, table_name):
+        existing_message_tokens = pg.read_table(pg_schema, table_name)
+        message_tokens = message_tokens.loc[~message_tokens['message_id'].isin(existing_message_tokens['message_id'])]
 
-        columns_match_expectation(message_tokens, table_name, columnspec)
-        message_tokens.to_sql(name=table_name,
-                              con=pg.dbcon,
-                              schema=pg_schema,
-                              index=False,
-                              if_exists='append')
+    columns_match_expectation(message_tokens, table_name, columnspec)
+    message_tokens.to_sql(name=table_name,
+                          con=pg.dbcon,
+                          schema=pg_schema,
+                          index=False,
+                          if_exists='append')
 
     if len(message_tokens):
         participle = 'Rebuilt' if rebuild else 'Appended'
