@@ -57,7 +57,7 @@ Options
 ~~~~~~~
 
 .. list-table:: Commandline Options
-   :widths: 25 15 18 9 50
+   :widths: 40 15 18 9 50
    :header-rows: 1
 
    * - Option
