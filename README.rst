@@ -1,5 +1,12 @@
 .. image:: graphics/imessage_extractor_logo.png
 
+.. role:: raw-html(raw)
+    :format: html
+
+Extract local iMessage data to a Postgres database or flat textfiles on a Mac.
+
+:raw-html:`<br />`
+
 .. image:: https://img.shields.io/pypi/v/imessage_extractor.svg
         :target: https://pypi.python.org/pypi/imessage_extractor
 
@@ -10,7 +17,7 @@
         :target: https://imessage-extractor.readthedocs.io/en/latest/?version=latest
         :alt: Documentation Status
 
-Extract local iMessage data to a Postgres database or flat textfiles on a Mac.
+:raw-html:`<br />`
 
 🏁 Getting Started
 ==================
@@ -26,7 +33,7 @@ Extract local iMessage data to a Postgres database or flat textfiles on a Mac.
 
 
 ⚙️ Installation
---------------
+---------------
 
 .. code-block:: bash
 
@@ -50,8 +57,7 @@ First, you'll want to make sure you have the iMessage SQLite database, called **
 
 Or by just navigating to that directory in Finder, and seeing whether a file called **chat.db** exists 🙂
 
-A call to the extractor will involve the following commands (examples below):
-
+A call to the extractor can involve the following options (examples below):
 
 .. list-table:: Commandline Options
    :header-rows: 1
