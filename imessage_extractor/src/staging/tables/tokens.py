@@ -38,17 +38,18 @@ def refresh_tokens(pg: pydoni.Postgres,
         # it exists
         rebuild = False
         join_clause = f'left join {pg_schema}.{table_name} e on lower(m."token") = lower(e."token")'
-        where_clause = 'and e."token" is null  -- Not in existing tokens table'
+        where_clause = 'where e."token" is null  -- Not in existing tokens table'
     else:
         rebuild = True
         join_clause = ''
         where_clause = ''
 
-    new_tokens = pg.read_sql(f"""
+    query_sql = f"""
     select distinct lower(m.token) as "token"
     from {pg_schema}.{message_tokens_table_name} m
     {join_clause}
-    {where_clause}""", simplify=False)  # Returns a dataframe with one column
+    {where_clause}"""
+    new_tokens = pg.read_sql(query_sql, simplify=False)  # Returns a dataframe with one column
     logger.debug(f'Gathering information by token for {len(new_tokens)} new, unique tokens')
 
     emoji_text_map = pg.read_table(pg_schema, emoji_text_map_table_name)[['emoji']]
