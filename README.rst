@@ -55,8 +55,8 @@ Or by just navigating to that directory in Finder, and seeing whether a file cal
 
 A call to the extractor will involve the following commands (examples below):
 
+
 .. list-table:: Commandline Options
-   :widths: 35 15 20 10 40
    :header-rows: 1
 
    * - Option
@@ -146,6 +146,8 @@ Here are a few ways we can tell the extractor to load data into Postgres:
 
    # Or by passing the connection string
    imessage-extractor go --pg-credentials "<hostname>:<port>:<db_name>:<user_name>:<password>" --pg-schema "imessage"
+
+Lastly, we can append the ``--verbose`` option to get feedback printed to the console as the extraction is happening!
 
 🌈 Releasing
 ------------
