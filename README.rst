@@ -1,9 +1,4 @@
-==================
-iMessage Extractor
-==================
-
 .. image:: graphics/imessage_extractor_logo.png
-   :width: 600
 
 .. image:: https://img.shields.io/pypi/v/imessage_extractor.svg
         :target: https://pypi.python.org/pypi/imessage_extractor
