@@ -37,7 +37,6 @@ m_join_chat_contacts as (
               , m.ts
               , m.ts :: date as dt
               , m."text"
-              , length(m."text") as n_characters
               , m.service
               , m.is_from_me
               , case when m.associated__type in (2000, 2001, 2002, 2003, 2004, 2005, 3000, 3001, 3002, 3003, 3004, 3005) then true
@@ -91,15 +90,23 @@ select message_id
        , ts
        , dt
        , "text"
-       , n_characters
-       , case when is_emote = false and is_url = false and message_special_type is null then array_length(regexp_split_to_array("text", '\s+'), 1)
-              when is_empty then 0
+       , length(case when is_emote = false and is_url = false and is_empty = false and message_special_type is null
+                          then "text"
+                     else null
+                end) as n_characters
+       , case when is_emote = false and is_url = false and message_special_type is null
+                   then array_length(regexp_split_to_array("text", '\s+'), 1)
+              when is_empty
+                   then 0
               else null
          end as n_tokens
        , service
        , is_from_me
        , is_group_chat
-       , case when is_emote = false and is_url = false and is_empty = false then true else false end as is_text
+       , case when is_emote = false and is_url = false and is_empty = false and message_special_type is null
+                   then true
+              else false
+         end as is_text
        , is_empty
        , is_emote
        , message_special_type
