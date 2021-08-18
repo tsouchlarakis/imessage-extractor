@@ -2,6 +2,8 @@
 iMessage Extractor
 ==================
 
+.. image:: graphics/imessage_extractor_logo.png
+   :width: 600
 
 .. image:: https://img.shields.io/pypi/v/imessage_extractor.svg
         :target: https://pypi.python.org/pypi/imessage_extractor
@@ -28,14 +30,14 @@ Extract local iMessage data to a Postgres database or flat textfiles on a Mac.
 * pip
 
 
-⚒ Installation
+⚙️ Installation
 --------------
 
 .. code-block:: bash
 
    pip install imessage-extractor
 
-It really is that simple ✔️
+It really is that simple ✨
 
 ⚡️ Usage
 ---------
@@ -83,7 +85,7 @@ A call to the extractor will involve the following commands (examples below):
      - string, path
      -
      - Optional
-     - EITHER the path to a local Postgres credentials file 'i.e. ~/.pgpass', OR a string with the    connection credentials. Must be in format 'hostname:port:db_name:user:pg_pass'.
+     - EITHER the path to a local Postgres credentials file 'i.e. ~/.pgpass', OR a string with the    connection credentials. Must be in format ``hostname:port:db_name:user:pg_pass``.
    * - -r, --rebuild
      - bool
      - False
@@ -176,7 +178,7 @@ Lastly, we can append the ``--verbose`` option to get feedback printed to the co
 
 5. Create a `pull request <https://github.com/tsouchlarakis/imessage-extractor/pulls>`_.
 
-⚙️ Customization
+⚒ Customization
 ================
 
 Here's where the fun begins! Because the use case for each user's iMessage history is slightly different, making custom changes to your local installation of ``imessage-extractor`` is encouraged and easy.
