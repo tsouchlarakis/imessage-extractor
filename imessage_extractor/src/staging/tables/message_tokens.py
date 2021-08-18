@@ -124,7 +124,7 @@ def refresh_message_tokens(pg: pydoni.Postgres,
     """
     logger.info(f'Refreshing "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
 
-    batch_size = 2000
+    batch_size = None
     logger.debug(f'Batch size: {bold(batch_size)}')
 
     if pg.table_exists(pg_schema, table_name):
@@ -158,7 +158,9 @@ def refresh_message_tokens(pg: pydoni.Postgres,
     total_tokens_inserted = 0
     message_tokens = pd.DataFrame(columns=[k for k, v in columnspec.items()])
     for i, targets in enumerate(target_indices):
-        logger.debug(f'Tokenizing batch {i + 1} of {len(target_indices)}')
+        if isinstance(batch_size, int):
+            logger.debug(f'Tokenizing batch {i + 1} of {len(target_indices)}')
+
         message_subset = message.loc[message.index.isin(targets)]
 
         for i, row in message_subset.iterrows():
