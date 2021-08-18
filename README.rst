@@ -20,23 +20,25 @@ Extract local iMessage data to a Postgres database or flat textfiles on a Mac.
 
 ``imessage-extractor`` is a pip-installable python package designed to be run on macOS that extracts iMessage chat data stored locally in a SQLite database by macOS, and saves it to an array of flat .csv files or a Postgres database, or both.
 
-Prerequisites
--------------
+🧿 Prerequisites
+----------------
 
 * macOS
 * Python 3.X
 * pip
 
 
-Installation
-------------
+⚒ Installation
+--------------
 
 .. code-block:: bash
 
    pip install imessage-extractor
 
-Usage
------
+It really is that simple ✔️
+
+⚡️ Usage
+-------
 
 First, you'll want to make sure you have the iMessage SQLite database, called ``chat.db``, stored locally. By default on macOS, this database is stored in the ``~/Library/Messages`` directory. You can verify that it's there by runnning the following command:
 
@@ -111,8 +113,8 @@ Options
 
 *Note that while --save-csv and pg-schema are both optional, at least one of them must be specified to run the extraction beacuse the program must have an output destination (either flat .csv files, a Postgres schema, or both).*
 
-Releasing
----------
+🌈 Releasing
+------------
 
 ``imessage-extractor`` utilizes `versioneer <https://pypi.org/project/versioneer/>`_ for versioning. This requires the ``versioneer.py`` in the project's top-level directory, as well as some lines in the package's ``setup.cfg`` and ``__init__.py``.
 
@@ -138,23 +140,23 @@ Releasing
 
 5. Create a `pull request <https://github.com/tsouchlarakis/imessage-extractor/pulls>`_.
 
-Customization
-=============
+⚙️ Customization
+===============
 
 Here's where the fun begins! Because the use case for each user's iMessage history is slightly different, making custom changes to your local installation of ``imessage-extractor`` is encouraged and easy.
 
-Changelog
-=========
+⤴️ Changelog
+============
 
 See `changelog <Changelog.rst>`_.
 
-License
-=======
+📜 License
+==========
 
 See `license <LICENSE>`_.
 
-Credits
--------
+🙏 Credits
+----------
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
