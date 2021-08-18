@@ -14,42 +14,7 @@ from os import makedirs, stat
 from os.path import expanduser, isdir, join
 
 
-# vw_dpath = abspath(join(dirname(__file__), 'views'))
-# vw_def_dpath = join(vw_dpath, 'definitions')
-# custom_table_dpath = abspath(join(dirname(__file__), '..', 'custom_tables'))
 logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
-
-
-# def validate_vw_info(vw_names: str) -> None:
-#     """
-#     Validate that the .sql view files in the `vw_def_dpath` folder are compatible with
-#     corresponding view metadata in the vw_info_*.json files.
-#     """
-#     # Views that can be defined after chat.db tables are loaded
-#     with open(join(vw_dpath, 'view_info_chatdb_dependent.json'), 'r') as f:
-#         vw_info_chat_db_dependent = json.load(f)
-
-#     # Views that depend on tables created downstream in this pipeline
-#     with open(join(vw_dpath, 'view_info_staging_dependent.json'), 'r') as f:
-#         vw_info_staging_dependent = json.load(f)
-
-#     # Validate that all views defined in vw_info*.json also contain a definition .sql
-#     # file in the views/ folder, and that all views with definition .sql files in the
-#     # views/ folder also have a corresponding key in the vw_info*.json file.
-
-#     for vw_name in vw_names:
-#         view_names_all = list(vw_info_chat_db_dependent.keys()) + list(vw_info_staging_dependent.keys())
-#         if vw_name not in view_names_all:
-#             raise ValueError(advanced_strip(
-#                 f"""View definition {bold(vw_name)} found at
-#                 {path(join(vw_def_dpath, vw_name + ".sql"))}
-#                 but not accounted for in {path("view_info.json")}"""))
-
-#     for vw_name in view_names_all:
-#         if vw_name not in vw_names:
-#             raise ValueError(advanced_strip(
-#                 f"""View definition {bold(vw_name)} found in {path("view_info.json")}
-#                 but not accounted for at {path(join(vw_def_dpath, vw_name + ".sql"))}"""))
 
 
 @click.option('--chat-db-path', type=str, default=expanduser('~/Library/Messages/chat.db'),
@@ -64,6 +29,8 @@ logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
               be in format 'hostname:port:db_name:user:pg_pass'."""))
 @click.option('-r', '--rebuild', is_flag=True, default=False,
               help='Wipe target Postgres schema and rebuild from scratch.')
+@click.option('-s', '--stage', is_flag=True, default=False,
+              help='Build staging tables and views after the chat.db tables have been loaded')
 @click.option('-v', '--verbose', is_flag=True, default=False,
               help='Set logging level to INFO.')
 @click.option('--debug', is_flag=True, default=False,
@@ -75,6 +42,7 @@ def go(chat_db_path,
        pg_schema,
        pg_credentials,
        rebuild,
+       stage,
        verbose,
        debug) -> None:
     """
@@ -138,6 +106,8 @@ def go(chat_db_path,
     #
     # Then save tables to .csv files.
     #
+
+    logger.info(f'Saving chat.db tables to {path(save_csv_dpath)}')
 
     with open(cfg.file.chatdb_table_info, 'r') as json_file:
         chatdb_table_info = json.load(json_file)
@@ -268,30 +238,31 @@ def go(chat_db_path,
                     view = View(vw_name=vw_name, vw_type='chatdb', logger=logger, cfg=cfg)
                     view.create(pg=pg, cascade=True)
 
-        #
-        # Staging tables and views
-        #
-        # At this point in the workflow, all data from chat.db has been loaded into Postgres
-        # and custom tables (which are overwritten with each run of the workflow) have been
-        # build. In addition all views that are reliant ONLY on those chat.db tables have
-        # been defined.
-        #
-        # We'll now begin the process of defining staging tables and views, the dependencies
-        # for which are much more fluid, in that a staging view might be dependent on another
-        # staging table, which in turn might have a dependency on a different staging
-        # view. Because dependencies among staging tables and views may be of arbitrary depth,
-        # they require a specific order in which they may be defined.
-        #
+        if cfg.stage:
+            #
+            # Staging tables and views
+            #
+            # At this point in the workflow, all data from chat.db has been loaded into Postgres
+            # and custom tables (which are overwritten with each run of the workflow) have been
+            # build. In addition all views that are reliant ONLY on those chat.db tables have
+            # been defined.
+            #
+            # We'll now begin the process of defining staging tables and views, the dependencies
+            # for which are much more fluid, in that a staging view might be dependent on another
+            # staging table, which in turn might have a dependency on a different staging
+            # view. Because dependencies among staging tables and views may be of arbitrary depth,
+            # they require a specific order in which they may be defined.
+            #
 
-        logger.info(f'Staging Postgres tables and views')
+            logger.info(f'Staging Postgres tables and views')
 
-        staging_order = assemble_staging_order(pg=pg, cfg=cfg, logger=logger)
-        logger.info(f'Staging order: {list(staging_order.keys())}')
+            staging_order = assemble_staging_order(pg=pg, cfg=cfg, logger=logger)
+            logger.info(f'Staging order: {list(staging_order.keys())}')
 
-        build_staging_tables_and_views(staging_order=staging_order,
-                                       pg=pg,
-                                       logger=logger,
-                                       cfg=cfg)
+            build_staging_tables_and_views(staging_order=staging_order,
+                                           pg=pg,
+                                           logger=logger,
+                                           cfg=cfg)
 
     else:
         logger.info('User opted not to save tables to a Postgres database')
