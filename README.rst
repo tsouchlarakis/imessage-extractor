@@ -187,7 +187,7 @@ Here's where the fun begins! Because the use case for each user's iMessage histo
 ⚓️ Changelog
 =============
 
-See `changelog <Changelog.rst>`_.
+See `changelog <CHANGELOG.rst>`_.
 
 📜 License
 ==========
