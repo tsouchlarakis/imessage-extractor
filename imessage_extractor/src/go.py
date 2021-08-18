@@ -33,7 +33,7 @@ logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
               help='Build staging tables and views after the chat.db tables have been loaded')
 @click.option('-v', '--verbose', is_flag=True, default=False,
               help='Set logging level to INFO.')
-@click.option('--debug', is_flag=True, default=False,
+@click.option('-d', '--debug', is_flag=True, default=False,
               help='Set logging level to DEBUG.')
 
 @click.command()
