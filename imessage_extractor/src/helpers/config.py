@@ -1,5 +1,6 @@
 import logging
-from os.path import dirname, basename, join, isdir, isfile, splitext
+from os.path import dirname, basename, join, isdir, isfile, splitext, expanduser
+from numpy import isin
 from pydoni import listfiles, ensurelist, duplicated
 from .verbosity import path, bold
 
@@ -18,6 +19,12 @@ class WorkflowConfig(object):
         self.logger = logger
         self._validate_commandline_params(params)
         self.__dict__.update(params)
+
+        if isinstance(self.pg_credentials, str):
+            self.pg_credentials = expanduser(self.pg_credentials)
+
+        if isinstance(self.save_csv, str):
+            self.save_csv = expanduser(self.save_csv)
 
         self.dir = Attribute()
         self.file = Attribute()
@@ -58,11 +65,11 @@ class WorkflowConfig(object):
         """
         if params['save_csv'] is None:
             if params['pg_schema'] is None:
-                raise ValueError('Must specify either --save-csv or --save-pg-schema')
+                raise ValueError('Must specify either --save-csv or --pg-schema')
 
         if (params['pg_schema'] is not None and params['pg_credentials'] is None) \
             or (params['pg_schema'] is None and params['pg_credentials'] is not None):
-                raise ValueError('Must specify both --pg-credentials and --save-pg-schema if one is specified')
+                raise ValueError('Must specify both --pg-credentials and --pg-schema if one is specified')
 
         # Log parameter values
         for name, value in params.items():

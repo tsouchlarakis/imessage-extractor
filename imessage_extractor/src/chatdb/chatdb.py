@@ -36,7 +36,7 @@ class ChatDb(object):
     Manage database connection to SQLite chat.db.
     """
     def __init__(self, chat_db_path: str, logger: logging.Logger) -> None:
-        self.chat_db_path = chat_db_path
+        self.chat_db_path = expanduser(chat_db_path)
         if not isfile(self.chat_db_path):
             raise FileNotFoundError(advanced_strip(
                 f"""Chat.db not found at {path(self.chat_db_path)}"""))

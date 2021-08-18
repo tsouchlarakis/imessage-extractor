@@ -23,7 +23,7 @@ logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
               help='Path to folder to save chat.db tables to.')
 @click.option('--pg-schema', type=str, default=None, required=False,
               help='Name of Postgres schema to save tables to.')
-@click.option('--pg-credentials', type=str, default=expanduser('~/.pgpass'), required=False,
+@click.option('--pg-credentials', type=str, default=None, required=False,
               help=advanced_strip("""EITHER the path to a local Postgres credentials
               file 'i.e. ~/.pgpass', OR a string with the connection credentials. Must
               be in format 'hostname:port:db_name:user:pg_pass'."""))
@@ -82,10 +82,10 @@ def go(chat_db_path,
     if cfg.pg_schema is not None:
         hostname, port, db_name, pg_user, pw = parse_pg_credentials(cfg.pg_credentials)
         pg = Postgres(hostname=hostname,
-                             port=port,
-                             db_name=db_name,
-                             pg_user=pg_user,
-                             pw=pw)
+                      port=port,
+                      db_name=db_name,
+                      pg_user=pg_user,
+                      pw=pw)
 
         logger.info(f'Connected to Postgres database {bold(db_name)} hosted on {bold(hostname + ":" + port)}')
 
@@ -267,9 +267,9 @@ def go(chat_db_path,
     else:
         logger.info('User opted not to save tables to a Postgres database')
 
-    logger.info('Cleanup')
 
     if cfg.save_csv is None:
+        logger.info('Cleanup')
         shutil.rmtree(save_csv_dpath)
         logger.info(f'Removed temporary directory {path(save_csv_dpath)}', arrow='red')
 

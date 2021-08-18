@@ -3,7 +3,7 @@ import logging
 import re
 import threading
 from pyfiglet import Figlet
-from os.path import dirname, join
+from os.path import dirname, join, expanduser
 
 
 class ExtendedLogger(logging.Logger):
@@ -107,10 +107,14 @@ def bold(msg: str) -> str:
     return click.style(msg, bold=True)
 
 
-def path(msg: str) -> str:
+def path(msg: str, home_tilde: bool=True) -> str:
     """
     Return a string formatted as a colored path string.
     """
+    if home_tilde:
+        if msg.startswith(expanduser('~')):
+            msg = msg.replace(expanduser('~'), '~')
+
     return click.style(msg, fg='blue')
 
 
