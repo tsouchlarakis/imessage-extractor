@@ -23,7 +23,6 @@ class CustomTable(object):
         self.logger = logger
         self.cfg = cfg
 
-
         self.csv_fpath = join(self.cfg.dir.custom_table_data, table_name + '.csv')
         if not isfile(self.csv_fpath):
             raise FileNotFoundError(advanced_strip(
@@ -104,7 +103,7 @@ def build_custom_tables(pg: Postgres,
                                            cfg=cfg)
 
                 table_object.save_to_postgres()
-                logger.info(f'Rebuilt Postgres:{bold(table_name)}', arrow='magenta')
+                logger.info(f'Rebuilt table "{bold(table_name)}"', arrow='magenta')
 
     else:
         logger.warning(advanced_strip(

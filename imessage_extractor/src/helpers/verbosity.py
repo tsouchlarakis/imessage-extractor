@@ -59,7 +59,7 @@ class ExtendedLogger(logging.Logger):
         return super(ExtendedLogger, self).critical(formatted_msg)
 
 
-def logger_setup(name: str=__name__, level: int=logging.DEBUG, equal_width: bool=False):
+def logger_setup(name: str=__name__, level: int=logging.DEBUG, equal_width: bool=False) -> logging.Logger:
     """
     Standardize logger setup across pydoni package.
     """
@@ -84,14 +84,14 @@ def print_startup_message(logger: logging.Logger) -> None:
     Print startup message to console.
     """
     tab = '    '  # This is used in `msg_fmt` format string
-    fig = Figlet(font='slant')
+    # fig = Figlet(font='bubble')
 
-    header_color = 'red'
-    header = fig.renderText('iMessage Extractor')
-    for s in str(header).split('\n'):
-        logger.info(click.style(s, fg=header_color))
+    # header_color = 'red'
+    # header = fig.renderText('iMessage Extractor')
+    # for s in str(header).split('\n'):
+    #     logger.info(click.style(s, fg=header_color))
 
-    logger.info('')
+    # logger.info('')
 
     with open(join(dirname(__file__), 'startup_message.txt'), 'r') as f:
         msg = f.read()
@@ -99,6 +99,7 @@ def print_startup_message(logger: logging.Logger) -> None:
         msg_lst = msg_fmt.split('\n')
         for line in msg_lst:
             logger.info(line)
+
 
 def bold(msg: str) -> str:
     """

@@ -516,10 +516,10 @@ class View(object):
         if if_exists:
             if pg.view_exists(self.cfg.pg_schema, self.vw_name):
                 pg.drop_view(self.cfg.pg_schema, self.vw_name, cascade=cascade)
-                self.logger.info(f'Dropped view (cascade {code(cascade)}) {bold(self.vw_name)}', arrow='red')
+                self.logger.info(f'Dropped view "{bold(self.vw_name)}" (cascade {code(cascade)}) ', arrow='red')
         else:
             pg.drop_view(self.cfg.pg_schema, self.vw_name, cascade=cascade)
-            self.logger.info(f'Dropped view (cascade {code(cascade)}) {bold(self.vw_name)}', arrow='red')
+            self.logger.info(f'Dropped view "{bold(self.vw_name)}" (cascade {code(cascade)}) ', arrow='red')
 
     def create(self,
                pg: Postgres,
@@ -558,7 +558,7 @@ class View(object):
                     self.logger.debug('All references exist, creating the view')
                     pg.execute(self.def_sql)
                     self.logger.debug('Defined view successfully')
-                    self.logger.info(f'Defined Postgres:"{bold(self.cfg.pg_schema)}"."{bold(self.vw_name)}"', arrow='cyan')
+                    self.logger.info(f'Defined view "{bold(self.vw_name)}"', arrow='cyan')
                 else:
                     self.logger.debug(advanced_strip(
                         f"""Cannot create the view because of nonexistent
@@ -576,4 +576,4 @@ class View(object):
                     # so we should be able to simply create it as normal
                     pg.execute(self.def_sql)
                     self.logger.debug('Created all nonexistent references and defined view successfully')
-                    self.logger.info(f'Defined Postgres:"{bold(self.cfg.pg_schema)}"."{bold(self.vw_name)}"', arrow='cyan')
+                    self.logger.info(f'Defined view "{bold(self.vw_name)}"', arrow='cyan')

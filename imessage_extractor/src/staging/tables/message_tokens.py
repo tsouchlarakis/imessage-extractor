@@ -122,7 +122,7 @@ def refresh_message_tokens(pg: pydoni.Postgres,
     Parse messages into tokens and append to message tokens table, for messages that have
     not already been parsed into tokens.
     """
-    logger.info(f'Refreshing "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
+    logger.info(f'Refreshing table "{bold(table_name)}"', arrow='yellow')
 
     batch_size = None
     logger.debug(f'Batch size: {bold(batch_size)}')
@@ -199,6 +199,6 @@ def refresh_message_tokens(pg: pydoni.Postgres,
 
     if len(message_tokens):
         participle = 'Rebuilt' if rebuild else 'Appended'
-        logger.info(f'{participle} "{bold(pg_schema)}"."{bold(table_name)}", shape: {message_tokens.shape}', arrow='yellow')
+        logger.info(f'{participle} table "{bold(table_name)}", shape: {message_tokens.shape}', arrow='yellow')
     else:
-        logger.info(f'No messages to add to "{bold(pg_schema)}"."{bold(table_name)}"', arrow='yellow')
+        logger.info(f'No messages to add to table "{bold(table_name)}"', arrow='yellow')

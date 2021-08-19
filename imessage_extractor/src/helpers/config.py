@@ -46,6 +46,7 @@ class WorkflowConfig(object):
 
         self.dir.helpers = join(self.dir.home, 'helpers')
         self.dir.qc = join(self.dir.home, 'quality_control')
+        self.dir.qc_views = join(self.dir.qc, 'views')
 
         self.dir.staging = join(self.dir.home, 'staging')
         self.dir.staging_tables = join(self.dir.staging, 'tables')
@@ -53,7 +54,6 @@ class WorkflowConfig(object):
         self.file.staging_views = listfiles(path=self.dir.staging_views, full_names=True, ext='.sql')
         self.file.staging_table_info = join(self.dir.staging, 'staging_table_info.json')
         self.file.staging_view_info = join(self.dir.staging, 'staging_view_info.json')
-
 
         self._files_and_directories_exist()
 
