@@ -10,6 +10,7 @@ from .custom_tables.custom_tables import build_custom_tables
 from .helpers.config import WorkflowConfig
 from .helpers.verbosity import print_startup_message, logger_setup, path, bold, code
 from .staging.staging import assemble_staging_order, build_staging_tables_and_views
+from .quality_control.quality_control import create_qc_views
 from os import makedirs, stat
 from os.path import expanduser, isdir, join
 
@@ -207,13 +208,13 @@ def go(chat_db_path,
                             # been saved to Postgres, so we can now insert this table
                             table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                             inserted_journal.append(table_name)
-                            logger.info(f'{participle} Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='cyan')
+                            logger.info(f'{participle} table "{bold(table_name)}"', arrow='cyan')
                     else:
                         # No references found for this table, we can insert it right away
                         # since there are no dependencies to worry about
                         table_object.save_to_postgres(pg=pg, pg_schema=pg_schema)
                         inserted_journal.append(table_name)
-                        logger.info(f'{participle} Postgres:"{bold(pg_schema)}"."{bold(table_name)}"', arrow='cyan')
+                        logger.info(f'{participle} table "{bold(table_name)}"', arrow='cyan')
                 else:
                     # This table has already been saved to Postgres, so we can skip it
                     pass
@@ -264,6 +265,13 @@ def go(chat_db_path,
                                            logger=logger,
                                            cfg=cfg)
 
+        #
+        # Quality control views
+        #
+
+        logger.info('Creating quality control views')
+        create_qc_views(pg=pg, cfg=cfg, logger=logger)
+
     else:
         logger.info('User opted not to save tables to a Postgres database')
 
@@ -275,4 +283,4 @@ def go(chat_db_path,
 
     diff_formatted = fmt_seconds(time.time() - start_ts, units='auto', round_digits=2)
     elapsed_time = f"{diff_formatted['value']} {diff_formatted['units']}"
-    logger.info(f'iMessage Extractor workflow completed in {elapsed_time}')
+    logger.info(f'{click.style("iMessage Extractor", bold=True)} workflow completed in {elapsed_time}')

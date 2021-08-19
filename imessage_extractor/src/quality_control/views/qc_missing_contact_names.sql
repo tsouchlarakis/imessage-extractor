@@ -12,8 +12,7 @@ from (
     from {pg_schema}.message_vw m
     left join {pg_schema}.contacts_ignored i
            on m.chat_identifier = i.chat_identifier
-    where m.dt > current_date - 35
-      and i.chat_identifier is null
+    where i.chat_identifier is null
       and m.contact_name is null
       and m.is_text = true
       and not m.chat_identifier ~ '^\d{{5,6}}$'  -- Phone number of 5-6 digits is typically automated
