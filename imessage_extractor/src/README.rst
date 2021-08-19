@@ -17,10 +17,11 @@ After the source tables are loaded into Postgres, we can now define **chatdb vie
 
 You're encouraged to add more useful views to the **views**/ folder as you see fit. If you do, be sure to add an entry in **chatdb_view_info.json** with that view's name, and the tables/views it depends on. The workflow will fold any new view into the definition of chatdb views automatically, and will a bit of magic to figure out the right order to define the views given their dependencies, and will notify you if anything has gone wrong.
 
-📂 chatdb
+📂 `chatdb`_
 ---------
 
 * **chatdb.py**: custom objects designed for interacting with the **chat.db** database
 * **chatdb_table_info.json**: configure handling of source data tables
 * **chatdb_view_info.json**:
 * **views**/
+    * all views whose only dependencies are the source **chat.db** tables, or other views in this folder
