@@ -83,5 +83,11 @@ Because of this condition (3) staging tables/views can be dependent on another s
 Step 5: Quality Control
 ========================
 
-Save a couple of views in the destination Postgres database that report on the integrity of the data finally loaded into Postgres. If any records exsit in these views, there are some data integrity issues to be addressed.
+Save a couple of views in the destination Postgres database that report on the integrity of the data finally loaded into Postgres. Check each view and report the results to the user.
 
+📂 quality_control/
+-------------------
+
+- **views/**:
+    - view definitions that report on integrity of the data loaded into Postgres
+- **quality_control.py**: python objects designed for reporting quality control to the user
