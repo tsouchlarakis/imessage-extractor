@@ -1,0 +1,34 @@
+{
+    "emoji_text_map": {
+        "columnspec": {
+            "emoji": "text",
+            "plain_text": "text"
+        },
+        "primary_key": "emoji",
+        "reference": null
+    },
+    "message_tokens": {
+        "columnspec": {
+            "message_id": "int",
+            "token_idx": "int",
+            "token": "text",
+            "pos": "text",
+            "pos_simple": "text"
+        },
+        "primary_key": "message_id",
+        "reference": ["message_vw", "emoji_text_map"]
+    },
+    "tokens": {
+        "columnspec": {
+            "token": "text",
+            "length": "int",
+            "stem": "text",
+            "lemma": "text",
+            "is_english_stopword": "bool",
+            "is_punct": "bool",
+            "is_emoji": "bool"
+        },
+        "primary_key": "message_id",
+        "reference": ["message_tokens", "emoji_text_map"]
+    }
+}

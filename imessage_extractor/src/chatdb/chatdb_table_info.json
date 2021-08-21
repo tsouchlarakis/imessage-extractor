@@ -1,0 +1,82 @@
+{
+    "_SqliteDatabaseProperties": {
+        "write_mode": "replace",
+        "primary_key": "key",
+        "reference": null
+    },
+    "attachment": {
+        "write_mode": "append",
+        "primary_key": "ROWID",
+        "reference": null
+    },
+    "chat": {
+        "write_mode": "append",
+        "primary_key": "ROWID",
+        "reference": null
+    },
+    "chat_handle_join": {
+        "write_mode": "replace",
+        "primary_key": ["chat_id", "handle_id"],
+        "reference": ["chat", "handle"]
+    },
+    "chat_message_join": {
+        "write_mode": "append",
+        "primary_key": "message_id",
+        "reference": ["chat", "message"]
+    },
+    "deleted_messages": {
+        "write_mode": "replace",
+        "primary_key": "ROWID",
+        "reference": null
+    },
+    "handle": {
+        "write_mode": "append",
+        "primary_key": "ROWID",
+        "reference": null
+    },
+    "kvtable": {
+        "write_mode": "replace",
+        "primary_key": "ROWID",
+        "reference": null
+    },
+    "message": {
+        "write_mode": "append",
+        "primary_key": "ROWID",
+        "reference": null
+    },
+    "message_attachment_join": {
+        "write_mode": "append",
+        "primary_key": ["message_id", "attachment_id"],
+        "reference": ["message", "attachment"]
+    },
+    "message_processing_task": {
+        "write_mode": "append",
+        "primary_key": "ROWID",
+        "reference": null
+    },
+    "sqlite_sequence": {
+        "write_mode": "replace",
+        "primary_key": "name",
+        "reference": null
+    },
+    "sqlite_stat1": {
+        "write_mode": "replace",
+        "primary_key": ["tbl", "idx"],
+        "reference": null
+    },
+    "sync_deleted_attachments": {
+        "write_mode": "append",
+        "primary_key": "ROWID",
+        "reference": null
+    },
+    "sync_deleted_chats": {
+        "write_mode": "append",
+        "primary_key": "ROWID",
+        "reference": null
+    },
+    "sync_deleted_messages": {
+        "write_mode": "append",
+        "primary_key": "ROWID",
+        "reference": null
+    }
+}
