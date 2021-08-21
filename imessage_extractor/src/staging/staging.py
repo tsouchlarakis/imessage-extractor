@@ -81,30 +81,6 @@ class StagingTable(object):
                               logger=self.logger)
 
 
-# def build_staging_tables(pg: Postgres, logger: logging.Logger, cfg: WorkflowConfig) -> None:
-#     """
-#     Build each staged table sequentially. Import each table's refresh function into
-#     this script, and add an entry in the `refresh_map` for each table that you'd
-#     like to refresh.
-#     """
-#     logger.info('Building staging tables')
-
-#     refresh_map = dict(
-#         emoji_text_map=refresh_emoji_text_map,
-#         message_tokens=refresh_message_tokens,
-#         tokens=refresh_tokens,
-#     )
-
-#     for table_name, refresh_function in refresh_map.items():
-#         table_obj = StagingTable(pg=pg,
-#                                  table_name=table_name,
-#                                  refresh_function=refresh_function,
-#                                  logger=logger,
-#                                  cfg=cfg)
-
-#         table_obj.refresh()
-
-
 def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Logger) -> OrderedDict:
     """
     Return a dictionary of staging tables and/or views in the order that they should be created.
