@@ -84,14 +84,6 @@ def print_startup_message(logger: logging.Logger) -> None:
     Print startup message to console.
     """
     tab = '    '  # This is used in `msg_fmt` format string
-    # fig = Figlet(font='bubble')
-
-    # header_color = 'red'
-    # header = fig.renderText('iMessage Extractor')
-    # for s in str(header).split('\n'):
-    #     logger.info(click.style(s, fg=header_color))
-
-    # logger.info('')
 
     with open(join(dirname(__file__), 'startup_message.txt'), 'r') as f:
         msg = f.read()
