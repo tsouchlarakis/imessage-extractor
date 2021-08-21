@@ -36,7 +36,7 @@ setup(
     },
     install_requires=requirements,
     license='MIT license',
-    long_description=readme + '\n\n' + history,
+    # long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='imessage_extractor',
     name='imessage_extractor',
