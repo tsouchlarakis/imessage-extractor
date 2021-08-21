@@ -20,8 +20,8 @@ then resolve them by making sure they appear in only one of
 the preceding three sources.
 */
 
-drop view if exists {pg_schema}.duplicate_chat_identifier_defs;
-create or replace view {pg_schema}.duplicate_chat_identifier_defs as
+drop view if exists {pg_schema}.qc_duplicate_chat_identifier_defs;
+create or replace view {pg_schema}.qc_duplicate_chat_identifier_defs as
 
 with all_contacts as (
     select chat_identifier, group_name as contact_name, 1 as priority, 'contact_group_names' as source

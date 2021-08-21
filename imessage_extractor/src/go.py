@@ -10,7 +10,7 @@ from .custom_tables.custom_tables import build_custom_tables
 from .helpers.config import WorkflowConfig
 from .helpers.verbosity import print_startup_message, logger_setup, path, bold, code
 from .staging.staging import assemble_staging_order, build_staging_tables_and_views
-from .quality_control.quality_control import create_qc_views
+from .quality_control.quality_control import create_qc_views, run_quality_control
 from os import makedirs, stat
 from os.path import expanduser, isdir, join
 
@@ -271,6 +271,8 @@ def go(chat_db_path,
 
         logger.info('Creating quality control views')
         create_qc_views(pg=pg, cfg=cfg, logger=logger)
+
+        run_quality_control(pg=pg, cfg=cfg, logger=logger)
 
     else:
         logger.info('User opted not to save tables to a Postgres database')
