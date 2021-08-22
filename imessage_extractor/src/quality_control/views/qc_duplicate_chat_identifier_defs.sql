@@ -25,17 +25,17 @@ create or replace view {pg_schema}.qc_duplicate_chat_identifier_defs as
 
 with all_contacts as (
     select chat_identifier, group_name as contact_name, 1 as priority, 'contact_group_names' as source
-    from imessage_test.contact_group_names
+    from {pg_schema}.contact_group_names
 
     union
 
     select chat_identifier, contact_name, 2 as priority, 'contacts_manual' as source
-    from imessage_test.contacts_manual
+    from {pg_schema}.contacts_manual
 
     union
 
     select chat_identifier, contact_name, 3 as priority, 'contacts' as source
-    from imessage_test.contacts
+    from {pg_schema}.contacts
 ),
 
 duplicate_contacts as (
