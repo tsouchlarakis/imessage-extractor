@@ -4,11 +4,12 @@ include HISTORY.rst
 include LICENSE
 include README.rst
 include requirements.in
+include versioneer.py
+include imessage_extractor/_version.py
 
-recursive-include tests *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 
+recursive-include tests *
 recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
-include versioneer.py
-include imessage_extractor/_version.py
+recursive-include imessage_extractor/src/*
