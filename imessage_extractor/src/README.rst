@@ -19,7 +19,7 @@ We can control which tables are fully rebuilt and which are simply updated with 
 - **chatdb.py**: custom objects designed for interacting with the **chat.db** database
 - **chatdb_table_info.json**: configure handling of source data tables
 - **chatdb_view_info.json**: list references, if any, for chat.db views
-- **views/**:
+- **views**/
     - all views whose only dependencies are the source **chat.db** tables, or other views in this folder
 
 
@@ -37,7 +37,7 @@ Just add entries to the **contacts_manual.csv** file, and they'll automagically 
 📂 custom_tables/
 -----------------
 
-- data/:
+- **data**/
     - add any new custom table .csv data files here
     - **contacts_ignored.csv**: maintain list of contacts to ignore in the workflow-final QC step (i.e. spam texts, one-time passwords, etc.)
     - **contacts_manual.csv**: maintain running list of contacts that you'd like to manually add to the database
@@ -70,11 +70,11 @@ Because of this condition (3) staging tables/views can be dependent on another s
 📂 staging/
 -----------
 
-- **tables/**:
+- **tables**/
     - refresh functions responsible for maintaining each individual staging table
     - refresh functions can fully rebuild staging tables on each run, or only update them with new data (user customizable)
     - each staging table must have a refresh function defined here, and each refresh function must take the same parameters
-- **views/**:
+- **views**/
     - view definitions for staging views
 - **common.py**: common library for objects referenced used across refresh functions
 - **staging_table_info.json**: store column specification (name and datatype), primary key column name (if present), and a list of references for each staging table
@@ -89,6 +89,6 @@ Save a couple of views in the destination Postgres database that report on the i
 📂 quality_control/
 -------------------
 
-- **views/**:
+- **views**/
     - view definitions that report on integrity of the data loaded into Postgres
 - **quality_control.py**: python objects designed for reporting quality control to the user
