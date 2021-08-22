@@ -10,13 +10,6 @@ Extract local iMessage data to a Postgres database or flat textfiles on a Mac.
 .. image:: https://img.shields.io/pypi/v/imessage_extractor.svg
         :target: https://pypi.python.org/pypi/imessage_extractor
 
-.. image:: https://img.shields.io/travis/tsouchlarakis/imessage_extractor.svg
-        :target: https://travis-ci.com/tsouchlarakis/imessage_extractor
-
-.. image:: https://readthedocs.org/projects/imessage-extractor/badge/?version=latest
-        :target: https://imessage-extractor.readthedocs.io/en/latest/?version=latest
-        :alt: Documentation Status
-
 :raw-html:`<br />`
 
 🏁 Getting Started
