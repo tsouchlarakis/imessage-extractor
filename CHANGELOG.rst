@@ -25,7 +25,24 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
-1.0.0 (YYYY-MM-DD)
+1.0.1 (2021-08-21)
+------------------
+**Added**
+- Repository image
+
+**Changed**
+- Updated README and CHANGELOG documentation
+- Updated requirements.txt
+
+**Deprecated**
+
+**Removed**
+
+**Fixed**
+
+**Security**
+
+1.0.0 (2021-08-21)
 ------------------
 - ``imessage-extractor`` launch! 🚀
 
