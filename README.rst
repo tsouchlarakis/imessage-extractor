@@ -53,7 +53,7 @@ First, you'll want to make sure you have the iMessage SQLite database, called **
 
    FILE=~/Library/Messages/chat.db
    if [ -f "$FILE" ]; then
-       echo "You're good!"
+       echo "You're good\!"
    else
        echo "Sadly, no file exists at $FILE - is it possible chat.db lives elsewhere on your system?"
    fi
