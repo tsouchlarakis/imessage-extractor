@@ -124,7 +124,7 @@ To save the chat.db tables to a set of flat .csv files at a target folder:
 
 .. code-block:: bash
 
-   imessage-extractor go --save-csv "~/Desktop/imessage-extractor/save_csv"
+   imessage-extractor go --save-csv "~/Desktop/imessage-extractor/imessage_chatdb_extract"
 
 To save the chat.db tables to a Postgres schema, we need to supply two things:
 
