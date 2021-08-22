@@ -15,7 +15,7 @@ Extract chat data from iMessage and much, much more!
 🏁 Getting Started
 ==================
 
-``imessage-extractor`` is a pip-installable python package designed to be run on macOS that extracts iMessage chat data stored locally in a SQLite database by macOS, and saves it to an array of flat .csv files or a Postgres database, or both.
+``imessage-extractor`` is a pip-installable Python package that extracts iMessage chat data stored locally in a SQLite database by macOS, and saves it to an set of flat .csv files or a Postgres database, or both. If saving to a Postgres database the workflow will create a series of staging tables, views, and other database objects designed to make querying your iMessage chat data as simple and straightforward as possible.
 
 🧿 Prerequisites
 ----------------
