@@ -39,7 +39,10 @@ Extract local iMessage data to a Postgres database or flat textfiles on a Mac.
 
    pip install imessage-extractor
 
-It really is that simple ✨
+   # Vanilla usage (just save chat.db tables to .csv files)
+   imessage-extractor go --save-csv "~/Desktop/imessage_chatdb_extract" -v
+
+It really is that simple ✨ but this vanilla workflow call merely scratches the surface of what **iMessage Extractor** can do.
 
 ⚡️ Usage
 ---------
