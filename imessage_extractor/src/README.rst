@@ -7,11 +7,11 @@ Step 1: Extract chat.db Tables
 
 The first step is to extract tables from **chat.db** and save them as .csv files to a temporary database. If saving data to Postgres (``--pg-schema`` is specified) and ``rebuild`` is not specified, then we'll attempt to only query and save any *new* data in **chat.db**.
 
-We can control which tables are fully rebuilt and which are simply updated with new data in the **chatdb_table_info.json** file. Those with ``write_mode: "replace"`` will be fully replaced with the corresponding **chat.db** table, but those with ``write_mode: "append"`` will have only new data appended to them
+*Once this point has been reached, chat.db table data has been saved to a folder on disk (controlled with the --save-csv-dpath argument.) Therefore, all following information ONLY applies if saving data to a Postgres schema.* 😊
+
+We can control which tables are fully rebuilt and which are simply updated with new data in the **chatdb_table_info.json** file. Those with ``"write_mode": "replace"`` will be fully replaced with the corresponding **chat.db** table, but those with ``"write_mode": "append"`` will have only new data appended to them
 
 (For the nerds out there, the workflow logic figures out what exactly is *new* data by looking at the primary key values for each table specified in the ``"primary_key"`` JSON attribute).
-
-*Once this point has been reached, chat.db table data has been saved to a folder on disk (controlled with the --save-csv-dpath argument.) Therefore, all following information ONLY applies if saving data to a Postgres schema.* 😊
 
 📂 chatdb/
 ----------
