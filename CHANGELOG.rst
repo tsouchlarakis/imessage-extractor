@@ -25,6 +25,16 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
+1.0.2 (2021-08-22)
+------------------
+**Added**
+- STDOUT log handler
+
+**Fixed**
+- Hard-coded ``imessage_test`` schema
+
+**Security**
+
 1.0.1 (2021-08-21)
 ------------------
 **Added**
@@ -33,14 +43,6 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 **Changed**
 - Updated README and CHANGELOG documentation
 - Updated requirements.txt
-
-**Deprecated**
-
-**Removed**
-
-**Fixed**
-
-**Security**
 
 1.0.0 (2021-08-21)
 ------------------
