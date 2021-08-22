@@ -1,6 +1,6 @@
 .. image:: ../../graphics/source_code.png
 
-**iMessage Extractor** workflow split into multiple sub-components. In order:
+The **iMessage Extractor** workflow is split into multiple steps...
 
 Step 1: Extract chat.db Tables
 ==============================
@@ -37,7 +37,7 @@ Just add entries to the **contacts_manual.csv** file, and they'll automagically 
 📂 custom_tables/
 -----------------
 
-- **data/**: add any new custom table .csv data files here
+- **data**/: add any new custom table .csv data files here
     - **contacts_ignored.csv**: maintain list of contacts to ignore in the workflow-final QC step (i.e. spam texts, one-time passwords, etc.)
     - **contacts_manual.csv**: maintain running list of contacts that you'd like to manually add to the database
     - **contacts.csv**: exported contact list using a contacts exporter app like `Contacts Exporter <https://apps.apple.com/us/app/exporter-for-contacts-2/id1526043062?mt=12>`_
