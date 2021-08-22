@@ -3,7 +3,7 @@
 .. role:: raw-html(raw)
     :format: html
 
-Extract local iMessage data to a Postgres database or flat textfiles on a Mac.
+Extract chat data from iMessage and much, much more!
 
 :raw-html:`<br />`
 
