@@ -1,9 +1,7 @@
 import click
 import logging
 import re
-import sys
 import threading
-from pyfiglet import Figlet
 from os.path import dirname, join, expanduser
 
 
@@ -72,10 +70,10 @@ def logger_setup(name: str=__name__, level: int=logging.DEBUG, equal_width: bool
         logger.handlers.clear()
 
     # Set up STDOUT handler
-    stdout_handler = logging.StreamHandler(sys.stdout)
-    stdout_handler.setLevel(level)
-    stdout_handler.setFormatter(formatter)
-    logger.addHandler(stdout_handler)
+    # stdout_handler = logging.StreamHandler(sys.stdout)
+    # stdout_handler.setLevel(level)
+    # stdout_handler.setFormatter(formatter)
+    # logger.addHandler(stdout_handler)
 
     # Set up console handler
     console_handler = logging.StreamHandler()
