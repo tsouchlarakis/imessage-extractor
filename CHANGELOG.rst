@@ -25,6 +25,21 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
+V.V.V (YYYY-MM-DD)
+------------------
+**Added**
+- View of ``message_vw`` filtered for just messages that are text ``message_vw_text``
+
+**Changed**
+
+**Deprecated**
+
+**Removed**
+
+**Fixed**
+
+**Security**
+
 1.0.2 (2021-08-22)
 ------------------
 **Added**
