@@ -20,10 +20,8 @@ select message_id
        , service
        , is_from_me
        , is_group_chat
-       , message_special_type
        , is_thread
        , thread_original_message_id
-       , has_attachment
 from {pg_schema}.message_vw
 where is_text = true
   and is_empty = false
