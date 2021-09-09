@@ -20,7 +20,7 @@ select message_id
        , service
        , is_from_me
        , is_group_chat
-       , is_thread
+       , is_threaded_reply
        , thread_original_message_id
 from {pg_schema}.message_vw
 where is_text = true
