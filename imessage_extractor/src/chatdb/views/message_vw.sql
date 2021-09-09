@@ -90,16 +90,6 @@ select message_id
        , ts
        , dt
        , case when "text" = '' then null else "text" end as "text"
-       , length(case when is_emote = false and is_url = false and is_empty = false and message_special_type is null
-                          then "text"
-                     else null
-                end) as n_characters
-       , case when is_emote = false and is_url = false and message_special_type is null
-                   then array_length(regexp_split_to_array("text", '\s+'), 1)
-              when is_empty
-                   then 0
-              else null
-         end as n_tokens
        , service
        , is_from_me
        , is_group_chat

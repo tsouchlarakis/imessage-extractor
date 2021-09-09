@@ -1,6 +1,6 @@
 {
     "contact_daily_message_volume_vw": {
-        "reference": ["message_vw"]
+        "reference": ["message_vw", "message_vw_text"]
     },
     "contact_group_names": {
         "reference": ["message"]
@@ -13,5 +13,8 @@
     },
     "message_vw": {
         "reference": ["chat", "chat_message_join", "message", "contacts_vw"]
+    },
+    "message_vw_text": {
+        "reference": ["message_vw"]
     }
 }

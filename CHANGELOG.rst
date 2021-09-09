@@ -25,14 +25,12 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
-1.0.1 (2021-08-21)
+V.V.V (YYYY-MM-DD)
 ------------------
 **Added**
-- Repository image
+- View of ``message_vw`` filtered for just messages that are text ``message_vw_text``
 
 **Changed**
-- Updated README and CHANGELOG documentation
-- Updated requirements.txt
 
 **Deprecated**
 
@@ -41,6 +39,25 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 **Fixed**
 
 **Security**
+
+1.0.2 (2021-08-22)
+------------------
+**Added**
+- STDOUT log handler
+
+**Fixed**
+- Hard-coded ``imessage_test`` schema
+
+**Security**
+
+1.0.1 (2021-08-21)
+------------------
+**Added**
+- Repository image
+
+**Changed**
+- Updated README and CHANGELOG documentation
+- Updated requirements.txt
 
 1.0.0 (2021-08-21)
 ------------------
