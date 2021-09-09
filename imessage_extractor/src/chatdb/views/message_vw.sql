@@ -17,7 +17,7 @@ with m as (
               , m.associated__type
               , m."service"
               , case when m.is_from_me = 1 then true when m.is_from_me = 0 then false else null end as is_from_me
-              , case when m.thread_originator_guid is not null then true else false end as is_thread
+              , case when m.thread_originator_guid is not null then true else false end as is_threaded_reply
               , thread_origins.thread_original_message_id
               , case when m.cache_has_attachments = 1 then true when m.cache_has_attachments = 0 then false else null end as has_attachment
        from {pg_schema}.message m
@@ -72,7 +72,7 @@ m_join_chat_contacts as (
                      when m."text" is null then true
                      else false
                 end as is_empty
-              , is_thread
+              , is_threaded_reply
               , thread_original_message_id
               , has_attachment
        from {pg_schema}.chat c
@@ -101,7 +101,7 @@ select message_id
        , is_emote
        , message_special_type
        , is_url
-       , is_thread
+       , is_threaded_reply
        , thread_original_message_id
        , has_attachment
 from m_join_chat_contacts
