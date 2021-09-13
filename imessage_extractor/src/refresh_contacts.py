@@ -7,7 +7,7 @@ from os.path import expanduser, abspath, join, dirname
 from send2trash import send2trash
 
 
-target_fpath = abspath(join(dirname(__file__), '..', 'custom_tables', 'contacts.csv'))
+target_fpath = abspath(join(dirname(__file__), 'custom_tables', 'data', 'contacts.csv'))
 
 
 @click.option('--exported-contacts-csv-fpath', type=click.Path(exists=True), required=True,
