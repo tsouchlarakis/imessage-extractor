@@ -17,27 +17,31 @@ with m as (
            , m.associated__type
            , m."service"
            , case when m.is_from_me = 1 then true when m.is_from_me = 0 then false else null end as is_from_me
-           , coalesce(is_thread_origin, false) as is_thread_origin
+           , coalesce(thread_origins.is_thread_origin, false) as is_thread_origin
            , case when m.thread_originator_guid is not null then true else false end as is_threaded_reply
-           , thread_origins.thread_original_message_id
+           , threaded_replies.thread_original_message_id
            , case when m.cache_has_attachments = 1 then true
                   when m.cache_has_attachments = 0 then false
                   else null
              end as has_attachment
     from {pg_schema}.message m
     left join (
+        -- Get the ROWID for all messages that have a thread_originator_guid
         select distinct t1.thread_originator_guid, t2."ROWID" as thread_original_message_id
         from {pg_schema}.message t1
         join {pg_schema}.message t2
           on t1.thread_originator_guid = t2.guid
-    ) as thread_origins
-      on m.thread_originator_guid = thread_origins.thread_originator_guid
+    ) as threaded_replies
+      on m.thread_originator_guid = threaded_replies.thread_originator_guid
     left join (
-        select thread_originator_guid, true as is_thread_origin
+        -- Get a boolean flag for all messages that are the origin of a thread. These messages
+        -- will not have a thread_originator_guid, because at the time that they are sent,
+        -- they are not yet part of a thread
+        select "ROWID" as thread_originator_guid, true as is_thread_origin
         from {pg_schema}.message
         where thread_originator_guid is not null
-    ) as m_thread
-      on m."ROWID" = m_thread.thread_originator_guid
+    ) as thread_origins
+      on m."ROWID" = thread_origins.thread_originator_guid
 ),
 
 m_join_chat_contacts as (
