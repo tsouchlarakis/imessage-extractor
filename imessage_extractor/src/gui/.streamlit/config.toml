@@ -1,0 +1,14 @@
+[server]
+
+port = 6969
+
+[browser]
+
+serverAddress = "localhost"
+
+[theme]
+
+primaryColor="#272b35"
+backgroundColor="#2b2b2b"
+secondaryBackgroundColor="#393939"
+textColor="#ffffff"

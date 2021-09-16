@@ -1,0 +1,9 @@
+.big-font {
+    font-size:100px;
+    font-family: sans-serif;
+}
+
+/* span { font-size: 3em;} */
+span mediumtext { font-size: 200%; font-weight: normal }
+span largetext { font-size: 600%; font-weight: normal }
+span largetextcolor { font-size: 600%; font-weight: normal; color: #83cf83 }
