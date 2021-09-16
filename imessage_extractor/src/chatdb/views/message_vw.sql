@@ -15,6 +15,7 @@ with m as (
                )
            ) as "text"
            , m.associated__type
+           , m.balloon_bundle_id
            , m."service"
            , case when m.is_from_me = 1 then true when m.is_from_me = 0 then false else null end as is_from_me
            , coalesce(thread_origins.is_thread_origin, false) as is_thread_origin
@@ -60,18 +61,19 @@ m_join_chat_contacts as (
                   when m."text" ilike '$%closed all three Activity rings.' then 'workout_notification'
                   when m."text" ilike '$%earned an achievement.' then 'workout_notification'
                   when m.associated__type = 3 then 'app_for_imessage'
-                  when m.associated__type = 2000 then 'love'
-                  when m.associated__type = 2001 then 'like'
-                  when m.associated__type = 2002 then 'dislike'
-                  when m.associated__type = 2003 then 'laugh'
-                  when m.associated__type = 2004 then 'emphasis'
-                  when m.associated__type = 2005 then 'question'
-                  when m.associated__type = 3000 then 'remove_heart'
-                  when m.associated__type = 3001 then 'remove_like'
-                  when m.associated__type = 3002 then 'remove_dislike'
-                  when m.associated__type = 3003 then 'remove_laugh'
-                  when m.associated__type = 3004 then 'remove_emphasis'
-                  when m.associated__type = 3005 then 'remove_question'
+                  when m.associated__type = 2000 then 'emote_love'
+                  when m.associated__type = 2001 then 'emote_like'
+                  when m.associated__type = 2002 then 'emote_dislike'
+                  when m.associated__type = 2003 then 'emote_laugh'
+                  when m.associated__type = 2004 then 'emote_emphasis'
+                  when m.associated__type = 2005 then 'emote_question'
+                  when m.associated__type = 3000 then 'emote_remove_heart'
+                  when m.associated__type = 3001 then 'emote_remove_like'
+                  when m.associated__type = 3002 then 'emote_remove_dislike'
+                  when m.associated__type = 3003 then 'emote_remove_laugh'
+                  when m.associated__type = 3004 then 'emote_remove_emphasis'
+                  when m.associated__type = 3005 then 'emote_remove_question'
+                  when m.associated__type = 2 and m.balloon_bundle_id ilike '%PeerPaymentMessagesExtension' then 'apple_cash'
                   else null
              end as message_special_type
            , case when c._identifier ilike 'chat%' then true
