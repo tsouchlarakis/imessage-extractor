@@ -1,14 +1,15 @@
 """Main module for the streamlit app"""
 # https://chatvisualizer.com/
 
-from imessage_extractor.src.gui.multiapp import MultiApp
 import streamlit as st
+import logging
 import awesome_streamlit as ast
 import pages.about
 # import pages.gallery.index
 import pages.home
 import multiapp
 import pages.pick_a_contact
+from imessage_extractor.src.helpers.verbosity import logger_setup
 # import pages.resources
 # import pages.vision
 
@@ -20,6 +21,9 @@ PAGES = {
     # 'Vision': pages.vision,
     'About': pages.about,
 }
+
+logger = logger_setup(name='imessage-visualizer', level=logging.INFO)
+logger.propagate = False
 
 
 def activate_stylesheet(fpath: str) -> None:
@@ -40,7 +44,7 @@ def main():
 
     st.sidebar.title('Navigation')
 
-    app = multiapp.MultiApp()
+    app = multiapp.MultiApp(logger=logger)
 
     for page_name, page_module in PAGES.items():
         app.add_app(page_name, getattr(page_module, 'write'))

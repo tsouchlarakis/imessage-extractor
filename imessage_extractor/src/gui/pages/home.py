@@ -20,7 +20,7 @@ def intword(n: int) -> str:
 to_date_str = lambda dt: dt.strftime('%b %-d, %Y') if dt is not None else ''
 
 
-def write(data) -> None:
+def write(data, logger) -> None:
     """
     Write the homepage.
     """

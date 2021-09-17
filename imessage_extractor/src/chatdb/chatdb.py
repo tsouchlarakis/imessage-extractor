@@ -531,9 +531,9 @@ class View(object):
         that all dependencies for a particular view are created before executing that view's
         definition.
 
-        We will iterate through each view in the view_info*.json file, and for each view,
+        We will iterate through each view in the *view_info.json file, and for each view,
         check each of its dependencies (if any) to ensure that they exist. If one or more
-        do not, we must navigate to that view in the view_info*.json file and ensure that
+        do not, we must navigate to that view in the *view_info.json file and ensure that
         all of that view's dependencies exist. If one or more do not yet exist, we must then
         continue navigating down the tree of dependencies until we can create all of them.
 

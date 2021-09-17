@@ -3,7 +3,7 @@ import streamlit as st
 
 
 # pylint: disable=line-too-long
-def write(data):
+def write(data, logger):
     """
     Write the About page.
     """
