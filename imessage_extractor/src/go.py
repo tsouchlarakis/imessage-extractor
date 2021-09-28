@@ -15,8 +15,6 @@ from os import makedirs, stat
 from os.path import expanduser, isdir, join
 
 
-logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
-
 
 @click.option('--chat-db-path', type=str, default=expanduser('~/Library/Messages/chat.db'),
               help='Path to working chat.db.')
@@ -30,7 +28,7 @@ logger = logger_setup(name='imessage-extractor', level=logging.ERROR)
               be in format 'hostname:port:db_name:user:pg_pass'."""))
 @click.option('-r', '--rebuild', is_flag=True, default=False,
               help='Wipe target Postgres schema and rebuild from scratch.')
-@click.option('-s', '--stage', is_flag=True, default=False,
+@click.option('-s', '--stage', is_flag=True, default=True,
               help='Build staging tables and views after the chat.db tables have been loaded')
 @click.option('-v', '--verbose', is_flag=True, default=False,
               help='Set logging level to INFO.')
@@ -258,7 +256,7 @@ def go(chat_db_path,
             logger.info(f'Staging Postgres tables and views')
 
             staging_order = assemble_staging_order(pg=pg, cfg=cfg, logger=logger)
-            logger.info(f'Staging order: {list(staging_order.keys())}')
+            logger.info(f'Staging order: {" > ".join(list(staging_order.keys()))}')
 
             build_staging_tables_and_views(staging_order=staging_order,
                                            pg=pg,

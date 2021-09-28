@@ -1,8 +1,8 @@
 """Home page shown when the user enters the application"""
 import streamlit as st
-import awesome_streamlit as ast
 import humanize
 from pydoni import advanced_strip
+from imessage_extractor.src.app.helpers import to_date_str, span, large_text_green, large_text, medium_text, medium_text_green
 
 
 def intword(n: int) -> str:
@@ -15,9 +15,6 @@ def intword(n: int) -> str:
         word = word.replace(' ' + k, v)
 
     return word
-
-
-to_date_str = lambda dt: dt.strftime('%b %-d, %Y') if dt is not None else ''
 
 
 def write(data, logger) -> None:
@@ -33,17 +30,13 @@ def write(data, logger) -> None:
     """))
 
     total_days = len(data.message_vw['dt'].unique())
-    st.write('TOTAL DAYS')
-    st.markdown(f'<p class="big-font">{intword(total_days)}</p>', unsafe_allow_html=True)
+    st.markdown(f'{large_text_green(total_days)} {medium_text("active texting days")}', unsafe_allow_html=True)
 
     total_messages = len(data.message_vw)
-    st.write('TOTAL MESSAGES')
-    st.markdown(f'<p class="big-font">{intword(total_messages)}</p>', unsafe_allow_html=True)
+    st.markdown(f'{large_text_green(intword(total_messages))} {medium_text("total messages")}', unsafe_allow_html=True)
 
-    total_words = data.message_vw_text['n_tokens'].sum()
-    st.write('TOTAL WORDS')
-    st.markdown(f'<p class="big-font">{intword(total_words)}</p>', unsafe_allow_html=True)
+    # total_words = data.message_vw_text['n_tokens'].sum()
+    # st.markdown(f'{large_text_green(intword(total_words))} {medium_text("total words")}', unsafe_allow_html=True)
 
-    total_letters = data.message_vw_text['n_characters'].sum()
-    st.write('TOTAL LETTERS')
-    st.markdown(f'<p class="big-font">{intword(total_letters)}</p>', unsafe_allow_html=True)
+    # total_letters = data.message_vw_text['n_characters'].sum()
+    # st.markdown(f'{large_text_green(intword(total_letters))} {medium_text("total letters")}', unsafe_allow_html=True)

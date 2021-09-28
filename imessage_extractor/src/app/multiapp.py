@@ -6,73 +6,109 @@ Source: https://github.com/upraneelnihar/streamlit-multiapps/blob/master/multiap
 import streamlit as st
 import typing
 import logging
+import json
 import pandas as pd
-from pydoni import Postgres
+from os import mkdir, write
+from os.path import join, expanduser, isdir, basename
+from shutil import rmtree
+from pydoni import Postgres, ensurelist
+from imessage_extractor.src.helpers.verbosity import path
+from imessage_extractor.src.app.data.extract import iMessageDataExtract
 
 
-@st.cache(show_spinner=True)
-class iMessageDataExtract(object):
+@st.cache()
+def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
     """
-    Store all dataframe extract objects accessed in the GUI.
+
     """
-    def __init__(self, logger: logging.Logger) -> None:
-        pg = Postgres()
-        logger.info('Fetching iMessageDataExtract')
+    logger.info('Querying data and saving to local...')
+    logger.info(f'=> target folder {path(tmp_env_dpath)}')
+    pg = Postgres()
 
-        #
-        # Raw tables
-        #
-        sample = False
+    # Maintain a dictionary of all tables written to local
+    manifest = {}
 
-        if sample:
-            sample_proportion = .01
-            logger.info(f'Querying SQL tables with {sample_proportion * 100}% sample')
-            self.message_vw = pg.read_sql(f'select * from imessage_extractor.message_vw where random() < {sample_proportion}')
-            self.message_vw_text = pg.read_sql(f'select * from imessage_extractor.message_vw_text where random() < {sample_proportion}')
+
+    def query_and_save_dataset(pg_schema: str,
+                               dataset_name: str,
+                               index: list,
+                               tmp_env_dpath: str,
+                               logger: logging.Logger):
+        """
+        Read the full table/view and save to local CSV.
+        """
+        if index is not None:
+            index = ensurelist(index)
+            write_index = True
         else:
-            logger.info('Querying full SQL tables')
-            self.message_vw = pg.read_table('imessage_extractor', 'message_vw')
-            self.message_vw_text = pg.read_table('imessage_extractor', 'message_vw_text')
+            write_index = False
 
-        logger.info('Done querying SQL tables')
+        df = pg.read_table(pg_schema, dataset_name)
+        logger.info(f'=> {dataset_name} queried')
 
-        #
-        # Lists
-        #
+        fpath = join(tmp_env_dpath, f'{dataset_name}.csv')
 
-        self.lst_contact_names_all = sorted([x for x in self.message_vw['contact_name'].unique() if isinstance(x, str)])
-        self.lst_contact_names_no_group_chats = sorted(
-            [x for x in self.message_vw.loc[~self.message_vw['is_group_chat']]['contact_name'].unique() if isinstance(x, str)]
-        )
+        if write_index:
+            df.set_index(index).to_csv(fpath, index=True)
+        else:
+            df.to_csv(fpath, index=False)
 
-        #
-        # Daily summaries
-        #
+        logger.info(f'=> {dataset_name} saved {path(basename(fpath))}')
 
-        logger.info('Aggregating data into daily summaries')
+        return fpath
 
-        daily_aggregations = lambda x: pd.Series(dict(
-            n_messages=x.message_id.nunique(),
-            n_text_messages=(x.is_text == True).sum(),
-            n_messages_group_chat=(x.is_group_chat == True).sum(),
-            n_text_messages_group_chat=((x.is_text == True) & (x.is_group_chat == True)).sum(),
-            contacts_messaged=x.contact_name.nunique(),
-            n_imessage=(x.service == 'iMessage').sum(),
-            n_sms=(x.service == 'SMS').sum(),
-            n_url=(x.is_url == True).sum(),
-            n_thread_origin=(x.is_thread_origin == True).sum(),
-            n_threaded_reply=(x.is_threaded_reply == True).sum(),
-            n_attachment=(x.has_attachment == True).sum(),
-        ))
 
-        self.daily_summary = self.message_vw.groupby('dt').apply(daily_aggregations)
-        self.daily_summary_contact = self.message_vw.groupby(['dt', 'contact_name']).apply(daily_aggregations)
-        self.daily_summary_from_who = self.message_vw.groupby(['dt', 'is_from_me']).apply(daily_aggregations)
-        self.daily_summary_contact_from_who = self.message_vw.groupby(['dt', 'contact_name', 'is_from_me']).apply(daily_aggregations)
+    index = ['message_id']
+    fpath = query_and_save_dataset(pg_schema='imessage_extractor',
+                                   dataset_name='message_vw',
+                                   index=index,
+                                   tmp_env_dpath=tmp_env_dpath,
+                                   logger=logger)
+    manifest['message_vw'] = dict(fpath=fpath, index=index)
 
-        logger.info('Computed daily summaries')
+    index = ['dt', 'contact_name', 'is_from_me']
+    fpath = query_and_save_dataset(pg_schema='imessage_extractor',
+                                   dataset_name='daily_summary_contact_from_who',
+                                   index=index,
+                                   tmp_env_dpath=tmp_env_dpath,
+                                   logger=logger)
+    manifest['daily_summary_contact_from_who'] = dict(fpath=fpath, index=index)
 
-        logger.info('Completed iMessageDataExtract')
+    index = ['dt', 'contact_name']
+    fpath = query_and_save_dataset(pg_schema='imessage_extractor',
+                                   dataset_name='daily_summary_contact',
+                                   index=index,
+                                   tmp_env_dpath=tmp_env_dpath,
+                                   logger=logger)
+    manifest['daily_summary_contact'] = dict(fpath=fpath, index=index)
+
+    index = ['dt', 'is_from_me']
+    fpath = query_and_save_dataset(pg_schema='imessage_extractor',
+                                   dataset_name='daily_summary_from_who',
+                                   index=index,
+                                   tmp_env_dpath=tmp_env_dpath,
+                                   logger=logger)
+    manifest['daily_summary_from_who'] = dict(fpath=fpath, index=index)
+
+    index = ['dt']
+    fpath = query_and_save_dataset(pg_schema='imessage_extractor',
+                                   dataset_name='daily_summary',
+                                   index=index,
+                                   tmp_env_dpath=tmp_env_dpath,
+                                   logger=logger)
+    manifest['daily_summary'] = dict(fpath=fpath, index=index)
+
+    manifest_fpath = join(tmp_env_dpath, 'manifest.json')
+    with open(manifest_fpath, 'w') as f:
+        if len(manifest) == 0:
+            raise ValueError('manifest variable is of length 0!')
+
+        json.dump(manifest, f)
+
+    logger.info(f'=> wrote manifest {path(manifest_fpath)}')
+
+    logger.info('=> done')
+
 
 
 class MultiApp(object):
@@ -82,7 +118,32 @@ class MultiApp(object):
     def __init__(self, logger: logging.Logger):
         self.apps = []
         self.logger = logger
-        self.data = iMessageDataExtract(logger)
+        self.tmp_env_dpath = join(expanduser('~'), 'Desktop', '.imessage-extractor-app')
+
+        # Extract and save data to temporary folder
+        if isdir(self.tmp_env_dpath):
+            rmtree(self.tmp_env_dpath)
+
+        if not isdir(self.tmp_env_dpath):
+            mkdir(self.tmp_env_dpath)
+
+        save_data_to_local(self.tmp_env_dpath, logger)
+
+        self.data = iMessageDataExtract(self.tmp_env_dpath, logger)
+
+        # with st.spinner('Loading iMessage data...'):
+        #     pg = Postgres()
+        #     logger.info('Querying imessage_extractor tables')
+        #     message_vw = pg.read_table('imessage_extractor', 'message_vw')
+        #     logger.info('Done querying tables')
+
+        #     logger.info('Writing data to temporary folder')
+        #     message_vw_fpath = join(self.tmp_env_dpath, 'message_vw.csv')
+        #     message_vw.to_csv(message_vw_fpath, index=False)
+        #     logger.info('Done writing data to temporary folder')
+
+        #     # Create data extract object referenced throughout the app
+        #     self.data = iMessageDataExtract(self.tmp_env_dpath, logger)
 
         self.logger.info('Initialized MultiApp')
 
@@ -104,5 +165,12 @@ class MultiApp(object):
         """
         Run the app.
         """
-        app = st.sidebar.radio('', self.apps, format_func=lambda app: app['title'])
+        # Set the name of the page that the app should open to when loaded
+        default_page_title = 'Pick a Contact'
+        app = st.sidebar.radio(
+            label='',
+            options=self.apps,
+            index=[x['title'] for x in self.apps].index(default_page_title),
+            format_func=lambda app: app['title']
+        )
         app['function'](data=self.data, logger=self.logger)

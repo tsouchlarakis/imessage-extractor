@@ -1,10 +1,32 @@
-.big-font {
-    font-size:100px;
+.medium-text {
+    font-size: 50px;
+    font-family: sans-serif;
+    font-weight: normal;
+}
+
+.medium-text-green {
+    font-size: 50px;
+    font-weight: normal;
+    font-family: sans-serif;
+    color: #83cf83;
+}
+
+.large-text {
+    font-size: 100px;
+    font-weight: bold;
     font-family: sans-serif;
 }
 
-/* span { font-size: 3em;} */
-span mediumtext { font-size: 200%; font-weight: normal }
-span mediumtextcolor { font-size: 200%; font-weight: normal; color: #83cf83 }
-span largetext { font-size: 600%; font-weight: normal }
-span largetextcolor { font-size: 600%; font-weight: normal; color: #83cf83 }
+.large-text-green {
+    font-size: 100px;
+    font-weight: bold;
+    font-family: sans-serif;
+    color: #83cf83;
+}
+
+.subtitle {
+    font-size: 15px;
+    font-weight: normal;
+    font-family: sans-serif;
+    color: #d4d4d4;
+}
