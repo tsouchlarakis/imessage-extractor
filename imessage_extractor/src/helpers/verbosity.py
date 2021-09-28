@@ -58,7 +58,7 @@ class ExtendedLogger(logging.Logger):
         return super(ExtendedLogger, self).critical(formatted_msg)
 
 
-def logger_setup(name: str=__name__, level: int=logging.DEBUG, equal_width: bool=False) -> logging.Logger:
+def logger_setup(name: str=__name__, level: int=logging.DEBUG) -> logging.Logger:
     """
     Standardize logger setup across pydoni package.
     """
@@ -81,6 +81,7 @@ def logger_setup(name: str=__name__, level: int=logging.DEBUG, equal_width: bool
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
+    logger.setLevel(level)
     return logger
 
 
@@ -102,7 +103,7 @@ def bold(msg: str) -> str:
     """
     Return a string wrapped in bold.
     """
-    return click.style(msg, bold=True)
+    return click.style(str(msg), bold=True)
 
 
 def path(msg: str, home_tilde: bool=True) -> str:
@@ -113,11 +114,11 @@ def path(msg: str, home_tilde: bool=True) -> str:
         if msg.startswith(expanduser('~')):
             msg = msg.replace(expanduser('~'), '~')
 
-    return click.style(msg, fg='blue')
+    return click.style(str(msg), fg='blue')
 
 
 def code(msg: str) -> str:
     """
     Return a string formatted as a colored code string.
     """
-    return click.style(msg, fg='black')
+    return click.style(str(msg), fg='black')

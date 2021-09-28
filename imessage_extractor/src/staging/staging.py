@@ -140,25 +140,6 @@ def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Lo
     # views. Now let's iterate along that dictionary to define an order in which these objects
     # should be created.
 
-    {
-        'contact_token_usage_vw': {
-            'reference': {},
-            'type': 'view'
-        },
-        'contact_top_token_usage_by_length': {
-            'reference': {'contact_token_usage_vw': 'view'},
-            'type': 'view'
-        },
-        'message_emoji_map': {
-            'reference': {},
-            'type': 'view'
-        },
-        'stats_by_contact': {
-            'reference': {'contact_token_usage_vw': 'view'},
-            'type': 'table'
-        }
-    }
-
     staging_order = OrderedDict()
 
     while len(staging_order) < len(object_info_nonexistent_refs):
@@ -221,7 +202,6 @@ def build_staging_tables_and_views(staging_order: OrderedDict,
                 table_object.refresh()
 
             elif item_type == 'view':
-                logger.info(f'Defining view "{bold(cfg.pg_schema)}"."{bold(item_name)}"', arrow='green')
 
                 view_object = View(
                     vw_name=item_name,
@@ -231,5 +211,6 @@ def build_staging_tables_and_views(staging_order: OrderedDict,
                 )
 
                 view_object.create(pg=pg, cascade=False)
+                logger.info(f'Defined view "{bold(item_name)}"', arrow='green')
     else:
         logger.warning('No staging tables or view definitions found')
