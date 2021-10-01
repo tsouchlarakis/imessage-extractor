@@ -93,10 +93,19 @@ m_join_chat_contacts as (
            , thread_original_message_id
            , has_attachment
     from {pg_schema}.chat c
-    join {pg_schema}.chat_message_join cm_join
-      on c."ROWID" = cm_join.chat_id
+    join (
+    	select chat_id, message_id
+      from (
+        -- Use a window function to avoid one-to-many message_id: chat_id mappings
+        select chat_id
+               , message_id
+               , row_number() over(partition by message_id order by message_date desc) as r
+        from {pg_schema}.chat_message_join
+      ) cm_join
+      where r = 1
+    ) cm_mapping on c."ROWID" = cm_mapping.chat_id
     join m
-      on cm_join.message_id = m.message_id
+      on cm_mapping.message_id = m.message_id
     left join {pg_schema}.contacts_vw n
       on c._identifier = n.chat_identifier
 )
@@ -110,7 +119,7 @@ select message_id
        , service
        , is_from_me
        , is_group_chat
-       , case when is_emote = false and is_url = false and is_empty = false and message_special_type is null
+       , case when is_emote = false and is_url = false and message_special_type is null
                    then true
               else false
          end as is_text

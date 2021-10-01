@@ -1,6 +1,6 @@
 import logging
 from ..helpers.config import WorkflowConfig
-from ..helpers.verbosity import bold
+from ..helpers.verbosity import bold, code
 from os.path import splitext, basename
 from pydoni import advanced_strip, listfiles, Postgres
 
@@ -61,6 +61,11 @@ def run_quality_control(pg: Postgres, cfg: WorkflowConfig, logger: logging.Logge
                     f"""{len(qc_df)} records found with one or more flag columns as
                     null (should be either True or False). Check {bold(vw_name)} for
                     more information.
+                    """))
+
+            elif vw_name == 'qc_duplicate_message_id':
+                logger.warning(advanced_strip(
+                    f"""{len(qc_df)} duplicate {code('message_id')} values found in {bold('message_vw')}
                     """))
 
         else:

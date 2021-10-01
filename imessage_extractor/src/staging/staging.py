@@ -7,8 +7,8 @@ from ..chatdb.chatdb import View
 from ..helpers.config import WorkflowConfig
 from ..helpers.verbosity import bold, path
 from .tables.emoji_text_map import refresh_emoji_text_map
-from .tables.message_tokens import refresh_message_tokens
-from .tables.tokens import refresh_tokens
+# from .tables.message_tokens import refresh_message_tokens
+# from .tables.tokens import refresh_tokens
 from os.path import basename
 from pydoni import Postgres, advanced_strip, ensurelist
 
@@ -176,8 +176,8 @@ def build_staging_tables_and_views(staging_order: OrderedDict,
     if len(staging_order):
         table_refresh_functions = dict(
             emoji_text_map=refresh_emoji_text_map,
-            message_tokens=refresh_message_tokens,
-            tokens=refresh_tokens,
+            # message_tokens=refresh_message_tokens,
+            # tokens=refresh_tokens,
         )
 
         for item_name, item_type in staging_order.items():

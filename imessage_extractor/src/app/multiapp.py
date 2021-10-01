@@ -16,10 +16,10 @@ from imessage_extractor.src.helpers.verbosity import path
 from imessage_extractor.src.app.data.extract import iMessageDataExtract
 
 
-@st.cache()
+@st.cache(show_spinner=False)
 def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
     """
-
+    Query all necessary tables/views and save the data as CSV files to a local temp directory.
     """
     logger.info('Querying data and saving to local...')
     logger.info(f'=> target folder {path(tmp_env_dpath)}')
@@ -65,6 +65,22 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
                                    tmp_env_dpath=tmp_env_dpath,
                                    logger=logger)
     manifest['message_vw'] = dict(fpath=fpath, index=index)
+
+    index = ['message_id']
+    fpath = query_and_save_dataset(pg_schema='imessage_extractor',
+                                   dataset_name='message_vw_text',
+                                   index=index,
+                                   tmp_env_dpath=tmp_env_dpath,
+                                   logger=logger)
+    manifest['message_vw_text'] = dict(fpath=fpath, index=index)
+
+    index = ['message_id']
+    fpath = query_and_save_dataset(pg_schema='imessage_extractor',
+                                   dataset_name='message_tokens_unnest',
+                                   index=index,
+                                   tmp_env_dpath=tmp_env_dpath,
+                                   logger=logger)
+    manifest['message_tokens_unnest'] = dict(fpath=fpath, index=index)
 
     index = ['dt', 'contact_name', 'is_from_me']
     fpath = query_and_save_dataset(pg_schema='imessage_extractor',
@@ -127,7 +143,8 @@ class MultiApp(object):
         if not isdir(self.tmp_env_dpath):
             mkdir(self.tmp_env_dpath)
 
-        save_data_to_local(self.tmp_env_dpath, logger)
+        with st.spinner('Loading iMessage data...'):
+            save_data_to_local(self.tmp_env_dpath, logger)
 
         self.data = iMessageDataExtract(self.tmp_env_dpath, logger)
 

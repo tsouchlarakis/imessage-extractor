@@ -1,16 +1,4 @@
 {
-    "contact_token_usage_vw": {
-        "reference": ["message_tokens", "tokens", "message_vw"]
-    },
-    "contact_top_token_usage_by_length": {
-        "reference": ["contact_token_usage_vw"]
-    },
-    "message_emoji_map": {
-        "reference": ["message_tokens", "message_vw"]
-    },
-    "contact_stats": {
-        "reference": ["message_vw", "message_emoji_map"]
-    },
     "daily_summary_contact_from_who": {
         "reference": ["message_vw"]
     },
@@ -22,5 +10,11 @@
     },
     "daily_summary": {
         "reference": ["daily_summary_contact_from_who"]
+    },
+    "message_tokens": {
+        "reference": ["message_vw"]
+    },
+    "message_tokens_unnest": {
+        "reference": ["message_tokens"]
     }
 }

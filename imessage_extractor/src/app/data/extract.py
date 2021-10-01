@@ -24,14 +24,15 @@ class iMessageDataExtract(object):
 
         for dataset_name, dataset_metadata in manifest.items():
             dataset = pd.read_csv(dataset_metadata['fpath'])
-            if dataset_metadata['index'] is not None:
-                dataset = dataset.set_index(dataset_metadata['index'])
 
             if 'dt' in dataset.columns:
                 dataset['dt'] = pd.to_datetime(dataset['dt'])
 
             if 'ts' in dataset.columns:
                 dataset['ts'] = dataset['ts'].apply(lambda x: pd.to_datetime(x).tz_localize(None))
+
+            if dataset_metadata['index'] is not None:
+                dataset = dataset.set_index(dataset_metadata['index'])
 
             setattr(self, dataset_name, dataset)
             logger.info(f'=> read {dataset_name}')

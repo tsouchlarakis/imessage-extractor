@@ -25,6 +25,22 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
+V.V.V (YYYY-MM-DD)
+------------------
+**Added**
+- ``message_tokens`` view
+
+**Changed**
+
+**Deprecated**
+- ``message_tokens`` table
+
+**Removed**
+
+**Fixed**
+
+**Security**
+
 1.0.3 (2021-09-08)
 ------------------
 **Added**

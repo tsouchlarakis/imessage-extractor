@@ -3,30 +3,32 @@ create or replace view {pg_schema}.daily_summary_from_who as
 
 select dt
        , is_from_me
-       , sum(n_messages) as n_messages
-       , sum(n_text_messages) as n_text_messages
-       , sum(n_messages_group_chat) as n_messages_group_chat
-       , sum(n_text_messages_group_chat) as n_text_messages_group_chat
-       , sum(n_imessage) as n_imessage
-       , sum(n_sms) as n_sms
-       , sum(n_emote) as n_emote
-       , sum(n_emote_remove_question) as n_emote_remove_question
-       , sum(n_emote_remove_like) as n_emote_remove_like
-       , sum(n_emote_remove_laugh) as n_emote_remove_laugh
-       , sum(n_emote_remove_heart) as n_emote_remove_heart
-       , sum(n_emote_remove_emphasis) as n_emote_remove_emphasis
-       , sum(n_emote_remove_dislike) as n_emote_remove_dislike
-       , sum(n_emote_question) as n_emote_question
-       , sum(n_emote_love) as n_emote_love
-       , sum(n_emote_like) as n_emote_like
-       , sum(n_emote_laugh) as n_emote_laugh
-       , sum(n_emote_emphasis) as n_emote_emphasis
-       , sum(n_emote_dislike) as n_emote_dislike
-       , sum(n_url) as n_url
-       , sum(n_app_for_imessage) as n_app_for_imessage
-       , sum(n_thread_origin) as n_thread_origin
-       , sum(n_threaded_reply) as n_threaded_reply
-       , sum(n_attachment) as n_attachment
-       , sum(n_contacts_messaged) as n_contacts_messaged
+       , sum(messages) as messages
+       , sum(text_messages) as text_messages
+       , sum(group_chat_messages) as group_chat_messages
+       , sum(group_chat_text_messages) as group_chat_text_messages
+       , sum(imessages) as imessages
+       , sum(sms) as sms
+       , sum(emotes) as emotes
+       , sum(emotes_love) as emotes_love
+       , sum(emotes_likes) as emotes_likes
+       , sum(emotes_dislikes) as emotes_dislikes
+       , sum(emotes_laugh) as emotes_laugh
+       , sum(emotes_emphasis) as emotes_emphasis
+       , sum(emotes_question) as emotes_question
+       , sum(emotes_remove_love) as emotes_remove_love
+       , sum(emotes_remove_like) as emotes_remove_like
+       , sum(emotes_remove_dislike) as emotes_remove_dislike
+       , sum(emotes_remove_laugh) as emotes_remove_laugh
+       , sum(emotes_remove_emphasis) as emotes_remove_emphasis
+       , sum(emotes_remove_question) as emotes_remove_question
+       , sum(urls) as urls
+       , sum(app_for_imessage) as app_for_imessage
+       , sum(thread_origins) as thread_origins
+       , sum(threaded_replies) as threaded_replies
+       , sum(messages_containing_attachments) as messages_containing_attachments
+       , sum(messages_attachments_only) as messages_attachments_only
+       , sum(tokens) as tokens
+       , sum(characters) as characters
 from {pg_schema}.daily_summary_contact_from_who
 group by dt, is_from_me

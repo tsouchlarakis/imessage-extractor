@@ -1,4 +1,3 @@
-"""About page"""
 import streamlit as st
 
 
@@ -7,6 +6,8 @@ def write(data, logger):
     """
     Write the About page.
     """
+    st.image('../../../graphics/about.png')
+
     st.markdown("""
     ## Contributions
     This an open source project and you are very welcome to **contribute** your awesome

@@ -1,4 +1,5 @@
 import datetime
+import humanize
 
 
 def to_date_str(dt: datetime.datetime) -> str:
@@ -18,6 +19,21 @@ def to_date_str(dt: datetime.datetime) -> str:
         return 'N/A'
 
 
+def csstext(text: str, cls: str, span: bool=False, header: bool=False) -> str:
+    """
+    Custom build HTML text element.
+    """
+    if span:
+        tag = 'span'
+    elif header:
+        tag = 'h1'
+    else:
+        tag = 'p'
+
+    return f'<{tag} class="{cls}">{str(text)}</{tag}>'
+
+
+
 def wrap_tag(tag: str, text: str, cls: str=None) -> str:
     if cls:
         return f'<{tag} class="{cls}">{str(text)}</{tag}>'
@@ -25,21 +41,17 @@ def wrap_tag(tag: str, text: str, cls: str=None) -> str:
         return f'<{tag}>{str(text)}</{tag}>'
 
 
-def span(text: str, cls: str=None) -> str:
-    return wrap_tag('span', str(text), cls=cls)
+def htmlbold(text: str) -> str:
+    return wrap_tag('b', text)
 
 
-def large_text(text: str) -> str:
-    return span(str(text), cls='large-text')
+def intword(n: int) -> str:
+    """
+    Apply humanize.intword() and custom formatting thereafter.
+    """
+    str_map = dict(thousand='K', million='M', billion='B')
+    word = humanize.intword(n)
+    for k, v in str_map.items():
+        word = word.replace(' ' + k, v)
 
-
-def large_text_green(text: str) -> str:
-    return span(str(text), cls='large-text-green')
-
-
-def medium_text(text: str) -> str:
-    return span(str(text), cls='medium-text')
-
-
-def medium_text_green(text: str) -> str:
-    return span(str(text), cls='medium-text-green')
+    return word
