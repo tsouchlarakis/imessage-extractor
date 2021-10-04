@@ -24,7 +24,6 @@ Extract chat data from iMessage and much, much more!
 * Python 3.X
 * pip
 
-
 ⚙️ Installation
 ---------------
 
