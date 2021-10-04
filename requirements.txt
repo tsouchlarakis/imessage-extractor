@@ -5,7 +5,9 @@
 #    pip-compile requirements.in
 #
 altair==4.1.0
-    # via streamlit
+    # via
+    #   -r requirements.in
+    #   streamlit
 appnope==0.1.2
     # via
     #   ipykernel
@@ -35,7 +37,10 @@ cffi==1.14.6
 chardet==4.0.0
     # via requests
 click==7.1.2
-    # via streamlit
+    # via
+    #   -r requirements.in
+    #   nltk
+    #   streamlit
 debugpy==1.4.3
     # via ipykernel
 decorator==5.1.0
@@ -44,6 +49,8 @@ decorator==5.1.0
     #   validators
 defusedxml==0.7.1
     # via nbconvert
+emoji==1.5.0
+    # via -r requirements.in
 entrypoints==0.3
     # via
     #   altair
@@ -80,6 +87,8 @@ jinja2==3.0.1
     #   nbconvert
     #   notebook
     #   pydeck
+joblib==1.0.1
+    # via nltk
 jsonschema==3.2.0
     # via
     #   altair
@@ -121,6 +130,8 @@ nest-asyncio==1.5.1
     # via
     #   jupyter-client
     #   nbclient
+nltk==3.6.3
+    # via -r requirements.in
 notebook==6.4.4
     # via widgetsnbextension
 numpy==1.21.2
@@ -136,6 +147,7 @@ packaging==21.0
     #   streamlit
 pandas==1.2.4
     # via
+    #   -r requirements.in
     #   altair
     #   streamlit
 pandocfilters==1.5.0
@@ -184,10 +196,14 @@ pyzmq==22.3.0
     # via
     #   jupyter-client
     #   notebook
+regex==2021.9.30
+    # via nltk
 requests==2.25.1
     # via streamlit
 send2trash==1.5.0
-    # via notebook
+    # via
+    #   -r requirements.in
+    #   notebook
 six==1.16.0
     # via
     #   bleach
@@ -197,6 +213,8 @@ six==1.16.0
     #   validators
 smmap==4.0.0
     # via gitdb
+sql-query-tools==0.1.0
+    # via -r requirements.in
 streamlit==0.89.0
     # via -r requirements.in
 terminado==0.12.1
@@ -214,6 +232,8 @@ tornado==6.1
     #   notebook
     #   streamlit
     #   terminado
+tqdm==4.62.3
+    # via nltk
 traitlets==5.1.0
     # via
     #   ipykernel
