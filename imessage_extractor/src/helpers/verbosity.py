@@ -60,7 +60,7 @@ class ExtendedLogger(logging.Logger):
 
 def logger_setup(name: str=__name__, level: int=logging.DEBUG) -> logging.Logger:
     """
-    Standardize logger setup across pydoni package.
+    Standardize logger setup.
     """
     logging.setLoggerClass(ExtendedLogger)
     logger = logging.getLogger(name)
@@ -68,12 +68,6 @@ def logger_setup(name: str=__name__, level: int=logging.DEBUG) -> logging.Logger
 
     if logger.hasHandlers():
         logger.handlers.clear()
-
-    # Set up STDOUT handler
-    # stdout_handler = logging.StreamHandler(sys.stdout)
-    # stdout_handler.setLevel(level)
-    # stdout_handler.setFormatter(formatter)
-    # logger.addHandler(stdout_handler)
 
     # Set up console handler
     console_handler = logging.StreamHandler()

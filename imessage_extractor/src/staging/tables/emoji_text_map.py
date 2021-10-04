@@ -1,12 +1,12 @@
 import emoji
 import logging
+import sql_query_tools
 import pandas as pd
-import pydoni
-from ...helpers.verbosity import bold
-from ..common import columns_match_expectation
+from imessage_extractor.src.helpers.verbosity import bold
+from imessage_extractor.src.staging.common import columns_match_expectation
 
 
-def refresh_emoji_text_map(pg: pydoni.Postgres,
+def refresh_emoji_text_map(pg: sql_query_tools.Postgres,
                            pg_schema: str,
                            table_name: str,
                            columnspec: dict,

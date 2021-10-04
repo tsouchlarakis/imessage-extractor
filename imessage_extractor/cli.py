@@ -1,4 +1,3 @@
-import logging
 import click
 from .src.go import go
 from .src.refresh_contacts import refresh_contacts

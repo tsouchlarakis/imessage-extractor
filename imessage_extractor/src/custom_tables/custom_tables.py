@@ -1,12 +1,11 @@
-import click
 import json
 import logging
 import pandas as pd
 from ..helpers.config import WorkflowConfig
 from ..helpers.verbosity import bold, path
 from os import listdir
-from os.path import isfile, join, splitext, basename, abspath
-from pydoni import advanced_strip, Postgres
+from os.path import isfile, join, abspath
+from sql_query_tools import Postgres
 
 
 class CustomTable(object):

@@ -1,18 +1,18 @@
 import click
 import json
 import logging
-import pathlib
 import shutil
 import time
-from pydoni import advanced_strip, fmt_seconds, human_filesize, Postgres
 from .chatdb.chatdb import ChatDb, ChatDbTable, View, parse_pg_credentials
 from .custom_tables.custom_tables import build_custom_tables
 from .helpers.config import WorkflowConfig
 from .helpers.verbosity import print_startup_message, logger_setup, path, bold, code
-from .staging.staging import assemble_staging_order, build_staging_tables_and_views
 from .quality_control.quality_control import create_qc_views, run_quality_control
+from .staging.staging import assemble_staging_order, build_staging_tables_and_views
+from .helpers.utils import fmt_seconds, human_filesize
 from os import makedirs, stat
 from os.path import expanduser, isdir, join
+from sql_query_tools import Postgres
 
 
 
@@ -23,9 +23,9 @@ from os.path import expanduser, isdir, join
 @click.option('--pg-schema', type=str, default=None, required=False,
               help='Name of Postgres schema to save tables to.')
 @click.option('--pg-credentials', type=str, default=None, required=False,
-              help=advanced_strip("""EITHER the path to a local Postgres credentials
+              help="""EITHER the path to a local Postgres credentials
               file 'i.e. ~/.pgpass', OR a string with the connection credentials. Must
-              be in format 'hostname:port:db_name:user:pg_pass'."""))
+              be in format 'hostname:port:db_name:user:pg_pass'.""")
 @click.option('-r', '--rebuild', is_flag=True, default=False,
               help='Wipe target Postgres schema and rebuild from scratch.')
 @click.option('-s', '--stage', is_flag=True, default=True,
@@ -142,20 +142,15 @@ def go(chat_db_path,
     if cfg.pg_schema is not None:
         # Drop all objects in the Postgres schema in order to rebuild it from scratch
         if cfg.rebuild:
-            pg.drop_schema(cfg.pg_schema, if_exists=True, cascade=True)
-            pg.create_schema(cfg.pg_schema)
-            # TODO: uncomment on new pydoni release
-            # pg.drop_schema_and_recreate(pg_schema, if_exists=True, cascade=True)
+            pg.drop_schema_and_recreate(pg_schema, if_exists=True, cascade=True)
 
-            logger.info(advanced_strip(
-                f"""Parameter {code("rebuild")} is set to {code("True")},
-                so re-created schema "{bold(cfg.pg_schema)}" from scratch"""))
+            logger.info(f"""Parameter {code("rebuild")} is set to {code("True")},
+                so re-created schema "{bold(cfg.pg_schema)}" from scratch""")
         else:
             # Drop views in the Postgres schema since they may be dependent on tables
             # that require rebuilding. They will all be re-created later
-            logger.info(advanced_strip(
-                f'''Parameter {code("rebuild")} is set to {code("False")},
-                so only appending new information from chat.db to "{bold(cfg.pg_schema)}"'''))
+            logger.info(f'''Parameter {code("rebuild")} is set to {code("False")},
+                so only appending new information from chat.db to "{bold(cfg.pg_schema)}"''')
 
             with open(cfg.file.chatdb_view_info, 'r') as json_file:
                 chatdb_view_info = json.load(json_file)

@@ -1,8 +1,9 @@
 import logging
-from ..helpers.config import WorkflowConfig
-from ..helpers.verbosity import bold, code
+from imessage_extractor.src.helpers.config import WorkflowConfig
+from imessage_extractor.src.helpers.utils import listfiles
+from imessage_extractor.src.helpers.verbosity import bold, code
 from os.path import splitext, basename
-from pydoni import advanced_strip, listfiles, Postgres
+from sql_query_tools import Postgres
 
 
 def create_qc_views(pg: Postgres, cfg: WorkflowConfig, logger: logging.Logger) -> None:
@@ -36,10 +37,10 @@ def run_quality_control(pg: Postgres, cfg: WorkflowConfig, logger: logging.Logge
             logger.warning(f'QC issues found in "{bold(vw_name)}"!')
 
             if vw_name == 'qc_duplicate_chat_identifier_defs':
-                logger.warning(advanced_strip("""The following `chat_identifier` values
+                logger.warning("""The following `chat_identifier` values
                 are mapped to multiple names/sources, and only 1 is allowed. Please
                 check the `chat_identifier` in each source, and make sure it is only
-                mapped to one value of `contact_name` in one source."""))
+                mapped to one value of `contact_name` in one source.""")
 
                 chat_ids = qc_df['chat_identifier'].unique()
                 for chat_id in chat_ids:
@@ -57,16 +58,16 @@ def run_quality_control(pg: Postgres, cfg: WorkflowConfig, logger: logging.Logge
                     logger.warning(chat_id, arrow='yellow')
 
             elif vw_name == 'qc_null_flags':
-                logger.warning(advanced_strip(
+                logger.warning(
                     f"""{len(qc_df)} records found with one or more flag columns as
                     null (should be either True or False). Check {bold(vw_name)} for
                     more information.
-                    """))
+                    """)
 
             elif vw_name == 'qc_duplicate_message_id':
-                logger.warning(advanced_strip(
+                logger.warning(
                     f"""{len(qc_df)} duplicate {code('message_id')} values found in {bold('message_vw')}
-                    """))
+                    """)
 
         else:
             # No QC issues to report
