@@ -1,13 +1,13 @@
-from imessage_extractor.src.app.helpers import to_date_str, intword, csstext, htmlbold
-from imessage_extractor.src.helpers.verbosity import bold
-from pydoni import advanced_strip
-import altair as alt
 from os import remove
 from os.path import isfile
+import altair as alt
 import datetime
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from imessage_extractor.src.app.helpers import to_date_str, intword, csstext, htmlbold
+from imessage_extractor.src.helpers.utils import strip_ws
+from imessage_extractor.src.helpers.verbosity import bold
 
 
 def write(data, logger) -> None:
@@ -153,7 +153,7 @@ def write(data, logger) -> None:
         'Include message types',
         include_types_options,
         include_types_options,
-        help=advanced_strip("""Select the message types to be included
+        help=strip_ws("""Select the message types to be included
             in the analysis below. By default, all message types are included.
             'Text' includes both iMessage and SMS messages.
             'Emote' includes all tapback replies (i.e. likes, dislikes, hearts, etc.).
