@@ -1,13 +1,17 @@
 from imessage_extractor.src.app.helpers import to_date_str, intword, csstext, htmlbold
+from os.path import dirname, join
 import streamlit as st
 import humanize
+
+
+root_dir = dirname(dirname(dirname(dirname(dirname(__file__)))))
 
 
 def write(data, logger) -> None:
     """
     Write the homepage.
     """
-    st.image('../../../graphics/imessage_extractor_logo.png')
+    st.image(join(root_dir, 'graphics', 'imessage_extractor_logo.png'))
     latest_ts = data.message_vw.ts.max()
 
     st.markdown(csstext(f"""

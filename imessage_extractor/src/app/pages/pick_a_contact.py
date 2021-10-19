@@ -1,7 +1,9 @@
 from os import remove
-from os.path import isfile
+from nltk.corpus import stopwords
+from os.path import isfile, join, dirname
 import altair as alt
 import datetime
+import stylecloud
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -10,12 +12,15 @@ from imessage_extractor.src.helpers.utils import strip_ws
 from imessage_extractor.src.helpers.verbosity import bold
 
 
+root_dir = dirname(dirname(dirname(dirname(dirname(__file__)))))
+
+
 def write(data, logger) -> None:
     """
     Write the Pick a Contact page.
     """
     logger.info('Writing page "Pick a Contact"')
-    st.image('../../../graphics/pick_a_contact.png')
+    st.image(join(root_dir, 'graphics', 'pick_a_contact.png'))
 
     # Controls
     show_group_chats = st.checkbox('Show group chats', value=False, help="Include group chat names in the 'Contact name' dropdown?")
@@ -267,12 +272,15 @@ def write(data, logger) -> None:
 
     col1, col2 = st.columns(2)
 
-    col1.markdown(csstext(stats['active_texting_days'], cls='large-text-green-center'), unsafe_allow_html=True)
-    col2.markdown(csstext(str(stats['active_texting_days_pct']) + '%', cls='large-text-green-center'), unsafe_allow_html=True)
-    col1.markdown(csstext('active texting days', cls='small-text-center'), unsafe_allow_html=True)
-    col2.markdown(csstext('of days in selected time window', cls='small-text-center'), unsafe_allow_html=True)
+    col1.markdown(csstext(stats['active_texting_days'], cls='large-text-green'), unsafe_allow_html=True)
+    col2.markdown(csstext(str(stats['active_texting_days_pct']) + '%', cls='large-text-green'), unsafe_allow_html=True)
+    col1.markdown(csstext('active texting days', cls='small-text'), unsafe_allow_html=True)
+    col2.markdown(csstext('of days in selected time window', cls='small-text'), unsafe_allow_html=True)
 
     top_active_days = page_data['summary_day'][message_count_col].sort_values(ascending=False).head(10).reset_index().reset_index()
+
+    st.markdown('<br>', unsafe_allow_html=True)
+    st.markdown(csstext('Here are the top 10 days with our highest message volume (a larger circle means more messages were exchanged on that day):', cls='small-text'), unsafe_allow_html=True)
 
     st.altair_chart(
         alt.Chart(top_active_days.reset_index())
@@ -306,7 +314,6 @@ def write(data, logger) -> None:
     #
 
     st.markdown(csstext('Message Volume', cls='medium-text-bold', header=True), unsafe_allow_html=True)
-    st.markdown(csstext(f'Volume of messages exchanged with {htmlbold(contact_name)}', cls='small-text'), unsafe_allow_html=True)
 
     stats['total_messages'] = page_data['summary_day']['messages'].sum()
     stats['total_messages_from_me_pct'] = page_data['summary_day_from_who']['messages_from_me'].sum() / page_data['summary_day']['messages'].sum()
@@ -316,9 +323,9 @@ def write(data, logger) -> None:
     st.markdown(csstext(f"""
     Total messages exchanged.
     {htmlbold(str(int(round(stats['total_messages_from_me_pct'] * 100, 0))) + '%')} sent by me,
-    {htmlbold(str(int(round(stats['total_messages_from_them_pct'] * 100, 0))) + '%')} sent by {contact_name}.
-    """, cls='small-text') , unsafe_allow_html=True
-    )
+    {htmlbold(str(int(round(stats['total_messages_from_them_pct'] * 100, 0))) + '%')} sent by {htmlbold(contact_name)}.
+    """, cls='small-text') , unsafe_allow_html=True)
+    st.markdown('<br>', unsafe_allow_html=True)
 
 
     def get_corner_radius_size(xaxis_length: int) -> float:
@@ -331,6 +338,9 @@ def write(data, logger) -> None:
             return 2
         else:
             return 1
+
+
+    st.markdown(csstext(f"Here's a plot of our total message volume over time, shown by {htmlbold(dt_gran)}:", cls='small-text'), unsafe_allow_html=True)
 
 
     chart_df = page_data['summary'].copy()
@@ -365,9 +375,7 @@ def write(data, logger) -> None:
     tmp_df = tmp_df.drop('dt', axis=1).groupby('weekday').mean()
     most_popular_day = tmp_df[message_count_col].idxmax()
 
-    st.markdown(csstext(f"""Average messages exchanged per day of the week.
-    Looks like {htmlbold(most_popular_day)} is your most popular texting
-    day!""", cls='small-text') , unsafe_allow_html=True)
+    st.markdown(csstext(f"Here's the average number of messages we've exchanged per day of the week:", cls='small-text') , unsafe_allow_html=True)
 
     st.altair_chart(
         alt.Chart(tmp_df.reset_index())
@@ -397,9 +405,11 @@ def write(data, logger) -> None:
         .properties(width=600, height=150)
     )
 
+    st.markdown(csstext(f'Looks like {htmlbold(most_popular_day)} is our most popular texting day!', cls='small-text'), unsafe_allow_html=True)
+
 
     st.markdown(csstext('% of All My Messages', cls='medium-text-bold', header=True), unsafe_allow_html=True)
-    st.markdown(csstext('Percent of my total volume across all contacts made up by the selected contact', cls='small-text'), unsafe_allow_html=True)
+    st.markdown(csstext(f'Percent of my total volume (across all contacts) made up by {htmlbold(contact_name)}:', cls='small-text'), unsafe_allow_html=True)
 
     pct_message_volume = (
         page_data['summary']
@@ -456,19 +466,19 @@ def write(data, logger) -> None:
     #
 
     st.markdown(csstext('Words', cls='medium-text-bold', header=True), unsafe_allow_html=True)
-    st.markdown(csstext(f'Words exchanged with {htmlbold(contact_name)}', cls='small-text'), unsafe_allow_html=True)
 
     stats['total_tokens'] = page_data['summary_day']['tokens'].sum()
     stats['total_tokens_from_me_pct'] = page_data['summary_day_from_who']['tokens_from_me'].sum() / page_data['summary_day']['tokens'].sum()
     stats['total_tokens_from_them_pct'] = page_data['summary_day_from_who']['tokens_from_them'].sum() / page_data['summary_day']['tokens'].sum()
 
     st.markdown(csstext(intword(stats['total_tokens']), cls='large-text-green'), unsafe_allow_html=True)
-    st.markdown(csstext(f"""
-    Total words exchanged.
+    st.markdown(f"""I've exchanged {htmlbold(intword(stats['total_tokens']))} total
+    words with {htmlbold(contact_name)},
     {htmlbold(str(int(round(stats['total_tokens_from_me_pct'] * 100, 0))) + '%')} written by me,
-    {htmlbold(str(int(round(stats['total_tokens_from_them_pct'] * 100, 0))) + '%')} written by {htmlbold(contact_name)}.
-    """, cls='small-text') , unsafe_allow_html=True
-    )
+    {htmlbold(str(int(round(stats['total_tokens_from_them_pct'] * 100, 0))) + '%')} written by them.
+    """, unsafe_allow_html=True)
+    st.markdown('<br>', unsafe_allow_html=True)
+
 
     page_data['word_counts'] = (
         data.message_vw
@@ -483,14 +493,8 @@ def write(data, logger) -> None:
     )
 
     # Filter stopwords and punctuation
-    # from nltk.corpus import stopwords
     page_data['word_counts']['token'] = page_data['word_counts']['token'].str.lower()
-    # page_data['word_counts'] = (
-    #     page_data['word_counts']
-    #     .loc[
-    #         (~page_data['word_counts']['token'].isin(stopwords.words('english')))
-    #     ]
-    # )
+
     page_data['word_counts']['token'] = (
         page_data['word_counts']['token']
         .str.replace(r'[^\w\s]+', '')
@@ -501,46 +505,17 @@ def write(data, logger) -> None:
     tmp_wordcloud_fpath = 'tmp_imessage_extractor_app_pick_a_contact_wordcloud.csv'
     page_data['word_counts'].head(500).to_csv(tmp_wordcloud_fpath, index=False)
 
-    import stylecloud
-    # from wordcloud import WordCloud, ImageColorGenerator
-    # from PIL import Image
-    # import matplotlib.pyplot as plt
-    # import numpy as np
-
-    # my_mask = np.array(Image.open('../../../graphics/imessage_logo.png'))
-    # wc = WordCloud(
-    #     background_color='#2b2b2b',
-    #     mask=my_mask,
-    #     collocations=False,
-    #     width=600,
-    #     height=300,
-    #     contour_width=3,
-    #     contour_color='white',
-    #     stopwords=stopwords.words('english'),
-    # )
-    # wc.generate_from_frequencies(page_data['word_counts'].head(500).to_dict())
-    # image_colors = ImageColorGenerator(my_mask)
-    # wc.recolor(color_func=image_colors)
-    # plt.figure(figsize=(20, 10))
-    # plt.imshow(wc, interpolation='bilinear')
-    # plt.axis('off')
-    # wc.to_file('wordcloud.png')
-    # plt.show()
-
-
     expected_stylecloud_fpath = 'stylecloud.png'
     stylecloud.gen_stylecloud(file_path=tmp_wordcloud_fpath,
                               icon_name='fas fa-comment',
-                            #   palette='cmocean.sequential.Algae_20',
                               colors=['#83cf83', '#a6e0a6', '#dcecdc', '#ffffff'],
                               background_color='#2b2b2b',
                               output_name=expected_stylecloud_fpath,
                               gradient='horizontal',
                               max_words=500,
                               stopwords=True,
-                              custom_stopwords=['im', 'id', 'ive'],
-                              size=(1024, 800),
-                              )
+                              custom_stopwords=['im', 'id', 'ive', 'ill'] + stopwords.words('english'),
+                              size=(1024, 800),)
 
     if isfile(expected_stylecloud_fpath):
         st.image('stylecloud.png')
@@ -553,28 +528,23 @@ def write(data, logger) -> None:
     if isfile(expected_stylecloud_fpath):
         remove(expected_stylecloud_fpath)
 
-    # import streamlit_wordcloud as wordcloud
+    stats['avg_words_per_message_from_me'] = \
+        (page_data['summary_day_from_who'].sum()['tokens_from_me']
+         / page_data['summary_day_from_who'].sum()['text_messages_from_me'])
 
-    # words = [dict(text=row['token'], value=row['count']) for i, row in page_data['word_counts'].iterrows()]
+    stats['avg_words_per_message_from_them'] = \
+        (page_data['summary_day_from_who'].sum()['tokens_from_them']
+         / page_data['summary_day_from_who'].sum()['text_messages_from_them'])
 
-    # words = [
+    col1, col2 = st.columns(2)
 
-    #     dict(text="Robinhood", value=16000, color="#b5de2b", country="US", industry="Cryptocurrency"),
-    #     dict(text="Personio", value=8500, color="#b5de2b", country="DE", industry="Human Resources"),
-    #     dict(text="Boohoo", value=6700, color="#b5de2b", country="UK", industry="Beauty"),
-    #     dict(text="Deliveroo", value=13400, color="#b5de2b", country="UK", industry="Delivery"),
-    #     dict(text="SumUp", value=8300, color="#b5de2b", country="UK", industry="Credit Cards"),
-    #     dict(text="CureVac", value=12400, color="#b5de2b", country="DE", industry="BioPharma"),
-    #     dict(text="Deezer", value=10300, color="#b5de2b", country="FR", industry="Music Streaming"),
-    #     dict(text="Eurazeo", value=31, color="#b5de2b", country="FR", industry="Asset Management"),
-    #     dict(text="Drift", value=6000, color="#b5de2b", country="US", industry="Marketing Automation"),
-    #     dict(text="Twitch", value=4500, color="#b5de2b", country="US", industry="Social Media"),
-    #     dict(text="Plaid", value=5600, color="#b5de2b", country="US", industry="FinTech"),
-    # ]
-    # return_obj = wordcloud.visualize(words, enable_tooltip=False, tooltip_data_fields={
-    #     'text':'Word', 'value':'Usages'
-    # }, per_word_coloring=False)
+    col1.markdown(csstext(round(stats['avg_words_per_message_from_me'], 1), cls='large-text-green'), unsafe_allow_html=True)
+    col1.markdown(csstext(f'My average words per message', cls='small-text'), unsafe_allow_html=True)
 
+    col2.markdown(csstext(round(stats['avg_words_per_message_from_them'], 1), cls='large-text-green'), unsafe_allow_html=True)
+    col2.markdown(csstext(f'Their average words per message', cls='small-text'), unsafe_allow_html=True)
+
+    st.markdown('<br>', unsafe_allow_html=True)
 
     #
     # Tabular message preview
@@ -614,6 +584,6 @@ def write(data, logger) -> None:
 
     message_snapshot_display['Time'] = message_snapshot_display['ts'].dt.strftime("%b %-d '%y at %I:%M:%S %p").str.lower().str.capitalize()
 
-    st.write(message_snapshot_display[['Time', 'Me', contact_name]].set_index('Time').fillna('').head(n_message_display))
+    st.write(message_snapshot_display[['Time', contact_name, 'Me']].set_index('Time').fillna('').head(n_message_display))
 
     logger.info('=> done')

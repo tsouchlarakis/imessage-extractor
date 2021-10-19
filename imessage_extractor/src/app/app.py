@@ -3,15 +3,16 @@
 
 import streamlit as st
 import logging
-import awesome_streamlit as ast
 import pages.about
 # import pages.gallery.index
 import pages.home
 import multiapp
 import pages.pick_a_contact
 from imessage_extractor.src.helpers.verbosity import logger_setup
+from os.path import join, dirname
 # import pages.resources
 # import pages.vision
+
 
 PAGES = {
     'Home': pages.home,
@@ -40,7 +41,7 @@ def main():
     """
     Top-level function of the app.
     """
-    activate_stylesheet('stylesheet.css')
+    activate_stylesheet(join(dirname(__file__), 'stylesheet.css'))
 
     st.sidebar.title('Navigation')
 
