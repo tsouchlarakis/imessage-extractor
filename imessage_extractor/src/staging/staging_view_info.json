@@ -16,5 +16,17 @@
     },
     "message_tokens_unnest": {
         "reference": ["message_tokens"]
+    },
+    "contact_token_usage_daily_from_who": {
+        "reference": ["message_vw_text", "message_tokens_unnest"]
+    },
+    "contact_token_usage_from_who": {
+        "reference": ["contact_token_usage_daily_from_who"]
+    },
+    "contact_token_usage_daily": {
+        "reference": ["contact_token_usage_daily_from_who"]
+    },
+    "contact_token_usage": {
+        "reference": ["contact_token_usage_daily_from_who"]
     }
 }

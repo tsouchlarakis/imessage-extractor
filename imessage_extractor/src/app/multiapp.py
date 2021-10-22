@@ -114,6 +114,14 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
                                    logger=logger)
     manifest['daily_summary'] = dict(fpath=fpath, index=index)
 
+    index = ['contact_name', 'is_from_me', 'token', 'length']
+    fpath = query_and_save_dataset(pg_schema='imessage_extractor',
+                                   dataset_name='contact_token_usage_from_who',
+                                   index=index,
+                                   tmp_env_dpath=tmp_env_dpath,
+                                   logger=logger)
+    manifest['contact_token_usage_from_who'] = dict(fpath=fpath, index=index)
+
     manifest_fpath = join(tmp_env_dpath, 'manifest.json')
     with open(manifest_fpath, 'w') as f:
         if len(manifest) == 0:
@@ -124,7 +132,6 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
     logger.info(f'=> wrote manifest {path(manifest_fpath)}')
 
     logger.info('=> done')
-
 
 
 class MultiApp(object):
@@ -147,21 +154,6 @@ class MultiApp(object):
             save_data_to_local(self.tmp_env_dpath, logger)
 
         self.data = iMessageDataExtract(self.tmp_env_dpath, logger)
-
-        # with st.spinner('Loading iMessage data...'):
-        #     pg = Postgres()
-        #     logger.info('Querying imessage_extractor tables')
-        #     message_vw = pg.read_table('imessage_extractor', 'message_vw')
-        #     logger.info('Done querying tables')
-
-        #     logger.info('Writing data to temporary folder')
-        #     message_vw_fpath = join(self.tmp_env_dpath, 'message_vw.csv')
-        #     message_vw.to_csv(message_vw_fpath, index=False)
-        #     logger.info('Done writing data to temporary folder')
-
-        #     # Create data extract object referenced throughout the app
-        #     self.data = iMessageDataExtract(self.tmp_env_dpath, logger)
-
         self.logger.info('Initialized MultiApp')
 
     def add_app(self, title: str, write_func: typing.Callable):
