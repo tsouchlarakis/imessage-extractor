@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import string
 import streamlit as st
 import json
 from os.path import join
@@ -45,6 +46,11 @@ class iMessageDataExtract(object):
         self.lst_contact_names_no_group_chats = sorted(
             [x for x in self.message_vw.loc[~self.message_vw['is_group_chat']]['contact_name'].unique() if isinstance(x, str)]
         )
+        self.lst_punctuation_chars = list(string.punctuation + '’‘“”``')
+        self.lst_contractions_w_apostrophe = [
+            "i'm", "i'd", "i've", "i'll", "'s",
+        ]
+        self.contractions_wo_apostrophe = [x.replace("'", '') for x in self.lst_contractions_w_apostrophe]
 
         logger.info('=> lists computed')
 

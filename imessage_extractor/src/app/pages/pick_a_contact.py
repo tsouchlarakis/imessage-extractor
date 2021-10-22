@@ -514,7 +514,7 @@ def write(data, logger) -> None:
                               gradient='horizontal',
                               max_words=500,
                               stopwords=True,
-                              custom_stopwords=['im', 'id', 'ive', 'ill'] + stopwords.words('english'),
+                              custom_stopwords=data.contractions_wo_apostrophe + stopwords.words('english'),
                               size=(1024, 800),)
 
     if isfile(expected_stylecloud_fpath):
@@ -545,6 +545,45 @@ def write(data, logger) -> None:
     col2.markdown(csstext(f'Their average words per message', cls='small-text'), unsafe_allow_html=True)
 
     st.markdown('<br>', unsafe_allow_html=True)
+
+    # Favorite words by word length
+
+    token_usage_from_who_ranked_by_length = (
+        data.contact_token_usage_from_who
+        .loc[data.contact_token_usage_from_who.index.get_level_values('contact_name') == contact_name]
+        .droplevel('contact_name')
+        .reset_index()
+    )
+
+    token_usage_from_who_ranked_by_length['token'] = token_usage_from_who_ranked_by_length['token'].str.lower()
+
+    # Filter out stopwords, punctuation characters and contractions
+    token_usage_from_who_ranked_by_length = token_usage_from_who_ranked_by_length.loc[
+        (~token_usage_from_who_ranked_by_length['token'].isin(stopwords.words('english')))
+        # & (~token_usage_from_who_ranked_by_length['token'].isin(data.lst_punctuation_chars))
+        & (~token_usage_from_who_ranked_by_length['token'].isin(data.lst_contractions_w_apostrophe))
+        & (~token_usage_from_who_ranked_by_length['token'].str.isdigit().astype(bool))
+    ]
+
+    token_usage_from_who_ranked_by_length['rank'] = (
+        token_usage_from_who_ranked_by_length
+        .groupby(['is_from_me', 'length'])
+        ['usages']
+        .rank(method='first', ascending=False)
+    )
+
+    page_data['top_token_usage_from_who_by_length'] = (
+        token_usage_from_who_ranked_by_length
+        .loc[
+            (token_usage_from_who_ranked_by_length['rank'] == 1)
+            & (token_usage_from_who_ranked_by_length['length'] <= 20)
+        ]
+        .drop('rank', axis=1)
+        .sort_values(['is_from_me', 'length'])
+    )
+
+    print(token_usage_from_who_ranked_by_length)
+    print(page_data['top_token_usage_from_who_by_length'])
 
     #
     # Tabular message preview
