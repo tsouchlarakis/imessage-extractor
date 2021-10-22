@@ -365,7 +365,7 @@ class ChatDbTable(object):
 
         df = pd.read_sql(f'SELECT * FROM {self.table_name} {where_clause}'.strip(), sqlite_con)
         if 'message.csv' in output_fpath:
-            df['text'] = df['text'].str.replace('\n', ' ').str.strip()
+            df['text'] = df['text'].str.replace('\n', ' ').str.replace('\r', ' ').str.strip()
 
         df.to_csv(output_fpath, index=False)
 
