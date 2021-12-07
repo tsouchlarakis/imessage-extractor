@@ -176,11 +176,10 @@ def go(chat_db_path,
 
         logger.info(f'Saving tables to schema "{bold(cfg.pg_schema)}"')
 
-        """
-        Save all tables to Postgres in such an order that foreign keys are resolved correctly.
-        For example, if a table depends on another table, then the other table must be created
-        before the dependent table.
-        """
+        # Save all tables to Postgres in such an order that foreign keys are resolved correctly.
+        # For example, if a table depends on another table, then the other table must be created
+        # before the dependent table.
+
         inserted_journal = []  # Keep a log of all tables that have been saved to Postgres
 
         while len(inserted_journal) < len(chatdb_tables):
