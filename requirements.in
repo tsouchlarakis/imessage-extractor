@@ -3,7 +3,6 @@ click
 emoji
 nltk
 pandas
-pandas
 psycopg2-binary==2.8.6
 send2trash
 sql-query-tools
