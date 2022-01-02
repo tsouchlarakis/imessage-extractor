@@ -136,6 +136,7 @@ class ChatDbTable(object):
             new_column_datatypes = {
                 'chat': {
                     'last_read_message_timestamp': 'BIGINT',
+                    'syndication_date': 'BIGINT',
                 },
                 'message': {
                     'date': 'BIGINT',
