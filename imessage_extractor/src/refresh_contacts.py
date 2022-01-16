@@ -1,13 +1,68 @@
 import click
 import logging
+import numpy as np
 import pandas as pd
-import re
+import phonenumbers
 from .helpers.verbosity import logger_setup, path, code
 from os.path import expanduser, abspath, join, dirname
 from send2trash import send2trash
 
 
-target_fpath = abspath(join(dirname(__file__), '..', 'custom_tables', 'contacts.csv'))
+target_fpath = abspath(join(dirname(__file__), 'custom_tables', 'data', 'contacts.csv'))
+
+
+def extract_phone_number(raw_string: str, sep: str=';') -> dict:
+    """
+    Extract all phone number(s) in a given row. Input format will be...
+
+        home: (XXX) XXX-XXXX; mobile: (XXX) XXX-XXXX; work: (XXX) XXX-XXXX; work fax: (XXX) XXX-XXXX
+
+    ...with an arbitrary number of phone numbers. Return each phone number (in its native format)
+    as a key: value pair in the form...
+
+        phone_number: phone_number_subtype
+
+    ...where `phone_number` is the phone number in its native format, and `phone_number_subtype` is
+    the type of phone number (i.e. 'home', 'mobile', 'work', 'work fax').
+    """
+    values_dct = {}
+
+    if isinstance(raw_string, str):
+        for s in raw_string.split(sep):
+            value_subtype = s.split(':')[0].strip()
+            value = s.split(':')[1].strip()
+            values_dct[value] = value_subtype
+
+        return values_dct
+
+    elif np.isnan(raw_string):
+        return {}
+
+    else:
+        return {}
+
+
+def extract_email(raw_string: str, sep:str=';') -> dict:
+    """
+    Apply the same extractions as extract_phone_number().
+    """
+    return extract_phone_number(raw_string, sep)
+
+
+def variate_phone_number(phone_number: str) -> list:
+        """
+        Use the phonenumbers package to return a set of phone number variations
+        that can be used to match iMessages with, since the iMessage app can
+        record the contact's phone number in a variety of formats.
+        """
+        pn_obj = phonenumbers.parse(phone_number, 'US')
+
+        return [
+            phonenumbers.format_number(pn_obj, phonenumbers.PhoneNumberFormat.E164),
+            phonenumbers.format_number(pn_obj, phonenumbers.PhoneNumberFormat.NATIONAL),
+            phonenumbers.format_number(pn_obj, phonenumbers.PhoneNumberFormat.INTERNATIONAL),
+        ]
+
 
 
 @click.option('--exported-contacts-csv-fpath', type=click.Path(exists=True), required=True,
@@ -42,69 +97,75 @@ def refresh_contacts(exported_contacts_csv_fpath, delete_input_csv, verbose) -> 
     """
     logging_level = logging.INFO if verbose else logging.ERROR
     logger = logger_setup(name='refresh-contact', level=logging_level)
-    logger.info(f'Processing {path(exported_contacts_csv_fpath)}')
 
     # Read datafile
-    df = pd.read_csv(exported_contacts_csv_fpath)
+    exported_contacts_csv_fpath = expanduser(exported_contacts_csv_fpath)
+    logger.info(f'Processing {path(exported_contacts_csv_fpath)}')
+    df = pd.read_csv(exported_contacts_csv_fpath).drop_duplicates()
     assert 'Full Name' in df.columns, 'Exported .csv file must contain a column named "Full Name"'
     logger.info(f'Read CSV, shape {df.shape}')
 
-    # Drop defined values of "Full Name"
-    drop_full_names = ['Error']
-    df = df[~df['Full Name'].isin(drop_full_names)]
-    df = df.drop_duplicates()
+    # Validate dataframe structure
+    assert list(df.columns) == ['Full Name', 'Phone', 'Email']
 
-    # Create contact map in format `chat_identifier`: `contact_name`, where
-    # `chat_identifier` is the contact's phone number or email, and `contact_name`
+    # Create contact map (output dataframe) in format `chat_identifier`: `contact_name`,
+    # where `chat_identifier` is the contact's phone number or email, and `contact_name`
     # is the contact's display name in clear text.
-    contact_map_df = pd.DataFrame(columns=['chat_identifier', 'contact_name'])
+    contact_map_cols = ['contact_name', 'chat_identifier', 'identifier_type', 'identifier_subtype']
+    contact_map_df = pd.DataFrame(columns=contact_map_cols)
 
     #
     # Iterate over each row in the exported .csv file and process them sequentially
     #
 
+    # Filter out these values of "Full Name"
+    ignore_full_names = ['Error']
+
+    n_unique_contacts = 0
+    n_invalid_contacts = 0
     for i, row in df.iterrows():
         name = row['Full Name']
 
-        for col, value in row[~row.isnull()].to_dict().items():
-            if (col != 'Full Name') and ('phone' in col.lower() or 'email' in col.lower()):
-                value_lst = []  # Convert to list to append alternative values
+        if name in ignore_full_names:
+            n_invalid_contacts += 1
 
-                if 'phone' in col.lower():
-                    values = str(value).split(';')
+        else:
+            n_unique_contacts += 1
+            pn_dct_original = extract_phone_number(row['Phone'])
+            pn_dct_variated = {}
 
-                    for v in values:
-                        phone_no_spaces = str(v).replace(' ', '')
-                        phone_no_chars = str(v).replace(' ', '').replace('(', '').replace(')', '').replace('-', '')
+            for pn_string, pn_subtype in pn_dct_original.items():
+                pn_dct_variated[pn_string] = pn_subtype
 
-                        # Add raw values as contender values
-                        if phone_no_chars.isdigit():
-                            value_lst.append(v)
-                            value_lst.append(phone_no_spaces)
-                            value_lst.append(phone_no_chars)
+                # Get all possible variations of this phone number
+                pn_variations = variate_phone_number(pn_string)
 
-                        if re.match(r'^\d{10}$', phone_no_chars):
-                            # Example: 4155954380
-                            phone_10_no_chars_w_plus_one = '+1' + phone_no_chars
-                            value_lst.append(phone_10_no_chars_w_plus_one)
+                # Append each variation to a recording dictionary
+                for variation in pn_variations:
+                    if variation not in pn_dct_variated.keys():
+                        pn_dct_variated[variation] = pn_subtype
 
-                        if re.match(r'^\d{11}$', phone_no_chars) and phone_no_chars.startswith('1'):
-                            # Example: 14155954380
-                            phone_11_no_chars_w_plus = '+' + phone_no_chars
-                            value_lst.append(phone_11_no_chars_w_plus)
+            phone_number_df = pd.DataFrame(pn_dct_variated, index=[None]).T.reset_index()
+            phone_number_df.columns = ['chat_identifier', 'identifier_subtype']
+            phone_number_df['contact_name'] = name
+            phone_number_df['identifier_type'] = 'phone'
+            phone_number_df = phone_number_df[contact_map_cols]
 
-                if 'email' in col.lower():
-                    values = str(value).split(';')
-                    for v in values:
-                        value_lst.append(v)
+            email_dct = extract_email(row['Email'])
+            email_df = pd.DataFrame(email_dct, index=[None]).T.reset_index()
+            email_df.columns = ['chat_identifier', 'identifier_subtype']
+            email_df['contact_name'] = name
+            email_df['identifier_type'] = 'email'
+            email_df = email_df[contact_map_cols]
 
-                for v_val in list(set(value_lst)):
-                    contact_map_df.loc[len(contact_map_df)] = [v_val, name]
+            contact_df = pd.concat([phone_number_df, email_df], axis=0)[contact_map_cols]
+            contact_map_df = pd.concat([contact_map_df, contact_df], axis=0)
+
 
     # Ensure only populated contact names remain
     contact_map_df = contact_map_df[~contact_map_df['contact_name'].isnull()]
-    contact_map_df = contact_map_df.drop_duplicates()
-    logger.info(f'Extracted {len(contact_map_df)} {code("(chat_identifier : contact_name)")}, pairs')
+    contact_map_df = contact_map_df.drop_duplicates().sort_values('contact_name')
+    logger.info(f'Extracted {len(contact_map_df)} {code("(chat_identifier : contact_name)")}, pairs from {n_unique_contacts} unique contacts ({n_invalid_contacts} invalid)')
 
     # Output to target destination
     contact_map_df.to_csv(target_fpath, index=False)

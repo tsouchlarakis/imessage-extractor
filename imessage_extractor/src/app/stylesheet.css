@@ -1,0 +1,89 @@
+.small-text {
+    font-size: 15px;
+    font-weight: normal;
+    font-family: sans-serif;
+    color: #d4d4d4;
+    text-align: left;
+}
+
+.small-text-center {
+    font-size: 15px;
+    font-weight: normal;
+    font-family: sans-serif;
+    color: #d4d4d4;
+    text-align: center;
+}
+
+.small-text-right {
+    font-size: 15px;
+    font-weight: normal;
+    font-family: sans-serif;
+    color: #d4d4d4;
+    text-align: right;
+}
+
+.medium-text {
+    font-size: 45px;
+    font-family: sans-serif;
+    font-weight: normal;
+    color: #d4d4d4;
+}
+
+.medium-text-right {
+    font-size: 45px;
+    font-family: sans-serif;
+    font-weight: normal;
+    color: #d4d4d4;
+    text-align: right;
+}
+
+.medium-text-bold {
+    font-size: 45px;
+    font-family: sans-serif;
+    font-weight: bold;
+    color: #d4d4d4;
+}
+
+.medium-text-green {
+    font-size: 45px;
+    font-weight: normal;
+    font-family: sans-serif;
+    color: #83cf83;
+}
+
+.medium-text-green-right {
+    font-size: 45px;
+    font-weight: normal;
+    font-family: sans-serif;
+    color: #83cf83;
+    text-align: right;
+}
+
+.large-text {
+    font-size: 100px;
+    font-weight: bold;
+    font-family: sans-serif;
+}
+
+.large-text-green {
+    font-size: 100px;
+    font-weight: bold;
+    font-family: sans-serif;
+    color: #83cf83;
+}
+
+.large-text-green-center {
+    font-size: 100px;
+    font-weight: bold;
+    font-family: sans-serif;
+    color: #83cf83;
+    text-align: center;
+}
+
+.large-text-green-right {
+    font-size: 100px;
+    font-weight: bold;
+    font-family: sans-serif;
+    color: #83cf83;
+    text-align: right;
+}

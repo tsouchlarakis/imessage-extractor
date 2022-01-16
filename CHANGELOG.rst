@@ -25,6 +25,30 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
+1.0.4 (2022-01-16)
+------------------
+**Added**
+- ``message_tokens`` view
+- Additional ``message_special_type`` values and null text values
+- Pick a Contact app enhancements
+
+**Changed**
+- Requirements
+- Added requirements designed to be installed via ``brew``
+- Additional data added to contacts.csv
+  - Now use ``phonenumbers`` packages to parse phone numbers from exported contacts
+
+**Deprecated**
+- ``message_tokens`` table
+
+**Removed**
+
+**Fixed**
+- Join to ``thread_origins``
+- Handle carriage return in message text
+
+**Security**
+
 1.0.3 (2021-09-08)
 ------------------
 **Added**

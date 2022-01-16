@@ -1,0 +1,15 @@
+[server]
+
+port = 1897
+
+[browser]
+
+serverAddress = "localhost"
+
+[theme]
+
+primaryColor="#272b35"
+backgroundColor="#2b2b2b"
+secondaryBackgroundColor="#393939"
+textColor="#ffffff"
+font="sans serif"

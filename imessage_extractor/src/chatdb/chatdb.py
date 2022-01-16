@@ -5,10 +5,11 @@ import pathlib
 import re
 import sqlite3
 import typing
-from ..helpers.config import WorkflowConfig
-from ..helpers.verbosity import bold, path, code
+from imessage_extractor.src.helpers.config import WorkflowConfig
+from imessage_extractor.src.helpers.utils import strip_ws, ensurelist
+from imessage_extractor.src.helpers.verbosity import bold, path, code
 from os.path import isfile, join, expanduser
-from pydoni import advanced_strip, Postgres, ensurelist
+from sql_query_tools import Postgres
 
 
 def parse_pg_credentials(pg_credentials: typing.Union[str, pathlib.Path]) -> tuple:
@@ -22,7 +23,7 @@ def parse_pg_credentials(pg_credentials: typing.Union[str, pathlib.Path]) -> tup
         pg_cred_str = pg_credentials
 
     assert len(pg_cred_str.split(':')) == 5, \
-        advanced_strip("""Invalid structure of supplied Postgres credentials.
+        strip_ws("""Invalid structure of supplied Postgres credentials.
         Must be either a path to a local Postgres credentials file 'i.e. ~/.pgpass', OR
         a string with the connection credentials. Must be in format
         'hostname:port:db_name:user_name:password'.""")
@@ -38,7 +39,7 @@ class ChatDb(object):
     def __init__(self, chat_db_path: str, logger: logging.Logger) -> None:
         self.chat_db_path = expanduser(chat_db_path)
         if not isfile(self.chat_db_path):
-            raise FileNotFoundError(advanced_strip(
+            raise FileNotFoundError(strip_ws(
                 f"""Chat.db not found at {path(self.chat_db_path)}"""))
 
         self.logger = logger
@@ -53,7 +54,7 @@ class ChatDb(object):
             self.logger.info(f'Connected to chat.db {path(self.chat_db_path)}')
             return sqlite_con
         except Exception as e:
-            raise(Exception(advanced_strip("""Unable to connect to SQLite! Could it be
+            raise(Exception(strip_ws("""Unable to connect to SQLite! Could it be
             that the executing environment does not have proper permissions? Perhaps wrapping
             the command in an (Automator) application or script, and granting Full Disk
             Access to that application or script might be a potential option""")))
@@ -135,6 +136,7 @@ class ChatDbTable(object):
             new_column_datatypes = {
                 'chat': {
                     'last_read_message_timestamp': 'BIGINT',
+                    'syndication_date': 'BIGINT',
                 },
                 'message': {
                     'date': 'BIGINT',
@@ -363,6 +365,8 @@ class ChatDbTable(object):
             self.logger.debug(f'Querying full table')
 
         df = pd.read_sql(f'SELECT * FROM {self.table_name} {where_clause}'.strip(), sqlite_con)
+        if 'message.csv' in output_fpath:
+            df['text'] = df['text'].str.replace('\n', ' ').str.replace('\r', ' ').str.strip()
 
         df.to_csv(output_fpath, index=False)
 
@@ -376,7 +380,7 @@ class ChatDbTable(object):
         self.logger.debug(f'Saving table {bold(self.table_name)} to Postgres')
 
         if self.csv_fpath is None:
-            raise FileNotFoundError(advanced_strip(f"""
+            raise FileNotFoundError(strip_ws(f"""
             Must create {path(self.csv_fpath)} before inserting to Postgres
             table {bold(self.table_name)} (hint: call `save_to_csv()` first)"""))
         else:
@@ -394,7 +398,7 @@ class ChatDbTable(object):
             self.logger.debug(f'Re-created empty table')
 
         # Save table to Postgres
-        load_sql = advanced_strip(f"""
+        load_sql = strip_ws(f"""
         copy "{pg_schema}"."{self.table_name}"
         from '{self.csv_fpath}' (
             delimiter ',',
@@ -441,7 +445,7 @@ class View(object):
 
         self.references = self.vw_info['reference']
         if not isinstance(self.references, list):
-            raise ValueError(advanced_strip(f"References for {bold(self.vw_name)} must be a list"))
+            raise ValueError(strip_ws(f"References for {bold(self.vw_name)} must be a list"))
 
         if isinstance(self.references, list) and len(self.references) > 0:
             self.has_references = True
@@ -456,7 +460,7 @@ class View(object):
         .sql file.
         """
         if not isfile(self.def_fpath):
-            raise FileNotFoundError(advanced_strip(
+            raise FileNotFoundError(strip_ws(
                 f"View definition {bold(self.vw_name)} expected at {path(self.def_fpath)}"))
 
         if self.vw_type == 'staging':
@@ -468,7 +472,7 @@ class View(object):
             vw_info = json.load(f)
 
         if self.vw_name not in vw_info:
-            raise ValueError(advanced_strip(
+            raise ValueError(strip_ws(
                 f"""View definition {bold(self.vw_name)} expected as key: value
                 pair in {path(vw_info_fpath)}"""))
 
@@ -477,7 +481,7 @@ class View(object):
         Read a .sql file containing a definition of a Postgres view.
         """
         if not isfile(def_fpath):
-            raise FileNotFoundError(advanced_strip(
+            raise FileNotFoundError(strip_ws(
                 f"View definition {bold(self.vw_name)} expected at {path(def_fpath)}"))
 
         try:
@@ -485,7 +489,7 @@ class View(object):
                 def_sql = sql_file.read().format(pg_schema=self.cfg.pg_schema)
                 return def_sql
         except Exception as e:
-            raise Exception(advanced_strip(
+            raise Exception(strip_ws(
                 f"""View definition exists but {bold(self.vw_name)} is malformed.
                 There is one or more format string enclosed in {{}} in the definition
                 {path(def_fpath)} that is incompatible with local variables
@@ -531,9 +535,9 @@ class View(object):
         that all dependencies for a particular view are created before executing that view's
         definition.
 
-        We will iterate through each view in the view_info*.json file, and for each view,
+        We will iterate through each view in the *view_info.json file, and for each view,
         check each of its dependencies (if any) to ensure that they exist. If one or more
-        do not, we must navigate to that view in the view_info*.json file and ensure that
+        do not, we must navigate to that view in the *view_info.json file and ensure that
         all of that view's dependencies exist. If one or more do not yet exist, we must then
         continue navigating down the tree of dependencies until we can create all of them.
 
@@ -560,7 +564,7 @@ class View(object):
                     self.logger.debug('Defined view successfully')
                     self.logger.info(f'Defined view "{bold(self.vw_name)}"', arrow='cyan')
                 else:
-                    self.logger.debug(advanced_strip(
+                    self.logger.debug(strip_ws(
                         f"""Cannot create the view because of nonexistent
                         references: {str(self.nonexistent_references)}"""))
 

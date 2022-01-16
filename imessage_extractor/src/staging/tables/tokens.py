@@ -1,9 +1,9 @@
 import logging
 import nltk
-import pydoni
+import sql_query_tools
 import string
-from ...helpers.verbosity import bold
-from ..common import columns_match_expectation
+from imessage_extractor.src.helpers.verbosity import bold
+from imessage_extractor.src.staging.common import columns_match_expectation
 from nltk.corpus import stopwords
 
 
@@ -20,7 +20,7 @@ def is_emoji(token):
   """
 
 
-def refresh_tokens(pg: pydoni.Postgres,
+def refresh_tokens(pg: sql_query_tools.Postgres,
                    pg_schema: str,
                    table_name: str,
                    columnspec: dict,

@@ -1,8 +1,7 @@
 import logging
+from imessage_extractor.src.helpers.verbosity import path, bold
+from imessage_extractor.src.helpers.utils import listfiles, ensurelist, duplicated
 from os.path import dirname, basename, join, isdir, isfile, splitext, expanduser
-from numpy import isin
-from pydoni import listfiles, ensurelist, duplicated
-from .verbosity import path, bold
 
 
 class Attribute():

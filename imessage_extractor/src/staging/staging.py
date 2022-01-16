@@ -2,15 +2,15 @@ import json
 import logging
 import typing
 from collections import OrderedDict
-from numpy import e
-from ..chatdb.chatdb import View
-from ..helpers.config import WorkflowConfig
-from ..helpers.verbosity import bold, path
-from .tables.emoji_text_map import refresh_emoji_text_map
-from .tables.message_tokens import refresh_message_tokens
-from .tables.tokens import refresh_tokens
+from imessage_extractor.src.chatdb.chatdb import View
+from imessage_extractor.src.helpers.config import WorkflowConfig
+from imessage_extractor.src.helpers.verbosity import bold, path
+from imessage_extractor.src.helpers.utils import strip_ws, ensurelist
+from imessage_extractor.src.staging.tables.emoji_text_map import refresh_emoji_text_map
+# from .tables.message_tokens import refresh_message_tokens
+# from .tables.tokens import refresh_tokens
 from os.path import basename
-from pydoni import Postgres, advanced_strip, ensurelist
+from sql_query_tools import Postgres
 
 
 class StagingTable(object):
@@ -37,7 +37,7 @@ class StagingTable(object):
             if self.table_name in json_data.keys():
                 json_data = json_data[self.table_name]
             else:
-                raise KeyError(advanced_strip(
+                raise KeyError(strip_ws(
                     f"""Table {table_name} expected as a key in
                     {basename(self.cfg.file.staging_table_info)} but not found"""))
 
@@ -65,7 +65,7 @@ class StagingTable(object):
                     missing_refs.append(ref)
 
             if len(missing_refs) > 0:
-                raise Exception(advanced_strip(
+                raise Exception(strip_ws(
                     f"""Staging table {bold(self.table_name)} requires the
                     following non-existent references: {str(missing_refs)}"""))
 
@@ -125,7 +125,7 @@ def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Lo
 
                     if not ref_exists:
                         if ref not in staging_table_info and ref not in staging_vw_info:
-                            raise ValueError(advanced_strip(
+                            raise ValueError(strip_ws(
                                 f"""Nonexistent reference {bold(ref)} for
                                 staging {obj_info['type']} {bold(obj_name)} must itself be a staging
                                 table or view, so it must be present in either
@@ -139,25 +139,6 @@ def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Lo
     # reference table or views that will be required to exist when create those tables and/or
     # views. Now let's iterate along that dictionary to define an order in which these objects
     # should be created.
-
-    {
-        'contact_token_usage_vw': {
-            'reference': {},
-            'type': 'view'
-        },
-        'contact_top_token_usage_by_length': {
-            'reference': {'contact_token_usage_vw': 'view'},
-            'type': 'view'
-        },
-        'message_emoji_map': {
-            'reference': {},
-            'type': 'view'
-        },
-        'stats_by_contact': {
-            'reference': {'contact_token_usage_vw': 'view'},
-            'type': 'table'
-        }
-    }
 
     staging_order = OrderedDict()
 
@@ -195,14 +176,14 @@ def build_staging_tables_and_views(staging_order: OrderedDict,
     if len(staging_order):
         table_refresh_functions = dict(
             emoji_text_map=refresh_emoji_text_map,
-            message_tokens=refresh_message_tokens,
-            tokens=refresh_tokens,
+            # message_tokens=refresh_message_tokens,
+            # tokens=refresh_tokens,
         )
 
         for item_name, item_type in staging_order.items():
             if item_type == 'table':
                 if item_name not in table_refresh_functions:
-                    raise ValueError(advanced_strip(
+                    raise ValueError(strip_ws(
                         f"""Attempting to refresh table {bold(item_name)} (found in
                         staging_table_info.json) but corresponding refresh function
                         not found in `table_refresh_functions` dictionary. Please add
@@ -221,7 +202,6 @@ def build_staging_tables_and_views(staging_order: OrderedDict,
                 table_object.refresh()
 
             elif item_type == 'view':
-                logger.info(f'Defining view "{bold(cfg.pg_schema)}"."{bold(item_name)}"', arrow='green')
 
                 view_object = View(
                     vw_name=item_name,
@@ -231,5 +211,6 @@ def build_staging_tables_and_views(staging_order: OrderedDict,
                 )
 
                 view_object.create(pg=pg, cascade=False)
+                logger.info(f'Defined view "{bold(item_name)}"', arrow='green')
     else:
         logger.warning('No staging tables or view definitions found')

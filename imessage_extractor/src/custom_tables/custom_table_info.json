@@ -9,6 +9,8 @@
     },
     "contacts": {
         "chat_identifier": "text",
-        "contact_name": "text"
+        "contact_name": "text",
+        "identifier_type": "text",
+        "identifier_subtype": "text"
     }
 }

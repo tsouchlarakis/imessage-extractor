@@ -6,8 +6,8 @@ from setuptools import setup, find_packages
 with open('README.rst') as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
-    history = history_file.read()
+with open('CHANGELOG.rst') as changelog_file:
+    changelog = changelog_file.read()
 
 with open('requirements.in') as requirements_file:
     requirements = requirements_file.read().split()
@@ -36,7 +36,7 @@ setup(
     },
     install_requires=requirements,
     license='MIT license',
-    # long_description=readme + '\n\n' + history,
+    # long_description=readme + '\n\n' + changelog,
     include_package_data=True,
     keywords='imessage_extractor',
     name='imessage_extractor',
