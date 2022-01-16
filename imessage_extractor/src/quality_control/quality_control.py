@@ -69,6 +69,11 @@ def run_quality_control(pg: Postgres, cfg: WorkflowConfig, logger: logging.Logge
                     f"""{len(qc_df)} duplicate {code('message_id')} values found in {bold('message_vw')}
                     """)
 
+            elif vw_name == 'qc_message_special_types':
+                logger.warning(
+                    f"""{len(qc_df)} missing {code('message_special_type')} values found in {bold('message_vw')}
+                    """)
+
         else:
             # No QC issues to report
             logger.info(f'No QC issues found in "{bold(vw_name)}"')

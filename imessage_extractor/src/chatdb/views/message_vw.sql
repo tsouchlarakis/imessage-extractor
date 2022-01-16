@@ -14,7 +14,7 @@ with m as (
                    '[\n\r]+', ' ', 'g'
                )
            ) as "text"
-           , m.associated__type
+           , m.associated__type as associated_type
            , m.balloon_bundle_id
            , m."service"
            , case when m.is_from_me = 1 then true when m.is_from_me = 0 then false else null end as is_from_me
@@ -25,6 +25,9 @@ with m as (
                   when m.cache_has_attachments = 0 then false
                   else null
              end as has_attachment
+           , m."attributedBody" as attributed_body
+           , m.was_data_detected
+           , m.cache_has_attachments
     from {pg_schema}.message m
     left join (
         -- Get the ROWID for all messages that have a thread_originator_guid
@@ -54,28 +57,37 @@ m_join_chat_contacts as (
            , "text"
            , m.service
            , m.is_from_me
-           , case when m.associated__type in (2000, 2001, 2002, 2003, 2004, 2005, 3000, 3001, 3002, 3003, 3004, 3005) then true
+           , case when m.associated_type in (2000, 2001, 2002, 2003, 2004, 2005, 3000, 3001, 3002, 3003, 3004, 3005) then true
                   else false
              end as is_emote
-           , case when m."text" ilike '$%completed a workout.' then 'workout_notification'
-                  when m."text" ilike '$%closed all three Activity rings.' then 'workout_notification'
-                  when m."text" ilike '$%earned an achievement.' then 'workout_notification'
-                  when m.associated__type = 3 then 'app_for_imessage'
-                  when m.associated__type = 2000 then 'emote_love'
-                  when m.associated__type = 2001 then 'emote_like'
-                  when m.associated__type = 2002 then 'emote_dislike'
-                  when m.associated__type = 2003 then 'emote_laugh'
-                  when m.associated__type = 2004 then 'emote_emphasis'
-                  when m.associated__type = 2005 then 'emote_question'
-                  when m.associated__type = 3000 then 'emote_remove_heart'
-                  when m.associated__type = 3001 then 'emote_remove_like'
-                  when m.associated__type = 3002 then 'emote_remove_dislike'
-                  when m.associated__type = 3003 then 'emote_remove_laugh'
-                  when m.associated__type = 3004 then 'emote_remove_emphasis'
-                  when m.associated__type = 3005 then 'emote_remove_question'
-                  when m.associated__type = 2 and m.balloon_bundle_id ilike '%PeerPaymentMessagesExtension' then 'apple_cash'
+           , case when m.associated_type = 2 and m.balloon_bundle_id ilike '%PeerPaymentMessagesExtension' then 'apple_cash'
+                  when m.associated_type = 2 and m.balloon_bundle_id ilike '%imessagepoll%' then 'poll'
+                  when m.associated_type in (2, 3) and m.balloon_bundle_id ilike '%gamepigeon%' then 'game_pigeon'
+                  when m.associated_type in (2, 3) and m.balloon_bundle_id ilike '%messages.business.extension%' then 'business_extension'
+                  when m.associated_type = 3 and m."text" ilike '%earned an achievement.' then 'activity'
+                  when m.associated_type = 3 and m."text" ilike '%completed a workout.' then 'activity'
+                  when m.associated_type = 3 and m."text" ilike '%closed all three Activity rings.' then 'activity'
+                  when m.associated_type = 3 and m."text" ilike 'Requested % with Apple Pay.' then 'apple_cash'
+                  when m.associated_type = 3 and (m."text" ilike '%poll%' or m."text" ilike '%voted%') then 'poll'
+                  when m.associated_type = 3 and m."text" = 'Cup Pong' then 'game_pigeon'
+                  when m.associated_type = 3 and m."text" = '8 Ball' then 'game_pigeon'
+                  when m.associated_type = 3 and m."text" = '(null)' then 'null_message'
+                  when m.associated_type = 1000 and m.cache_has_attachments = 1 and m.was_data_detected = 1 and m.attributed_body ilike '%kIMFileTransferGUIDAttributeName%' then 'sticker'
+                  when m.associated_type = 2000 then 'emote_love'
+                  when m.associated_type = 2001 then 'emote_like'
+                  when m.associated_type = 2002 then 'emote_dislike'
+                  when m.associated_type = 2003 then 'emote_laugh'
+                  when m.associated_type = 2004 then 'emote_emphasis'
+                  when m.associated_type = 2005 then 'emote_question'
+                  when m.associated_type = 3000 then 'emote_remove_heart'
+                  when m.associated_type = 3001 then 'emote_remove_like'
+                  when m.associated_type = 3002 then 'emote_remove_dislike'
+                  when m.associated_type = 3003 then 'emote_remove_laugh'
+                  when m.associated_type = 3004 then 'emote_remove_emphasis'
+                  when m.associated_type = 3005 then 'emote_remove_question'
                   else null
              end as message_special_type
+           , associated_type
            , case when c._identifier ilike 'chat%' then true
                   else false
              end as is_group_chat
@@ -126,6 +138,7 @@ select message_id
        , is_empty
        , is_emote
        , message_special_type
+       , associated_type
        , is_url
        , is_thread_origin
        , is_threaded_reply
