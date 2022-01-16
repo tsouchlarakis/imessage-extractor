@@ -1,8 +1,9 @@
 import json
 import logging
 import pandas as pd
-from ..helpers.config import WorkflowConfig
-from ..helpers.verbosity import bold, path
+from imessage_extractor.src.helpers.config import WorkflowConfig
+from imessage_extractor.src.helpers.utils import strip_ws
+from imessage_extractor.src.helpers.verbosity import bold, path
 from os import listdir
 from os.path import isfile, join, abspath
 from sql_query_tools import Postgres
