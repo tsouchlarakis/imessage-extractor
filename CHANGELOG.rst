@@ -34,7 +34,6 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 **Changed**
 - Requirements
-- Added requirements designed to be installed via ``brew``
 - Additional data added to contacts.csv
   - Now use ``phonenumbers`` packages to parse phone numbers from exported contacts
 

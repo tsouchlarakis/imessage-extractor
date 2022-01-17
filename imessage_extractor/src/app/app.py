@@ -3,24 +3,23 @@
 
 import streamlit as st
 import logging
-import pages.about
-# import pages.gallery.index
-import pages.home
 import multiapp
-import pages.pick_a_contact
 from imessage_extractor.src.helpers.verbosity import logger_setup
 from os.path import join, dirname
+from pages import home
+from pages import about
+from pages.pick_a_contact import pick_a_contact
 # import pages.resources
 # import pages.vision
 
 
 PAGES = {
-    'Home': pages.home,
-    'Pick a Contact': pages.pick_a_contact,
-    # 'Resources': pages.resources,
-    # 'Gallery': pages.gallery.index,
-    # 'Vision': pages.vision,
-    'About': pages.about,
+    'Home': home,
+    'Pick a Contact': pick_a_contact,
+    # 'Resources': resources,
+    # 'Gallery': gallery.index,
+    # 'Vision': vision,
+    'About': about,
 }
 
 logger = logger_setup(name='imessage-visualizer', level=logging.INFO)
