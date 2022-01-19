@@ -11,12 +11,12 @@ def viz_message_volume(page_data, stats, contact_name, message_count_col, dt_off
     stats['total_messages_from_me_pct'] = page_data['summary_day_from_who']['messages_from_me'].sum() / page_data['summary_day']['messages'].sum()
     stats['total_messages_from_them_pct'] = page_data['summary_day_from_who']['messages_from_them'].sum() / page_data['summary_day']['messages'].sum()
 
-    st.markdown(csstext(intword(stats['total_messages']), cls='large-text-green'), unsafe_allow_html=True)
-    st.markdown(csstext(f"""
-    Total messages exchanged.
-    {htmlbold(str(int(round(stats['total_messages_from_me_pct'] * 100, 0))) + '%')} sent by me,
-    {htmlbold(str(int(round(stats['total_messages_from_them_pct'] * 100, 0))) + '%')} sent by {htmlbold(contact_name)}.
-    """, cls='small-text') , unsafe_allow_html=True)
+    st.markdown(f"""Total messages exchanged with **{contact_name}**,
+    **{str(int(round(stats['total_messages_from_me_pct'] * 100, 0))) + '%'}** sent by me,
+    **{str(int(round(stats['total_messages_from_them_pct'] * 100, 0))) + '%'}** sent by them.
+    """)
+
+    st.markdown(csstext(intword(stats['total_messages']), cls='large-text-green-center'), unsafe_allow_html=True)
     st.markdown('<br>', unsafe_allow_html=True)
 
 
@@ -32,14 +32,14 @@ def viz_message_volume(page_data, stats, contact_name, message_count_col, dt_off
             return 1
 
 
-    st.markdown(csstext(f"Here's a plot of our total message volume over time, shown by {htmlbold(dt_gran)}:", cls='small-text'), unsafe_allow_html=True)
+    st.markdown(f"Here's our total message volume over time, shown by **{dt_gran}**:")
 
     chart_df = page_data['summary'].copy()
     chart_df.index = chart_df.reset_index()['dt'] + dt_offset
     brush = alt.selection_interval(encodings=['x'])
 
     st.altair_chart(
-        alt.Chart(chart_df.sort_index().reset_index())
+        alt.Chart(data=chart_df.sort_index().reset_index(), background='#2b2b2b')
         .mark_bar(
             cornerRadiusTopLeft=get_corner_radius_size(len(chart_df)),
             cornerRadiusTopRight=get_corner_radius_size(len(chart_df))
@@ -66,11 +66,12 @@ def viz_message_volume(page_data, stats, contact_name, message_count_col, dt_off
     tmp_df['weekday'] = tmp_df['dt'].dt.day_name()
     tmp_df = tmp_df.drop('dt', axis=1).groupby('weekday').mean()
     most_popular_day = tmp_df[message_count_col].idxmax()
+    n_messages_on_most_popular_day = tmp_df[message_count_col].max()
 
-    st.markdown(csstext(f"Here's the average number of messages we've exchanged per day of the week:", cls='small-text') , unsafe_allow_html=True)
+    st.markdown("Here's the average number of messages we've exchanged per day of the week:")
 
     st.altair_chart(
-        alt.Chart(tmp_df.reset_index())
+        alt.Chart(data=tmp_df.reset_index(), background='#2b2b2b')
         .mark_area(
             color=alt.Gradient(
                 gradient='linear',
@@ -97,4 +98,4 @@ def viz_message_volume(page_data, stats, contact_name, message_count_col, dt_off
         .properties(width=600, height=150)
     )
 
-    st.markdown(csstext(f'Looks like {htmlbold(most_popular_day)} is our most popular texting day', cls='small-text'), unsafe_allow_html=True)
+    st.markdown(f'Looks like **{most_popular_day}** is our most popular texting day, with an average of **{n_messages_on_most_popular_day}** messages exchanged that day.')

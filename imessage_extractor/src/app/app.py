@@ -9,8 +9,6 @@ from os.path import join, dirname
 from pages import home
 from pages import about
 from pages.pick_a_contact import pick_a_contact
-# import pages.resources
-# import pages.vision
 
 
 PAGES = {
@@ -52,19 +50,20 @@ def main():
     app.run()
 
     st.sidebar.title('Contribute')
-    st.sidebar.info(
-        'This an open source project and you are very welcome to **contribute** your awesome '
-        'comments, questions, resources and apps as '
-        '[issues](https://github.com/MarcSkovMadsen/awesome-streamlit/issues) of or '
-        '[pull requests](https://github.com/MarcSkovMadsen/awesome-streamlit/pulls) '
-        'to the [source code](https://github.com/MarcSkovMadsen/awesome-streamlit). '
-    )
-    st.sidebar.title('About')
     st.sidebar.info("""
-    This app is maintained by Andoni Sooklaris. You can learn more about me at
-    [andonisooklaris.com](https://www.andonisooklaris.com).
+    This is an open-source project and you're very welcome to contribute any and all ideas
+    for improvements, bug fixes or new features as
+    [pull requests](https://github.com/tsouchlarakis/imessage-extractor/pulls) or
+    [issues](https://github.com/tsouchlarakis/imessage-extractor/issues) to the
+    [source code](https://github.com/tsouchlarakis/imessage-extractor). For more details,
+    see the repository's [README](https://github.com/tsouchlarakis/imessage-extractor/blob/main/README.rst).
     """)
 
+    st.sidebar.title('About')
+    st.sidebar.info("""
+    This app is developed by Andoni Sooklaris. You can learn more about me at
+    [andonisooklaris.com](https://www.andonisooklaris.com).
+    """)
 
 
 if __name__ == "__main__":

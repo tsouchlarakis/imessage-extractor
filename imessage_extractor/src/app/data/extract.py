@@ -2,6 +2,7 @@ import logging
 import pandas as pd
 import string
 import streamlit as st
+import emoji
 import json
 from os.path import join
 
@@ -51,6 +52,24 @@ class iMessageDataExtract(object):
             "i'm", "i'd", "i've", "i'll", "'s",
         ]
         self.contractions_wo_apostrophe = [x.replace("'", '') for x in self.lst_contractions_w_apostrophe]
+
+        self.emoji_lst = list(emoji.UNICODE_EMOJI['en'].keys())
+
+        self.tapback_type_map = {
+            'emote_dislike': 'Dislike',
+            'emote_emphasis': 'Emphasis',
+            'emote_laugh': 'Laugh',
+            'emote_like': 'Like',
+            'emote_love': 'Love',
+            'emote_question': 'Question',
+            'emote_remove_dislike': 'Remove Dislike',
+            'emote_remove_emphasis': 'Remove Emphasis',
+            'emote_remove_heart': 'Remove Heart',
+            'emote_remove_laugh': 'Remove Laugh',
+            'emote_remove_like': 'Remove Like',
+            'emote_remove_question': 'Remove Question',
+        }
+        self.tapback_lst = list(self.tapback_type_map.keys())
 
         logger.info('=> lists computed')
 

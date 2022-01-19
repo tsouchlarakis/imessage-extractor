@@ -14,15 +14,14 @@ def write(data, logger) -> None:
     st.image(join(root_dir, 'graphics', 'imessage_extractor_logo.png'))
     latest_ts = data.message_vw.ts.max()
 
-    st.markdown(csstext(f"""
+    st.markdown(f"""
     Statistics on my iMessage history from
-    {htmlbold(to_date_str(data.message_vw.dt.min()))}
+    **{to_date_str(data.message_vw.dt.min())}**
     until
-    {htmlbold(to_date_str(data.message_vw.dt.max()))}.
+    **{to_date_str(data.message_vw.dt.max())}.**
     Data last refreshed
-    {htmlbold(humanize.naturaltime(latest_ts.replace(tzinfo=None)))}.
-    """, cls='small-text'), unsafe_allow_html=True)
-
+    **{humanize.naturaltime(latest_ts.replace(tzinfo=None))}**.
+    """)
 
     col1, col2 = st.columns((1.4, 1))
 

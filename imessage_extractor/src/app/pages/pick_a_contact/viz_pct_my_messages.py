@@ -48,7 +48,7 @@ def viz_pct_my_messages(data,
     brush = alt.selection_interval(encodings=['x'])
 
     st.altair_chart(
-        alt.Chart(chart_df['rate'].sort_index().reset_index())
+        alt.Chart(data=chart_df['rate'].sort_index().reset_index(), background='#2b2b2b')
         .mark_line(size=3, point=dict(filled=False, fill='darkslategray'))
         .encode(
             x=alt.X(xaxis_identifier, title=None, axis=alt.Axis(format=tooltip_dt_format, labelColor='dimgray')),
