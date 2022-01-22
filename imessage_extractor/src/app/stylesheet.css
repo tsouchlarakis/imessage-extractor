@@ -32,11 +32,27 @@
     text-align: right;
 }
 
+.small22-text-center {
+    font-size: 22px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: normal;
+    color: #d4d4d4;
+    text-align: center;
+}
+
 .smallmedium-text-bold {
     font-size: 30px;
     font-family: 'IBM Plex Sans', sans-serif;
     font-weight: bold;
     color: #d4d4d4;
+}
+
+.smallmedium-text-center {
+    font-size: 30px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: normal;
+    color: #d4d4d4;
+    text-align: center;
 }
 
 .smallmedium-text-bold-center {

@@ -6,7 +6,6 @@ from os.path import join, dirname
 from imessage_extractor.src.app.pages.pick_a_contact.common import prepare_page_data, get_altair_dt_plot_attributes, controls
 from imessage_extractor.src.app.pages.pick_a_contact.viz_texting_activity import viz_texting_activity
 from imessage_extractor.src.app.pages.pick_a_contact.viz_message_volume import viz_message_volume
-from imessage_extractor.src.app.pages.pick_a_contact.viz_pct_my_messages import viz_pct_my_messages
 from imessage_extractor.src.app.pages.pick_a_contact.viz_tabular_chat_history import viz_tabular_chat_history
 from imessage_extractor.src.app.pages.pick_a_contact.viz_word_analysis import viz_word_analysis
 
@@ -25,7 +24,7 @@ def write(data, logger) -> None:
     # Prepare page
     #
 
-    contact_name, dt_gran = controls(data)
+    contact_name, dt_gran, show_group_chats = controls(data)
 
     inputs, page_data, stats, message_count_col, selected_include_type_columns = prepare_page_data(data, contact_name, dt_gran)
 
@@ -33,6 +32,24 @@ def write(data, logger) -> None:
     tooltip_dt_title, tooltip_dt_format, xaxis_identifier, dt_offset = get_altair_dt_plot_attributes(dt_gran)
 
     st.markdown(f'First message on **{to_date_str(stats["first_message_dt"])}**, latest message on **{to_date_str(stats["last_message_dt"])}**.')
+
+    #
+    # Message volume
+    #
+
+    st.markdown(csstext('Message Volume', cls='medium-text-bold', header=True), unsafe_allow_html=True)
+
+    viz_message_volume(data=data,
+                       page_data=page_data,
+                       contact_name=contact_name,
+                       message_count_col=message_count_col,
+                       dt_offset=dt_offset,
+                       dt_gran=dt_gran,
+                       show_group_chats=show_group_chats,
+                       xaxis_identifier=xaxis_identifier,
+                       tooltip_dt_title=tooltip_dt_title,
+                       tooltip_dt_format=tooltip_dt_format,
+                       selected_include_type_columns=selected_include_type_columns)
 
     #
     # Texting Activity
@@ -44,39 +61,6 @@ def write(data, logger) -> None:
     viz_texting_activity(page_data=page_data, stats=stats, message_count_col=message_count_col)
 
     st.markdown('<br>', unsafe_allow_html=True)
-
-    #
-    # Message volume
-    #
-
-    st.markdown(csstext('Message Volume', cls='medium-text-bold', header=True), unsafe_allow_html=True)
-
-    viz_message_volume(page_data=page_data,
-                       stats=stats,
-                       contact_name=contact_name,
-                       message_count_col=message_count_col,
-                       dt_offset=dt_offset,
-                       dt_gran=dt_gran,
-                       xaxis_identifier=xaxis_identifier,
-                       tooltip_dt_title=tooltip_dt_title,
-                       tooltip_dt_format=tooltip_dt_format)
-
-    #
-    # Percent of All My Messages
-    #
-
-    st.markdown(csstext('% of All My Messages', cls='smallmedium-text-bold', header=True), unsafe_allow_html=True)
-    st.markdown(f'Percent of my total volume (across all contacts) made up to & from **{contact_name}**:')
-
-    viz_pct_my_messages(data=data,
-                        page_data=page_data,
-                        message_count_col=message_count_col,
-                        dt_gran=dt_gran,
-                        dt_offset=dt_offset,
-                        selected_include_type_columns=selected_include_type_columns,
-                        xaxis_identifier=xaxis_identifier,
-                        tooltip_dt_title=tooltip_dt_title,
-                        tooltip_dt_format=tooltip_dt_format)
 
     #
     # Word Analysis

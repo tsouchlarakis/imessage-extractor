@@ -18,7 +18,7 @@ def viz_tabular_chat_history(data, inputs, contact_name) -> None:
 
     col1, col2 = st.columns((1, 2.5))
 
-    n_message_display = col1.number_input('Show this many messages', min_value=1, max_value=len(message_snapshot), value=20, step=1)
+    n_message_display = col1.number_input('Show this many messages', min_value=1, max_value=len(message_snapshot), value=min(20, len(message_snapshot)), step=1)
 
     message_snapshot_display = pd.concat([
         (

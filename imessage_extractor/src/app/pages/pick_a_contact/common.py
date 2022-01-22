@@ -29,7 +29,7 @@ def controls(data) -> tuple:
         help='Determine the date granularity of the visualizations below'
     )
 
-    return contact_name, dt_gran
+    return contact_name, dt_gran, show_group_chats
 
 
 def pull_contact_summary(data, contact_name: str, include_is_from_me: bool) -> pd.DataFrame:

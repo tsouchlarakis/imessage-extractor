@@ -28,6 +28,9 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
     logger.info(f'=> target folder {path(tmp_env_dpath)}')
     pg = Postgres()
 
+    if not refresh_data:
+        logger.warning('Refresh data is set to False - skipping data extraction')
+
     # Maintain a dictionary of all tables written to local
     manifest = {}
 

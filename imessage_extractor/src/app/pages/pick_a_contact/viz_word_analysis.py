@@ -70,7 +70,7 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
 
         if is_from_me:
             expected_stylecloud_fpath = expected_stylecloud_from_me_fpath
-            icon_name = 'fas fa-comment fa-flip-horizontal'
+            icon_name = 'fas fa-comment fa-flip-horizontal'  # FIXME - this is horizontal flip is not working
         else:
             expected_stylecloud_fpath = expected_stylecloud_from_them_fpath
             icon_name = 'fas fa-comment'
@@ -90,7 +90,7 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
     col1.markdown(csstext(contact_name, cls='smallmedium-text-bold-center'), unsafe_allow_html=True)
     col2.markdown(csstext('Me', cls='smallmedium-text-bold-center'), unsafe_allow_html=True)
 
-    st.markdown(csstext('Favorite words', cls='small-text-center'), unsafe_allow_html=True)
+    st.markdown(csstext('Favorite words', cls='small22-text-center'), unsafe_allow_html=True)
     col1, col2 = st.columns(2)
 
     if isfile(expected_stylecloud_from_them_fpath):
@@ -112,7 +112,7 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
     # Favorite tokens by word length
     #
 
-    st.markdown(csstext('Favorite tokens by word length', cls='small-text-center'), unsafe_allow_html=True)
+    st.markdown(csstext('Favorite tokens by word length', cls='small22-text-center'), unsafe_allow_html=True)
     col1, col2 = st.columns(2)
 
     token_usage_from_who_ranked_by_length = (
@@ -225,7 +225,7 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
         (page_data['summary_day_from_who'].sum()['tokens_from_them']
          / page_data['summary_day_from_who'].sum()['text_messages_from_them'])
 
-    st.markdown(csstext('Average words per message', cls='small-text-center'), unsafe_allow_html=True)
+    st.markdown(csstext('Average words per message', cls='small22-text-center'), unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     col1.markdown(csstext(round(avg_words_per_message_from_them, 1), cls='large-text-green-center'), unsafe_allow_html=True)
     col2.markdown(csstext(round(avg_words_per_message_from_me, 1), cls='large-text-green-center'), unsafe_allow_html=True)
@@ -242,7 +242,7 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
         (page_data['summary_day_from_who'].sum()['characters_from_them']
          / page_data['summary_day_from_who'].sum()['text_messages_from_them'])
 
-    st.markdown(csstext('Average characters per message', cls='small-text-center'), unsafe_allow_html=True)
+    st.markdown(csstext('Average characters per message', cls='small22-text-center'), unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     col1.markdown(csstext(int(round(avg_chars_per_message_from_them, 0)), cls='large-text-green-center'), unsafe_allow_html=True)
     col2.markdown(csstext(int(round(avg_chars_per_message_from_me, 0)), cls='large-text-green-center'), unsafe_allow_html=True)
@@ -317,7 +317,7 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
         showlegend=False,
     )
 
-    st.markdown(csstext('Favorite tapbacks', cls='small-text-center'), unsafe_allow_html=True)
+    st.markdown(csstext('Favorite tapbacks', cls='small22-text-center'), unsafe_allow_html=True)
     col1, col2 = st.columns(2)
 
     col1.plotly_chart(fig)
