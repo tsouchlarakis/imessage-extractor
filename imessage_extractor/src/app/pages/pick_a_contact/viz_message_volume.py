@@ -1,6 +1,5 @@
 import altair as alt
 import streamlit as st
-import pandas as pd
 from imessage_extractor.src.app.helpers import intword, csstext
 from imessage_extractor.src.app.pages.pick_a_contact.common import resample_dataframe
 
@@ -105,6 +104,7 @@ def viz_message_volume(data,
         tmp_df = chart_df.head(limit).copy()
         tmp_df.loc[contact_name] = chart_df.loc[contact_name].squeeze()
         chart_df = tmp_df.copy()
+        del tmp_df
 
 
     st.altair_chart(

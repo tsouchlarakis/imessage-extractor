@@ -191,7 +191,7 @@ class MultiApp(object):
         Run the app.
         """
         # Set the name of the page that the app should open to when loaded
-        default_page_title = 'Pick a Contact'
+        default_page_title = 'My Stats'
         app = st.sidebar.radio(
             label='',
             options=self.apps,

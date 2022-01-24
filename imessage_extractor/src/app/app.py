@@ -8,11 +8,13 @@ from imessage_extractor.src.helpers.verbosity import logger_setup
 from os.path import join, dirname
 from pages import home
 from pages import about
+from pages import my_stats
 from pages.pick_a_contact import pick_a_contact
 
 
 PAGES = {
     'Home': home,
+    'My Stats': my_stats,
     'Pick a Contact': pick_a_contact,
     # 'Resources': resources,
     # 'Gallery': gallery.index,
