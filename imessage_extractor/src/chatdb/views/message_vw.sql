@@ -54,7 +54,9 @@ m_join_chat_contacts as (
            , n.contact_name
            , m.ts
            , m.ts :: date as dt
-           , "text"
+           , case when "text" = '�' then null
+                  else "text"
+             end as "text"
            , m.service
            , m.is_from_me
            , case when m.associated_type in (2000, 2001, 2002, 2003, 2004, 2005, 3000, 3001, 3002, 3003, 3004, 3005) then true
