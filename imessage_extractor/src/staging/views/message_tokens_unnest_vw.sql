@@ -1,14 +1,27 @@
-drop view if exists {pg_schema}.message_tokens_unnest;
-create or replace view {pg_schema}.message_tokens_unnest as
+drop view if exists message_tokens_unnest_vw;
+create view message_tokens_unnest_vw as
 
-with unnested_tokens as (
-    select message_id, unnest(tokens) as token
-    from {pg_schema}.message_tokens
+with message_user_candidates as (
+    select message_id
+           , replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(text, '‘', ''''), '’', ''''), '“', '"'), '”', '"'), "'s", " 's"), "'d", " 'd"), '.', ' . '), ',', ' , '), '!', ' ! '), '?', ' ? ') as text
+    from message_user
+    where is_text = true
+      and is_empty = false
 )
 
-select ut.message_id
-       , ut.token
-       , case when e.emoji is not null then true else false end as is_emoji
-from unnested_tokens ut
-left join {pg_schema}.emoji_text_map e
-  on e.emoji = ut.token
+, split(message_id, token, str) as (
+    select message_id, '', text||' '
+    from message_user_candidates
+
+    union all
+
+    select message_id,
+           substr(str, 0, instr(str, ' ')),
+           substr(str, instr(str, ' ') + 1)
+    from split
+    where str != ''
+)
+
+select message_id, token
+from split
+where token != ''

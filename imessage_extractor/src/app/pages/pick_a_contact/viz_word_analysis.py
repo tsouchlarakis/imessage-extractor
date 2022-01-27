@@ -252,11 +252,11 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
     #
 
     df_tapback = (
-        data.message_vw
+        data.message_user
         .reset_index()
         .loc[
-            (data.message_vw.reset_index()['contact_name'] == contact_name)
-            & (data.message_vw.reset_index()['is_emote'] == True)
+            (data.message_user.reset_index()['contact_name'] == contact_name)
+            & (data.message_user.reset_index()['is_emote'] == True)
         ]
         .groupby(['is_from_me', 'message_special_type'])
         .agg({'message_id': 'count'})

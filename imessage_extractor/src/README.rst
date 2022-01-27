@@ -32,7 +32,7 @@ Take the simple example of maintaining a list of contacts. Because the iMessage 
 
 What do you know, **iMessage Extractor** ships with a few of custom table template files in the custom_tables/ folder that help with just this. How convenient!
 
-Just add entries to the **contacts_manual.csv** file, and they'll automagically appear in **message_vw**, the main entry point for querying your iMessage history 🪄
+Just add entries to the **contacts_manual.csv** file, and they'll automagically appear in **message_user**, the main entry point for querying your iMessage history 🪄
 
 📂 custom_tables/
 -----------------
@@ -52,7 +52,7 @@ After the source **chat.db** tables and custom tables are loaded into Postgres, 
 
 These views were developed by yours truly, and exist purely for your convenience of querying your iMessage history data. For example, there really isn't a super intutive way on first glance to query the source tables to simply pull a list of all messages sent to/from you, and the contacts associated with those messages.
 
-✨ **message_vw** will be your friend ✨
+✨ **message_user** will be your friend ✨
 
 You're encouraged to add more useful views to the **views**/ folder as you see fit. If you do, be sure to add an entry in **chatdb_view_info.json** with that view's name, and the tables/views it depends on. The workflow will fold any new view into the definition of chatdb views automatically, and will use a bit of magic to figure out the right order to define the views given their dependencies, and will notify you of any issues encountered along the way.
 

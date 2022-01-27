@@ -2,12 +2,12 @@ import emoji
 import logging
 import sql_query_tools
 import pandas as pd
+from imessage_extractor.src.chatdb.chatdb import ChatDb
 from imessage_extractor.src.helpers.verbosity import bold
 from imessage_extractor.src.staging.common import columns_match_expectation
 
 
-def refresh_emoji_text_map(pg: sql_query_tools.Postgres,
-                           pg_schema: str,
+def refresh_emoji_text_map(chatdb: 'ChatDb',
                            table_name: str,
                            columnspec: dict,
                            logger: logging.Logger) -> None:
@@ -21,8 +21,8 @@ def refresh_emoji_text_map(pg: sql_query_tools.Postgres,
 
     columns_match_expectation(emoji_table, table_name, columnspec)
     emoji_table.to_sql(name=table_name,
-                       con=pg.dbcon,
-                       schema=pg_schema,
+                       con=chatdb.sqlite_con,
+                       schema='main',
                        index=False,
                        if_exists='replace')
 

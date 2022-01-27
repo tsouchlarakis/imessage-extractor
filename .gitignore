@@ -13,3 +13,4 @@ Icon?
 tests/test_data
 imessage_extractor/src/custom_tables/data/*.csv
 graphics/*.afphoto
+database/

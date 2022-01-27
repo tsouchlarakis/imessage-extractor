@@ -2,7 +2,7 @@ import json
 import logging
 import typing
 from collections import OrderedDict
-from imessage_extractor.src.chatdb.chatdb import View
+from imessage_extractor.src.chatdb.chatdb import ChatDb, UserTable
 from imessage_extractor.src.helpers.config import WorkflowConfig
 from imessage_extractor.src.helpers.verbosity import bold, path
 from imessage_extractor.src.helpers.utils import strip_ws, ensurelist
@@ -10,21 +10,20 @@ from imessage_extractor.src.staging.tables.emoji_text_map import refresh_emoji_t
 # from .tables.message_tokens import refresh_message_tokens
 # from .tables.tokens import refresh_tokens
 from os.path import basename
-from sql_query_tools import Postgres
 
 
 class StagingTable(object):
     """
     Store information and operations for tables that get staged after chat.db
-    data has been loaded into Postgres.
+    data has been loaded into SQLite.
     """
     def __init__(self,
                  table_name: str,
                  refresh_function: typing.Callable,
-                 pg: Postgres,
+                 chatdb: 'ChatDb',
                  logger: logging.Logger,
                  cfg: 'WorkflowConfig') -> None:
-        self.pg = pg
+        self.chatdb = chatdb
         self.table_name = table_name
         self.refresh_function = refresh_function
         self.logger = logger
@@ -55,13 +54,13 @@ class StagingTable(object):
 
     def check_references(self, reference) -> None:
         """
-        Return True if all reference objects exist in Postgres schema, and return
+        Return True if all reference objects exist in SQLite schema, and return
         an error otherwise.
         """
         if isinstance(reference, list):
             missing_refs = []
             for ref in reference:
-                if not self.pg.table_or_view_exists(self.cfg.pg_schema, ref):
+                if not self.chatdb.table_or_view_exists(ref):
                     missing_refs.append(ref)
 
             if len(missing_refs) > 0:
@@ -74,14 +73,13 @@ class StagingTable(object):
         Execute custom refresh function for a particular table. Refresh functions are
         stored as python modules and live in relative directory refresh_functions/
         """
-        self.refresh_function(pg=self.pg,
-                              pg_schema=self.cfg.pg_schema,
+        self.refresh_function(chatdb=self.chatdb,
                               table_name=self.table_name,
                               columnspec=self.columnspec,
                               logger=self.logger)
 
 
-def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Logger) -> OrderedDict:
+def assemble_staging_order(chatdb: 'ChatDb', cfg: 'WorkflowConfig', logger: logging.Logger) -> OrderedDict:
     """
     Return a dictionary of staging tables and/or views in the order that they should be created.
     """
@@ -94,14 +92,14 @@ def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Lo
     object_info = {}
 
     for table_name, table_info in staging_table_info.items():
-        exists = pg.table_exists(cfg.pg_schema, table_name)
+        exists = chatdb.table_exists(table_name)
         object_info[table_name] = dict(
             type='table',
             reference=table_info['reference'],
             exists=exists)
 
     for vw_name, vw_info in staging_vw_info.items():
-        exists = pg.table_exists(cfg.pg_schema, vw_name)
+        exists = chatdb.table_exists(vw_name)
         object_info[vw_name] = dict(
             type='view',
             reference=vw_info['reference'],
@@ -116,18 +114,19 @@ def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Lo
                 for ref in reference:
                     if ref in staging_table_info:
                         ref_type = 'table'
-                        ref_exists = pg.table_exists(cfg.pg_schema, ref)
+                        ref_exists = chatdb.table_exists(ref)
                     elif ref in staging_vw_info:
                         ref_type = 'view'
-                        ref_exists = pg.view_exists(cfg.pg_schema, ref)
+                        ref_exists = chatdb.view_exists(ref)
                     else:
-                        ref_exists = pg.table_or_view_exists(cfg.pg_schema, ref)
+                        ref_exists = chatdb.table_or_view_exists(ref)
 
                     if not ref_exists:
                         if ref not in staging_table_info and ref not in staging_vw_info:
                             raise ValueError(strip_ws(
                                 f"""Nonexistent reference {bold(ref)} for
-                                staging {obj_info['type']} {bold(obj_name)} must itself be a staging
+                                staging {obj_info['type']} {bold(obj_name)} must itself either
+                                already exist (most likely a ChatDb table or view), or be a staging
                                 table or view, so it must be present in either
                                 {path(cfg.file.staging_table_info)} or
                                 {path(cfg.file.staging_view_info)}"""))
@@ -166,9 +165,9 @@ def assemble_staging_order(pg: Postgres, cfg: WorkflowConfig, logger: logging.Lo
 
 
 def build_staging_tables_and_views(staging_order: OrderedDict,
-                                   pg: Postgres,
+                                   chatdb: 'ChatDb',
                                    logger: logging.Logger,
-                                   cfg: WorkflowConfig) -> None:
+                                   cfg: 'WorkflowConfig') -> None:
     """
     Build each object specified in `staging_order` sequentially. Objects may be
     tables or views.
@@ -176,8 +175,6 @@ def build_staging_tables_and_views(staging_order: OrderedDict,
     if len(staging_order):
         table_refresh_functions = dict(
             emoji_text_map=refresh_emoji_text_map,
-            # message_tokens=refresh_message_tokens,
-            # tokens=refresh_tokens,
         )
 
         for item_name, item_type in staging_order.items():
@@ -194,7 +191,7 @@ def build_staging_tables_and_views(staging_order: OrderedDict,
                 table_object = StagingTable(
                     table_name=item_name,
                     refresh_function=table_refresh_functions[item_name],
-                    pg=pg,
+                    chatdb=chatdb,
                     logger=logger,
                     cfg=cfg
                 )
@@ -203,14 +200,15 @@ def build_staging_tables_and_views(staging_order: OrderedDict,
 
             elif item_type == 'view':
 
-                view_object = View(
-                    vw_name=item_name,
-                    vw_type='staging',
+                view_object = UserTable(
+                    table_name=item_name,
+                    table_type='staging',
                     logger=logger,
                     cfg=cfg
                 )
 
-                view_object.create(pg=pg, cascade=False)
+                logger.debug(f'Creating view {bold(item_name)}')
+                view_object.create(chatdb=chatdb, cascade=False)
                 logger.info(f'Defined view "{bold(item_name)}"', arrow='green')
     else:
         logger.warning('No staging tables or view definitions found')

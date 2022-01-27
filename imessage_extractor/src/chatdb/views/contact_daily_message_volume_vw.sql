@@ -1,10 +1,10 @@
-drop view if exists {pg_schema}.contact_daily_message_volume_vw;
-create or replace view {pg_schema}.contact_daily_message_volume_vw as
+drop view if exists contact_daily_message_volume_vw;
+create view contact_daily_message_volume_vw as
 
 with messages as (
        select m.*, t.n_characters, t.n_tokens
-       from {pg_schema}.message_vw m
-       left join {pg_schema}.message_vw_text t
+       from message_user m
+       left join message_user_text_vw t
          on m.message_id = t.message_id
 )
 
@@ -28,7 +28,7 @@ from (
            , sum(n_characters) as n_text_characters
            , sum(n_tokens) as n_text_words
            , row_number() over(partition by contact_name order by count(distinct message_id) desc) as day_rank_by_n_messages_partition_by_contact
-    from messages
+    from message_user
     where is_text = true
       and contact_name is not null
     group by contact_name

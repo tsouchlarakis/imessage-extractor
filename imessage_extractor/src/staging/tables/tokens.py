@@ -1,7 +1,7 @@
 import logging
 import nltk
-import sql_query_tools
 import string
+from imessage_extractor.src.chatdb.chatdb import ChatDb
 from imessage_extractor.src.helpers.verbosity import bold
 from imessage_extractor.src.staging.common import columns_match_expectation
 from nltk.corpus import stopwords
@@ -20,8 +20,7 @@ def is_emoji(token):
   """
 
 
-def refresh_tokens(pg: sql_query_tools.Postgres,
-                   pg_schema: str,
+def refresh_tokens(chatdb: 'ChatDb',
                    table_name: str,
                    columnspec: dict,
                    logger: logging.Logger):
@@ -33,11 +32,11 @@ def refresh_tokens(pg: sql_query_tools.Postgres,
     message_tokens_table_name = 'message_tokens'
     emoji_text_map_table_name = 'emoji_text_map'
 
-    if pg.table_exists(pg_schema, table_name):
+    if chatdb.table_exists(table_name):
         # Filter out messages that are already in the message <> emoji mapping table if
         # it exists
         rebuild = False
-        join_clause = f'left join {pg_schema}.{table_name} e on lower(m."token") = lower(e."token")'
+        join_clause = f'left join {table_name} e on lower(m."token") = lower(e."token")'
         where_clause = 'where e."token" is null  -- Not in existing tokens table'
     else:
         rebuild = True
@@ -46,13 +45,13 @@ def refresh_tokens(pg: sql_query_tools.Postgres,
 
     query_sql = f"""
     select distinct lower(m.token) as "token"
-    from {pg_schema}.{message_tokens_table_name} m
+    from {message_tokens_table_name} m
     {join_clause}
     {where_clause}"""
-    new_tokens = pg.read_sql(query_sql, simplify=False)  # Returns a dataframe with one column
+    new_tokens = chatdb.read_sql(query_sql, simplify=False)  # Returns a dataframe with one column
     logger.debug(f'Gathering information by token for {len(new_tokens)} new, unique tokens')
 
-    emoji_text_map = pg.read_table(pg_schema, emoji_text_map_table_name)[['emoji']]
+    emoji_text_map = chatdb.read_table(emoji_text_map_table_name)[['emoji']]
     emoji_text_map['is_emoji'] = True
 
     if len(new_tokens) > 0:
@@ -80,8 +79,8 @@ def refresh_tokens(pg: sql_query_tools.Postgres,
 
         columns_match_expectation(new_tokens, table_name, columnspec)
         new_tokens.to_sql(name=table_name,
-                          con=pg.dbcon,
-                          schema=pg_schema,
+                          con=chatdb.sqlite_con,
+                          schema='main',
                           index=False,
                           if_exists='append')
 

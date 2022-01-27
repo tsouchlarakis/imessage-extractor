@@ -1,5 +1,5 @@
-drop view if exists {pg_schema}.daily_summary_contact_from_who;
-create or replace view {pg_schema}.daily_summary_contact_from_who as
+drop view if exists daily_summary_contact_from_who_vw;
+create view daily_summary_contact_from_who_vw as
 
 with m as (
   select dt
@@ -30,7 +30,7 @@ with m as (
          , count(case when is_threaded_reply = true then message_id else null end) as threaded_replies
          , count(case when has_attachment = true then message_id else null end) as messages_containing_attachments
          , count(case when has_attachment = true and is_text = false and is_emote = false and is_url = false and message_special_type is null then message_id else null end) as messages_attachments_only
-  from {pg_schema}.message_vw
+  from message_user
   group by dt, contact_name, is_from_me
 
 ),
@@ -41,7 +41,7 @@ t as (
          , is_from_me
          , sum(n_tokens) as tokens
          , sum(n_characters) as characters
-  from {pg_schema}.message_vw_text
+  from message_user_text_vw
   group by dt, contact_name, is_from_me
 )
 

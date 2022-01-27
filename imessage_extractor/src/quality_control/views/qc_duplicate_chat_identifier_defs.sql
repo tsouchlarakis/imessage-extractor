@@ -20,22 +20,22 @@ then resolve them by making sure they appear in only one of
 the preceding three sources.
 */
 
-drop view if exists {pg_schema}.qc_duplicate_chat_identifier_defs;
-create or replace view {pg_schema}.qc_duplicate_chat_identifier_defs as
+drop view if exists qc_duplicate_chat_identifier_defs;
+create view qc_duplicate_chat_identifier_defs as
 
 with all_contacts as (
     select chat_identifier, group_name as contact_name, 1 as priority, 'contact_group_names' as source
-    from {pg_schema}.contact_group_names
+    from contact_group_names
 
     union
 
     select chat_identifier, contact_name, 2 as priority, 'contacts_manual' as source
-    from {pg_schema}.contacts_manual
+    from contacts_manual
 
     union
 
     select chat_identifier, contact_name, 3 as priority, 'contacts' as source
-    from {pg_schema}.contacts
+    from contacts
 ),
 
 duplicate_contacts as (
@@ -49,4 +49,4 @@ select ac.chat_identifier, ac.contact_name, ac.priority, ac.source
 from all_contacts ac
 join duplicate_contacts dc
   on ac.chat_identifier = dc.chat_identifier
-order by chat_identifier, priority
+order by ac.chat_identifier, priority

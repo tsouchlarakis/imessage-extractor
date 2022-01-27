@@ -1,5 +1,5 @@
-drop view if exists {pg_schema}.contact_stats;
-create or replace view {pg_schema}.contact_stats as
+drop view if exists contact_stats_vw;
+create view contact_stats_vw as
 
 select m.contact_name
        , m.is_from_me
@@ -19,9 +19,7 @@ select m.contact_name
        , current_date - max(m.dt) as days_since_latest_message
        , max(m.dt) - min(m.dt) as lifetime_days
        , count(distinct m.dt) as active_days
-from {pg_schema}.message_vw m
-left join {pg_schema}.message_vw_text mt on m.message_id = mt.message_id
-left join {pg_schema}.message_emoji_map e
-  on m.message_id = e.message_id
+from message_user m
+left join message_user_text_vw mt on m.message_id = mt.message_id
 group by m.contact_name, m.is_from_me
 order by m.contact_name, m.is_from_me

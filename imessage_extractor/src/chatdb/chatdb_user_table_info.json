@@ -1,20 +1,20 @@
 {
     "contact_daily_message_volume_vw": {
-        "reference": ["message_vw", "message_vw_text"]
+        "reference": ["message_user", "message_user_text_vw"]
     },
     "contact_group_names": {
         "reference": ["message"]
     },
-    "contacts_vw": {
+    "contacts_user": {
         "reference": ["contact_group_names", "contacts_manual", "contacts"]
     },
     "message_count_top_contacts_vw": {
-        "reference": ["message_vw"]
+        "reference": ["message_user"]
     },
-    "message_vw": {
-        "reference": ["chat", "chat_message_join", "message", "contacts_vw"]
+    "message_user": {
+        "reference": ["chat", "chat_message_join", "message", "contacts_user"]
     },
-    "message_vw_text": {
-        "reference": ["message_vw"]
+    "message_user_text_vw": {
+        "reference": ["message_user"]
     }
 }

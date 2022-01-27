@@ -1,5 +1,5 @@
-drop view if exists {pg_schema}.message_vw_text;
-create view {pg_schema}.message_vw_text as
+drop view if exists message_user_text_vw;
+create view message_user_text_vw as
 
 select message_id
        , chat_identifier
@@ -12,7 +12,7 @@ select message_id
                      else null
                 end) as n_characters
        , case when is_emote = false and is_url = false and message_special_type is null
-                   then array_length(regexp_split_to_array("text", '\s+'), 1)
+                   then (length(text) - length(replace(text, ' ', ''))) / length(' ') + 1
               when is_empty
                    then 0
               else null
@@ -22,8 +22,6 @@ select message_id
        , is_group_chat
        , is_threaded_reply
        , thread_original_message_id
-from {pg_schema}.message_vw
+from message_user
 where is_text = true
   and is_empty = false
-
-

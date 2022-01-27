@@ -67,20 +67,20 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
     if refresh_data:
         index = ['message_id']
         fpath = query_and_save_dataset(pg_schema='imessage_extractor',
-                                       dataset_name='message_vw',
+                                       dataset_name='message_user',
                                        index=index,
                                        tmp_env_dpath=tmp_env_dpath,
                                        logger=logger)
-    manifest['message_vw'] = dict(fpath=fpath, index=index)
+    manifest['message_user'] = dict(fpath=fpath, index=index)
 
     if refresh_data:
         index = ['message_id']
         fpath = query_and_save_dataset(pg_schema='imessage_extractor',
-                                       dataset_name='message_vw_text',
+                                       dataset_name='message_user_text_vw',
                                        index=index,
                                        tmp_env_dpath=tmp_env_dpath,
                                        logger=logger)
-    manifest['message_vw_text'] = dict(fpath=fpath, index=index)
+    manifest['message_user_text_vw'] = dict(fpath=fpath, index=index)
 
     if refresh_data:
         index = ['message_id']

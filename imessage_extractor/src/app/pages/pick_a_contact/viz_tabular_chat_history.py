@@ -7,13 +7,13 @@ def viz_tabular_chat_history(data, inputs, contact_name) -> None:
     Create the visualization.
     """
     message_snapshot = (
-        data.message_vw
+        data.message_user
         [['ts', 'text', 'is_from_me']]
-        .loc[(data.message_vw['is_text'])
-             & (~data.message_vw['is_empty'])
-             & (data.message_vw['contact_name'] == contact_name)
-             & (data.message_vw['dt'] >= pd.to_datetime(inputs['filter_start_dt']))
-                & (data.message_vw['dt'] <= pd.to_datetime(inputs['filter_stop_dt']))]
+        .loc[(data.message_user['is_text'])
+             & (~data.message_user['is_empty'])
+             & (data.message_user['contact_name'] == contact_name)
+             & (data.message_user['dt'] >= pd.to_datetime(inputs['filter_start_dt']))
+                & (data.message_user['dt'] <= pd.to_datetime(inputs['filter_stop_dt']))]
     )
 
     col1, col2 = st.columns((1, 2.5))

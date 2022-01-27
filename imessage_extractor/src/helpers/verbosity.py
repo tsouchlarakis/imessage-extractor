@@ -23,7 +23,7 @@ class ExtendedLogger(logging.Logger):
         if bold:
             msg = click.style(msg, bold=True)
 
-        arrow_str = click.style('==> ', fg=arrow, bold=True) if arrow is not None else ''
+        arrow_str = click.style('> ', fg=arrow, bold=True) if arrow is not None else ''
         indent_str = '  ' * indent
 
         msg = str(msg)
@@ -64,7 +64,7 @@ def logger_setup(name: str=__name__, level: int=logging.DEBUG) -> logging.Logger
     """
     logging.setLoggerClass(ExtendedLogger)
     logger = logging.getLogger(name)
-    formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
+    formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s :%(message)s')
 
     if logger.hasHandlers():
         logger.handlers.clear()

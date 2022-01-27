@@ -1,11 +1,11 @@
-drop view if exists {pg_schema}.contact_token_usage;
-create or replace view {pg_schema}.contact_token_usage as
+drop view if exists contact_token_usage_vw;
+create view contact_token_usage_vw as
 
 select contact_name
        , "token"
        , "length"
        , sum(usages) as usages
-from {pg_schema}.contact_token_usage_daily_from_who
+from contact_token_usage_daily_from_who_vw
 group by contact_name
          , "token"
          , "length"

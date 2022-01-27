@@ -1,5 +1,5 @@
-drop view if exists {pg_schema}.daily_summary_from_who;
-create or replace view {pg_schema}.daily_summary_from_who as
+drop view if exists daily_summary_from_who_vw;
+create view daily_summary_from_who_vw as
 
 select dt
        , is_from_me
@@ -30,5 +30,5 @@ select dt
        , sum(messages_attachments_only) as messages_attachments_only
        , sum(tokens) as tokens
        , sum(characters) as characters
-from {pg_schema}.daily_summary_contact_from_who
+from daily_summary_contact_from_who_vw
 group by dt, is_from_me

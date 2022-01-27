@@ -16,14 +16,9 @@ class WorkflowConfig(object):
     """
     def __init__(self, params: dict, logger: logging.Logger) -> None:
         self.logger = logger
-        self._validate_commandline_params(params)
         self.__dict__.update(params)
 
-        if isinstance(self.pg_credentials, str):
-            self.pg_credentials = expanduser(self.pg_credentials)
-
-        if isinstance(self.save_csv, str):
-            self.save_csv = expanduser(self.save_csv)
+        self.sqlite_schema = 'main'
 
         self.dir = Attribute()
         self.file = Attribute()
@@ -33,15 +28,15 @@ class WorkflowConfig(object):
         self.logger.debug(f'Home directory set at {path(self.dir.home)}')
 
         self.dir.chatdb = join(self.dir.home, 'chatdb')
-        self.dir.chatdb_views = join(self.dir.chatdb, 'views')
-        self.file.chatdb_views = listfiles(path=self.dir.chatdb_views, full_names=True, ext='.sql')
+        self.dir.chatdb_user_tables = join(self.dir.chatdb, 'views')
+        self.file.chatdb_user_tables = listfiles(path=self.dir.chatdb_user_tables, full_names=True, ext='.sql')
         self.file.chatdb_table_info = join(self.dir.chatdb, 'chatdb_table_info.json')
-        self.file.chatdb_view_info = join(self.dir.chatdb, 'chatdb_view_info.json')
+        self.file.chatdb_user_table_info = join(self.dir.chatdb, 'chatdb_user_table_info.json')
 
-        self.dir.custom_tables = join(self.dir.home, 'custom_tables')
-        self.file.custom_table_info = join(self.dir.custom_tables, 'custom_table_info.json')
-        self.dir.custom_table_data = join(self.dir.custom_tables, 'data')
-        self.file.custom_table_csv = listfiles(path=self.dir.custom_table_data, full_names=True, ext='.csv')
+        self.dir.static_tables = join(self.dir.home, 'static_tables')
+        self.file.static_table_info = join(self.dir.static_tables, 'static_table_info.json')
+        self.dir.static_table_data = join(self.dir.static_tables, 'data')
+        self.file.static_table_csv = listfiles(path=self.dir.static_table_data, full_names=True, ext='.csv')
 
         self.dir.helpers = join(self.dir.home, 'helpers')
         self.dir.qc = join(self.dir.home, 'quality_control')
@@ -57,22 +52,6 @@ class WorkflowConfig(object):
         self._files_and_directories_exist()
 
         self._no_duplicate_object_names()
-
-    def _validate_commandline_params(self, params: dict) -> None:
-        """
-        Carry out assertions on parameters.
-        """
-        if params['save_csv'] is None:
-            if params['pg_schema'] is None:
-                raise ValueError('Must specify either --save-csv or --pg-schema')
-
-        if (params['pg_schema'] is not None and params['pg_credentials'] is None) \
-            or (params['pg_schema'] is None and params['pg_credentials'] is not None):
-                raise ValueError('Must specify both --pg-credentials and --pg-schema if one is specified')
-
-        # Log parameter values
-        for name, value in params.items():
-            self.logger.debug(f'{name}: {value}')
 
     def _files_and_directories_exist(self):
         """
@@ -97,15 +76,16 @@ class WorkflowConfig(object):
                 else:
                     self.logger.debug(f'Validated existence of file {path(subthing.replace(self.dir.home + "/", ""))}')
 
-        self.logger.debug('All configuration files and directories exist')
+        self.logger.info('Validated that all necessary configured paths exist', arrow='black')
+        self.logger.info('Loaded workflow configuration', arrow='black')
 
     def _no_duplicate_object_names(self):
         """
         Make sure there are no duplicate table or view names.
         """
         tables_and_views_fpaths = (
-            self.file.chatdb_views
-            + self.file.custom_table_csv
+            self.file.chatdb_user_tables
+            + self.file.static_table_csv
             + self.file.staging_views
             + listfiles(path=self.dir.staging_tables, full_names=True, ext='.py')
         )

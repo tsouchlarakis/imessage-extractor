@@ -204,8 +204,8 @@ def prepare_page_data(data, contact_name: str, dt_gran: str) -> tuple:
 
     # Days with at least one message exchanged for any contact in filter range
     stats['total_active_texting_days'] = len(
-        data.message_vw.loc[(data.message_vw['dt'] >= pd.to_datetime(inputs['filter_start_dt']))
-        & (data.message_vw['dt'] <= pd.to_datetime(inputs['filter_stop_dt']))]['dt'].unique()
+        data.message_user.loc[(data.message_user['dt'] >= pd.to_datetime(inputs['filter_start_dt']))
+        & (data.message_user['dt'] <= pd.to_datetime(inputs['filter_stop_dt']))]['dt'].unique()
     )
 
     # Percent of total active days across all contacts with at least one message exchanged

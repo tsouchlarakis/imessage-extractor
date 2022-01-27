@@ -1,5 +1,5 @@
-drop view if exists {pg_schema}.message_tokens;
-create or replace view {pg_schema}.message_tokens as
+drop view if exists message_tokens_vw;
+create view message_tokens_vw as
 
 select message_id,
        string_to_array(
@@ -20,6 +20,6 @@ select message_id,
          )
          , ' '
        ) as tokens
-from {pg_schema}.message_vw
+from message_user
 where is_text = true
   and is_empty = false
