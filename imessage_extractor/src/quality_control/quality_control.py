@@ -2,7 +2,7 @@ import logging
 from imessage_extractor.src.chatdb.chatdb import ChatDb
 from imessage_extractor.src.helpers.config import WorkflowConfig
 from imessage_extractor.src.helpers.utils import listfiles
-from imessage_extractor.src.helpers.verbosity import bold, code
+from imessage_extractor.src.helpers.verbosity import code
 from os.path import splitext, basename
 
 
@@ -14,10 +14,10 @@ def create_qc_views(chatdb: 'ChatDb', cfg: WorkflowConfig, logger: logging.Logge
 
     for view_fpath in view_fpaths:
         view_name = splitext(basename(view_fpath))[0]
-        logger.debug(f'Defining view "{bold(view_name)}"')
+        logger.debug(f'Defining view {code(view_name)}')
         sql = open(view_fpath, 'r').read()
         chatdb.execute(sql)
-        logger.info(f'Defined view "{bold(view_name)}"', arrow='green')
+        logger.info(f'Defined view {code(view_name)}', arrow='black')
 
 
 def run_quality_control(chatdb: 'ChatDb', cfg: WorkflowConfig, logger: logging.Logger) -> None:
@@ -29,13 +29,13 @@ def run_quality_control(chatdb: 'ChatDb', cfg: WorkflowConfig, logger: logging.L
     for view_name in vw_names:
         # Validate the view was successfully defined
         if not chatdb.view_exists(view_name):
-            raise Exception(f'View "{bold(view_name)}" expected, but does not exist in SQLite')
+            raise Exception(f'View {code(view_name)} expected, but does not exist in SQLite')
 
         qc_df = chatdb.read_table(view_name)
 
         if len(qc_df):
             # Some QC issues to report
-            logger.warning(f'QC issues found in "{bold(view_name)}"!')
+            logger.warning(f'QC issues found in {code(view_name)}!')
 
             if view_name == 'qc_duplicate_chat_identifier_defs':
                 logger.warning("""The following `chat_identifier` values
@@ -51,30 +51,30 @@ def run_quality_control(chatdb: 'ChatDb', cfg: WorkflowConfig, logger: logging.L
                     mappings = [f'name: "{name}" (source: "{source}")' for name, source in zip(mapped_names, mapped_sources)]
                     mappings_str = ' | '.join(mappings)
 
-                    logger.warning(f'Chat Identifier {bold(chat_id)} mapped to: {mappings_str}', arrow='yellow')
+                    logger.warning(f'Chat Identifier {code(chat_id)} mapped to: {mappings_str}', arrow='black')
 
             elif view_name == 'qc_missing_contact_names':
-                logger.warning('Unmapped `chat_identifier` values:')
+                logger.warning(f'Unmapped {code("chat_identifier")} values:')
                 for chat_id in qc_df['chat_identifier'].unique():
-                    logger.warning(chat_id, arrow='yellow')
+                    logger.warning(chat_id, arrow='black')
 
             elif view_name == 'qc_null_flags':
                 logger.warning(
                     f"""{len(qc_df)} records found with one or more flag columns as
-                    null (should be either True or False). Check {bold(view_name)} for
+                    null (should be either True or False). Check {code(view_name)} for
                     more information.
                     """)
 
             elif view_name == 'qc_duplicate_message_id':
                 logger.warning(
-                    f"""{len(qc_df)} duplicate {code('message_id')} values found in {bold('message_user')}
+                    f"""{len(qc_df)} duplicate {code('message_id')} values found in {code('message_user')}
                     """)
 
             elif view_name == 'qc_message_special_types':
                 logger.warning(
-                    f"""{len(qc_df)} missing {code('message_special_type')} values found in {bold('message_user')}
+                    f"""{len(qc_df)} missing {code('message_special_type')} values found in {code('message_user')}
                     """)
 
         else:
             # No QC issues to report
-            logger.info(f'No QC issues found in "{bold(view_name)}"')
+            logger.info(f'No QC issues found in {code(view_name)}')

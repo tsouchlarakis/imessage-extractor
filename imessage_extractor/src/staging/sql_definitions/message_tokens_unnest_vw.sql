@@ -22,6 +22,6 @@ with message_user_candidates as (
     where str != ''
 )
 
-select message_id, token
+select message_id, trim(token) as token
 from split
 where token != ''

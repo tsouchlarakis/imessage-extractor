@@ -9,6 +9,5 @@ from (
 	  on m.message_id = u.message_id
 	left join emoji_text_map e
 	  on u.token = e.emoji
-	limit 1000
 ) as t
 group by message_id

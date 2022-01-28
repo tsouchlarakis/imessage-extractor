@@ -51,7 +51,7 @@ m_join_chat_contacts as (
            , case when m.associated_message_type in (2000, 2001, 2002, 2003, 2004, 2005, 3000, 3001, 3002, 3003, 3004, 3005) then true
                   else false
              end as is_emote
-           , case when m.associated_message_type = 2 and m.balloon_bundle_id like '%PeerPaymentMessagesExtension' then 'apple_cash'
+           , case when m.balloon_bundle_id like '%PeerPaymentMessagesExtension' then 'apple_cash'
                   when m.associated_message_type = 2 and m.balloon_bundle_id like '%imessagepoll%' then 'poll'
                   when m.associated_message_type in (2, 3) and m.balloon_bundle_id like '%gamepigeon%' then 'game_pigeon'
                   when m.associated_message_type in (2, 3) and m.balloon_bundle_id like '%messages.business.extension%' then 'business_extension'
@@ -63,7 +63,7 @@ m_join_chat_contacts as (
                   when m.associated_message_type = 3 and m.text = 'Cup Pong' then 'game_pigeon'
                   when m.associated_message_type = 3 and m.text = '8 Ball' then 'game_pigeon'
                   when m.associated_message_type = 3 and m.text = '(null)' then 'null_message'
-                  when m.associated_message_type = 1000 and m.cache_has_attachments = 1 and m.was_data_detected = 1 and m.attributed_body like '%kIMFileTransferGUIDAttributeName%' then 'sticker'
+                  when m.associated_message_type = 1000 and m.cache_has_attachments = 1 and m.was_data_detected = 1 then 'sticker'
                   when m.associated_message_type = 2000 then 'emote_love'
                   when m.associated_message_type = 2001 then 'emote_like'
                   when m.associated_message_type = 2002 then 'emote_dislike'

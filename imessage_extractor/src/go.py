@@ -1,14 +1,14 @@
 import click
-import json
 import logging
 import time
-from .chatdb.chatdb import ChatDb, UserTable
-from .static_tables.static_tables import build_static_tables
+from .chatdb.chatdb import ChatDb
 from .helpers.config import WorkflowConfig
 from .helpers.utils import fmt_seconds
 from .helpers.verbosity import print_startup_message, logger_setup
 from .quality_control.quality_control import create_qc_views, run_quality_control
-from .staging.staging import assemble_staging_order, build_staging_tables_and_views
+from .staging.staging import assemble_staging_order
+from .static_tables.static_tables import build_static_tables
+from imessage_extractor.src.helpers.verbosity import bold
 from os.path import expanduser
 
 
@@ -71,20 +71,6 @@ def go(chatdb_path, outputdb_path, verbose, debug) -> None:
     build_static_tables(sqlite_con=chatdb.sqlite_con, logger=logger, cfg=cfg)
 
     #
-    # Chat.db user tables
-    #
-
-    logger.info(f'Defining user tables that are dependent only on chat.db tables')
-
-    with open(cfg.file.chatdb_user_table_info, 'r') as f:
-        chatdb_vw_info = json.load(f)
-
-        for table_name in chatdb_vw_info:
-            if not chatdb.table_exists(table_name):
-                user_table = UserTable(table_name=table_name, table_type='chatdb', logger=logger, cfg=cfg)
-                user_table.create(chatdb=chatdb, cascade=True)
-
-    #
     # Staging tables and views
     #
 
@@ -99,21 +85,21 @@ def go(chatdb_path, outputdb_path, verbose, debug) -> None:
     # view. Because dependencies among staging tables and views may be of arbitrary depth,
     # they require a specific order in which they may be defined.
 
-    logger.info(f'Staging tables and views')
+    logger.info(f'Staging Tables and Views', bold=True)
 
-    staging_order = assemble_staging_order(chatdb=chatdb, cfg=cfg, logger=logger)
-    logger.debug(f'Staging order: {" > ".join(list(staging_order.keys()))}')
+    assemble_staging_order(chatdb=chatdb, cfg=cfg)
+    # logger.debug(f'Staging order: {" > ".join(list(staging_order.keys()))}')
 
-    build_staging_tables_and_views(staging_order=staging_order,
-                                   chatdb=chatdb,
-                                   logger=logger,
-                                   cfg=cfg)
+    # build_staging_tables_and_views(staging_order=staging_order,
+    #                                chatdb=chatdb,
+    #                                logger=logger,
+    #                                cfg=cfg)
 
     #
     # Quality control views
     #
 
-    logger.info('Creating quality control views')
+    logger.info('Quality Control', bold=True)
     create_qc_views(chatdb=chatdb, cfg=cfg, logger=logger)
 
     run_quality_control(chatdb=chatdb, cfg=cfg, logger=logger)
@@ -124,4 +110,4 @@ def go(chatdb_path, outputdb_path, verbose, debug) -> None:
 
     diff_formatted = fmt_seconds(time.time() - start_ts, units='auto', round_digits=2)
     elapsed_time = f"{diff_formatted['value']} {diff_formatted['units']}"
-    logger.info(f'{click.style("iMessage Extractor", bold=True)} workflow completed in {elapsed_time}')
+    logger.info(f'{click.style("iMessage Extractor", bold=True)} workflow completed in {bold(elapsed_time)}')

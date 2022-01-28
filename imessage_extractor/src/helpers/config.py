@@ -28,10 +28,7 @@ class WorkflowConfig(object):
         self.logger.debug(f'Home directory set at {path(self.dir.home)}')
 
         self.dir.chatdb = join(self.dir.home, 'chatdb')
-        self.dir.chatdb_user_tables = join(self.dir.chatdb, 'views')
-        self.file.chatdb_user_tables = listfiles(path=self.dir.chatdb_user_tables, full_names=True, ext='.sql')
         self.file.chatdb_table_info = join(self.dir.chatdb, 'chatdb_table_info.json')
-        self.file.chatdb_user_table_info = join(self.dir.chatdb, 'chatdb_user_table_info.json')
 
         self.dir.static_tables = join(self.dir.home, 'static_tables')
         self.file.static_table_info = join(self.dir.static_tables, 'static_table_info.json')
@@ -43,14 +40,16 @@ class WorkflowConfig(object):
         self.dir.qc_views = join(self.dir.qc, 'views')
 
         self.dir.staging = join(self.dir.home, 'staging')
-        self.dir.staging_tables = join(self.dir.staging, 'tables')
-        self.dir.staging_views = join(self.dir.staging, 'views')
-        self.file.staging_views = listfiles(path=self.dir.staging_views, full_names=True, ext='.sql')
-        self.file.staging_table_info = join(self.dir.staging, 'staging_table_info.json')
-        self.file.staging_view_info = join(self.dir.staging, 'staging_view_info.json')
+        self.dir.staging_python = join(self.dir.staging, 'python_definitions')
+        self.dir.staging_sql = join(self.dir.staging, 'sql_definitions')
+
+        self.file.staging_sql = listfiles(path=self.dir.staging_sql, full_names=True, ext='.sql')
+        self.file.staging_sql_info = join(self.dir.staging, 'staging_sql_info.json')
+
+        self.file.staging_python = listfiles(path=self.dir.staging_python, full_names=True, ext='.py')
+        self.file.staging_python_info = join(self.dir.staging, 'staging_python_info.json')
 
         self._files_and_directories_exist()
-
         self._no_duplicate_object_names()
 
     def _files_and_directories_exist(self):
@@ -83,15 +82,12 @@ class WorkflowConfig(object):
         """
         Make sure there are no duplicate table or view names.
         """
-        tables_and_views_fpaths = (
-            self.file.chatdb_user_tables
-            + self.file.static_table_csv
-            + self.file.staging_views
-            + listfiles(path=self.dir.staging_tables, full_names=True, ext='.py')
-        )
+        tables_and_views_fpaths = self.file.static_table_csv + self.file.staging_sql + self.file.staging_python
 
         tables_and_views = [splitext(basename(f))[0] for f in tables_and_views_fpaths]
+
         dup_ind = duplicated(tables_and_views)
+
         table_and_view_dups = [x for i, x in enumerate(tables_and_views) if dup_ind[i] == True]
         table_and_view_dup_fpaths = [x for x in tables_and_views if splitext(basename(x))[0] in table_and_view_dups]
 

@@ -78,7 +78,7 @@ Because of this condition (3) staging tables/views can be dependent on another s
     - view definitions for staging views
 - **common.py**: common library for objects referenced used across refresh functions
 - **staging_table_info.json**: store column specification (name and datatype), primary key column name (if present), and a list of references for each staging table
-- **staging_view_info.json**: list references for staging views
+- **staging_sql_info.json**: list references for staging views
 - **staging.py**: python objects designed for staging table and view interaction
 
 Step 5: Quality Control
