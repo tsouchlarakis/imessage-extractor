@@ -23,13 +23,13 @@ def viz_tabular_chat_history(data, inputs, contact_name) -> None:
     message_snapshot_display = pd.concat([
         (
             message_snapshot
-            .loc[message_snapshot['is_from_me']]
+            .loc[message_snapshot['is_from_me'] == 1]
             .rename(columns={'text': 'Me'})
             [['ts', 'Me']]
         ),
         (
             message_snapshot
-            .loc[~message_snapshot['is_from_me']]
+            .loc[message_snapshot['is_from_me'] == 0]
             .rename(columns={'text': contact_name})
             [['ts', contact_name]]
         )

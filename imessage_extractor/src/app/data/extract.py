@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 import string
 from os.path import join
+from imessage_extractor.src.helpers.verbosity import code
 
 
 @st.cache(show_spinner=False, allow_output_mutation=True)
@@ -25,6 +26,7 @@ class iMessageDataExtract(object):
         logger.info('=> read manifest')
 
         for dataset_name, dataset_metadata in manifest.items():
+            logger.debug(f'Reading dataset {code(dataset_name)}...')
             dataset = pd.read_csv(dataset_metadata['fpath'])
 
             if 'dt' in dataset.columns:
@@ -45,7 +47,7 @@ class iMessageDataExtract(object):
 
         self.lst_contact_names_all = sorted([x for x in self.message_user['contact_name'].unique() if isinstance(x, str)])
         self.lst_contact_names_no_group_chats = sorted(
-            [x for x in self.message_user.loc[~self.message_user['is_group_chat']]['contact_name'].unique() if isinstance(x, str)]
+            [x for x in self.message_user.loc[self.message_user['is_group_chat'] == 0]['contact_name'].unique() if isinstance(x, str)]
         )
         self.lst_punctuation_chars = list(string.punctuation + '’‘“”``')
         self.lst_contractions_w_apostrophe = [

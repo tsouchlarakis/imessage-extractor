@@ -22,7 +22,7 @@ PAGES = {
     'About': about,
 }
 
-logger = logger_setup(name='imessage-visualizer', level=logging.INFO)
+logger = logger_setup(name='imessage-visualizer', level=logging.DEBUG)
 logger.propagate = False
 
 

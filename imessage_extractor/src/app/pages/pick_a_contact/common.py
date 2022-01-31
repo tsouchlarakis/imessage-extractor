@@ -46,7 +46,8 @@ def pull_contact_summary(data, contact_name: str, include_is_from_me: bool) -> p
 
         df = df.reset_index().pivot(index='dt', columns='is_from_me', values=[x for x in df.columns])
         df.columns = ['_'.join([str(x) for x in pair]) for pair in df.columns]
-        df.columns = [x.replace('True', 'from_me').replace('False', 'from_them') for x in df.columns]
+        df.columns = [x.replace('1', 'from_me').replace('0', 'from_them') for x in df.columns]
+
     else:
         df = (
             data.daily_summary_contact

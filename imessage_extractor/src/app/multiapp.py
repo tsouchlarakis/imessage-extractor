@@ -5,18 +5,19 @@ Source: https://github.com/upraneelnihar/streamlit-multiapps/blob/master/multiap
 """
 import streamlit as st
 import typing
+import sqlite3
 import logging
 import json
+import pandas as pd
 from os import mkdir
 from os.path import join, expanduser, isdir, basename
 from shutil import rmtree
-from sql_query_tools import Postgres
 from imessage_extractor.src.helpers.verbosity import path
 from imessage_extractor.src.helpers.utils import ensurelist
 from imessage_extractor.src.app.data.extract import iMessageDataExtract
 
 
-refresh_data = False  # Used for debugging and testing
+refresh_data = True  # Used for debugging and testing
 
 
 @st.cache(show_spinner=False)
@@ -26,7 +27,9 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
     """
     logger.info('Querying data and saving to local...')
     logger.info(f'=> target folder {path(tmp_env_dpath)}')
-    pg = Postgres()
+
+    imessage_extractor_chatdb_path = expanduser('~/GDrive/Hobbies/Code/git-doni/imessage-extractor/database/imessage_extractor.db')
+    chatdb_con = sqlite3.connect(imessage_extractor_chatdb_path)
 
     if not refresh_data:
         logger.warning('Refresh data is set to False - skipping data extraction')
@@ -35,11 +38,12 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
     manifest = {}
 
 
-    def query_and_save_dataset(pg_schema: str,
+    def query_and_save_dataset(chatdb_con: sqlite3.Connection,
                                dataset_name: str,
                                index: list,
                                tmp_env_dpath: str,
-                               logger: logging.Logger):
+                               logger: logging.Logger
+                               ) -> None:
         """
         Read the full table/view and save to local CSV.
         """
@@ -49,7 +53,8 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
         else:
             write_index = False
 
-        df = pg.read_table(pg_schema, dataset_name)
+        # df = pg.read_table(pg_schema, dataset_name)
+        df = pd.read_sql(f'select * from {dataset_name}', chatdb_con)
         logger.info(f'=> {dataset_name} queried')
 
         fpath = join(tmp_env_dpath, f'{dataset_name}.csv')
@@ -66,7 +71,7 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
 
     if refresh_data:
         index = ['message_id']
-        fpath = query_and_save_dataset(pg_schema='imessage_extractor',
+        fpath = query_and_save_dataset(chatdb_con=chatdb_con,
                                        dataset_name='message_user',
                                        index=index,
                                        tmp_env_dpath=tmp_env_dpath,
@@ -75,7 +80,7 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
 
     if refresh_data:
         index = ['message_id']
-        fpath = query_and_save_dataset(pg_schema='imessage_extractor',
+        fpath = query_and_save_dataset(chatdb_con=chatdb_con,
                                        dataset_name='message_user_text_vw',
                                        index=index,
                                        tmp_env_dpath=tmp_env_dpath,
@@ -84,8 +89,8 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
 
     if refresh_data:
         index = ['message_id']
-        fpath = query_and_save_dataset(pg_schema='imessage_extractor',
-                                       dataset_name='message_tokens_unnest',
+        fpath = query_and_save_dataset(chatdb_con=chatdb_con,
+                                       dataset_name='message_tokens_unnest_vw',
                                        index=index,
                                        tmp_env_dpath=tmp_env_dpath,
                                        logger=logger)
@@ -93,8 +98,8 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
 
     if refresh_data:
         index = ['dt', 'contact_name', 'is_from_me']
-        fpath = query_and_save_dataset(pg_schema='imessage_extractor',
-                                       dataset_name='daily_summary_contact_from_who',
+        fpath = query_and_save_dataset(chatdb_con=chatdb_con,
+                                       dataset_name='daily_summary_contact_from_who_vw',
                                        index=index,
                                        tmp_env_dpath=tmp_env_dpath,
                                        logger=logger)
@@ -102,8 +107,8 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
 
     if refresh_data:
         index = ['dt', 'contact_name']
-        fpath = query_and_save_dataset(pg_schema='imessage_extractor',
-                                       dataset_name='daily_summary_contact',
+        fpath = query_and_save_dataset(chatdb_con=chatdb_con,
+                                       dataset_name='daily_summary_contact_vw',
                                        index=index,
                                        tmp_env_dpath=tmp_env_dpath,
                                        logger=logger)
@@ -111,8 +116,8 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
 
     if refresh_data:
         index = ['dt', 'is_from_me']
-        fpath = query_and_save_dataset(pg_schema='imessage_extractor',
-                                       dataset_name='daily_summary_from_who',
+        fpath = query_and_save_dataset(chatdb_con=chatdb_con,
+                                       dataset_name='daily_summary_from_who_vw',
                                        index=index,
                                        tmp_env_dpath=tmp_env_dpath,
                                        logger=logger)
@@ -120,8 +125,8 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
 
     index = ['dt']
     if refresh_data:
-        fpath = query_and_save_dataset(pg_schema='imessage_extractor',
-                                       dataset_name='daily_summary',
+        fpath = query_and_save_dataset(chatdb_con=chatdb_con,
+                                       dataset_name='daily_summary_vw',
                                        index=index,
                                        tmp_env_dpath=tmp_env_dpath,
                                        logger=logger)
@@ -129,8 +134,8 @@ def save_data_to_local(tmp_env_dpath: str, logger: logging.Logger):
 
     index = ['contact_name', 'is_from_me', 'token', 'length']
     if refresh_data:
-        fpath = query_and_save_dataset(pg_schema='imessage_extractor',
-                                       dataset_name='contact_token_usage_from_who',
+        fpath = query_and_save_dataset(chatdb_con=chatdb_con,
+                                       dataset_name='contact_token_usage_from_who_vw',
                                        index=index,
                                        tmp_env_dpath=tmp_env_dpath,
                                        logger=logger)
