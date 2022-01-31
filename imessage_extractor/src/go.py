@@ -101,8 +101,7 @@ def go(chatdb_path, outputdb_path, verbose, debug) -> None:
 
     logger.info('Quality Control', bold=True)
     create_qc_views(chatdb=chatdb, cfg=cfg, logger=logger)
-
-    run_quality_control(chatdb=chatdb, cfg=cfg, logger=logger)
+    total_warnings = run_quality_control(chatdb=chatdb, cfg=cfg, logger=logger)
 
     #
     # End
@@ -110,4 +109,6 @@ def go(chatdb_path, outputdb_path, verbose, debug) -> None:
 
     diff_formatted = fmt_seconds(time.time() - start_ts, units='auto', round_digits=2)
     elapsed_time = f"{diff_formatted['value']} {diff_formatted['units']}"
-    logger.info(f'{click.style("iMessage Extractor", bold=True)} workflow completed in {bold(elapsed_time)}')
+    plural_s = '' if total_warnings == 1 else 's'
+    warnings_str = click.style(f' with {total_warnings} warning{plural_s}', fg='yellow') if total_warnings > 0 else ''
+    logger.info(f'{click.style("iMessage Extractor", bold=True)} workflow completed{warnings_str} in {bold(elapsed_time)}')

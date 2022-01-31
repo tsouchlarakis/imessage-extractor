@@ -7,5 +7,3 @@ and saves a readable & writable .db SQLite database locally.
 
 It's entirely {click.style('non-destructive', bold=True)}, meaning none of the original
 chat.db data is appended to, deleted or mutated in any way.
-
-Let's go! ⚡️

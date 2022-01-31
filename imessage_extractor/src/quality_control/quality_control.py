@@ -2,7 +2,7 @@ import logging
 from imessage_extractor.src.chatdb.chatdb import ChatDb
 from imessage_extractor.src.helpers.config import WorkflowConfig
 from imessage_extractor.src.helpers.utils import listfiles
-from imessage_extractor.src.helpers.verbosity import code
+from imessage_extractor.src.helpers.verbosity import code, path
 from os.path import splitext, basename
 
 
@@ -24,7 +24,10 @@ def run_quality_control(chatdb: 'ChatDb', cfg: WorkflowConfig, logger: logging.L
     """
     Query each QC view and check for any data integrity issues.
     """
+    logger.info('Checking data integrity...', bold=True, arrow='black')
+
     vw_names = [splitext(basename(f))[0] for f in listfiles(cfg.dir.qc_views, ext='.sql')]
+    total_warnings = 0
 
     for view_name in vw_names:
         # Validate the view was successfully defined
@@ -34,14 +37,14 @@ def run_quality_control(chatdb: 'ChatDb', cfg: WorkflowConfig, logger: logging.L
         qc_df = chatdb.read_table(view_name)
 
         if len(qc_df):
-            # Some QC issues to report
-            logger.warning(f'QC issues found in {code(view_name)}!')
+            # At least one data integrity issue to report
+            total_warnings += 1
 
             if view_name == 'qc_duplicate_chat_identifier_defs':
-                logger.warning("""The following `chat_identifier` values
+                logger.warning(f"""The following {code('chat_identifier')} values
                 are mapped to multiple names/sources, and only 1 is allowed. Please
-                check the `chat_identifier` in each source, and make sure it is only
-                mapped to one value of `contact_name` in one source.""")
+                check the {code('chat_identifier')} in each source, and make sure it is only
+                mapped to one value of {code('contact_name')} in one source.""", arrow='black')
 
                 chat_ids = qc_df['chat_identifier'].unique()
                 for chat_id in chat_ids:
@@ -51,30 +54,30 @@ def run_quality_control(chatdb: 'ChatDb', cfg: WorkflowConfig, logger: logging.L
                     mappings = [f'name: "{name}" (source: "{source}")' for name, source in zip(mapped_names, mapped_sources)]
                     mappings_str = ' | '.join(mappings)
 
-                    logger.warning(f'Chat Identifier {code(chat_id)} mapped to: {mappings_str}', arrow='black')
+                    logger.warning(f'Chat Identifier {code(chat_id)} mapped to: {mappings_str}', arrow='yellow', indent=1)
 
             elif view_name == 'qc_missing_contact_names':
-                logger.warning(f'Unmapped {code("chat_identifier")} values:')
+                logger.warning(f"""Unmapped {code("chat_identifier")} value(s). Add these to your contacts,
+                or ensure they are accounted for in either {path("contacts_manual.csv")} or
+                {path("contacts_ignored.csv")}""", arrow='yellow')
+
                 for chat_id in qc_df['chat_identifier'].unique():
-                    logger.warning(chat_id, arrow='black')
+                    logger.warning(chat_id, arrow='yellow', indent=1)
 
             elif view_name == 'qc_null_flags':
                 logger.warning(
                     f"""{len(qc_df)} records found with one or more flag columns as
                     null (should be either True or False). Check {code(view_name)} for
-                    more information.
-                    """)
+                    more information.""", arrow='yellow', indent=1)
 
             elif view_name == 'qc_duplicate_message_id':
-                logger.warning(
-                    f"""{len(qc_df)} duplicate {code('message_id')} values found in {code('message_user')}
-                    """)
+                logger.warning(f"{len(qc_df)} duplicate {code('message_id')} values found in {code('message_user')}", arrow='yellow', indent=1)
 
             elif view_name == 'qc_message_special_types':
-                logger.warning(
-                    f"""{len(qc_df)} missing {code('message_special_type')} values found in {code('message_user')}
-                    """)
+                logger.warning(f"{len(qc_df)} missing {code('message_special_type')} values found in {code('message_user')}", arrow='yellow', indent=1)
 
         else:
             # No QC issues to report
-            logger.info(f'No QC issues found in {code(view_name)}')
+            logger.info(f'No QC issues found in {code(view_name)}', arrow='black')
+
+    return total_warnings

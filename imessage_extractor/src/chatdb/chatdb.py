@@ -2,6 +2,7 @@ import json
 import logging
 import pandas as pd
 import sqlite3
+import subprocess
 from imessage_extractor.src.helpers.config import WorkflowConfig
 from imessage_extractor.src.helpers.utils import strip_ws
 from imessage_extractor.src.helpers.verbosity import bold, path, code
@@ -129,6 +130,8 @@ class ChatDb(SQLiteDb):
         self.logger.info(f'Native chat.db (source): {path(self.native_chatdb_path)}', arrow='black')
         self.logger.info(f'Output chat.db (target): {path(imessage_extractor_db_path)}', arrow='black')
 
+        self.chatdb_cfg = self._load_config()
+
         # Copy chat.db to a separate location to prevent damage
         self.logger.info('Copy Source Data to Target', bold=True)
         self.logger.info('Querying source chat.db...', arrow='black')
@@ -137,8 +140,6 @@ class ChatDb(SQLiteDb):
             self.chatdb_path = imessage_extractor_db_path
         else:
             raise FileNotFoundError(f'Intended copied chat.db not found at {path(imessage_extractor_db_path)}')
-
-        self.chatdb_cfg = self._load_config()
 
         super().__init__(db_path=imessage_extractor_db_path, logger=logger)
 
@@ -185,8 +186,6 @@ class ChatDb(SQLiteDb):
             if not isdir(dirname(imessage_extractor_chatdb_path)):
                 mkdir(dirname(imessage_extractor_chatdb_path))
 
-        # shutil.copy2(native_chatdb_path, imessage_extractor_chatdb_path)
-
         native_chatdb_con = sqlite3.connect(native_chatdb_path)
         cursor = native_chatdb_con.cursor()
         native_chatdb_tables = [x[0] for x in cursor.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()]
@@ -194,7 +193,6 @@ class ChatDb(SQLiteDb):
         copied_chatdb_con = sqlite3.connect(imessage_extractor_chatdb_path)
         copy_command_template = 'sqlite3 {native_chatdb_path} ".dump {table_name}" | sqlite3 {imessage_extractor_chatdb_path}'
 
-        import subprocess
         for table_name in native_chatdb_tables:
             copy_sql = copy_command_template.format(**locals())
             subprocess.call(copy_sql, shell=True)
