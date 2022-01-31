@@ -4,7 +4,7 @@ create table message_user as
 with m as (
     select m.ROWID as message_id
            , datetime(`date` / 1000000000 + 978307200, 'unixepoch', 'localtime') as ts
-           , trim(replace(m.text, '￼', '')) as text
+           , trim(replace(replace(replace(m.text, '￼', ''), char(13), ' '), char(10), ' ')) as text  -- char(13) = carriage return, char(10) = line break
            , m.associated_message_type
            , m.balloon_bundle_id
            , m.service
