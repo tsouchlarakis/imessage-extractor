@@ -39,9 +39,9 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
 
     # Pull data
     df_word_counts = (
-        data.contact_token_usage_from_who
+        data.contact_token_usage_from_who_vw
         .reset_index()
-        .loc[data.contact_token_usage_from_who.reset_index()['contact_name'] == contact_name]
+        .loc[data.contact_token_usage_from_who_vw.reset_index()['contact_name'] == contact_name]
         [['is_from_me', 'token', 'usages']]
         .sort_values(['is_from_me', 'usages'], ascending=False)
     )
@@ -116,8 +116,8 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
     col1, col2 = st.columns(2)
 
     token_usage_from_who_ranked_by_length = (
-        data.contact_token_usage_from_who
-        .loc[data.contact_token_usage_from_who.index.get_level_values('contact_name') == contact_name]
+        data.contact_token_usage_from_who_vw
+        .loc[data.contact_token_usage_from_who_vw.index.get_level_values('contact_name') == contact_name]
         .droplevel('contact_name')
         .reset_index()
     )

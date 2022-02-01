@@ -1,11 +1,11 @@
 import altair as alt
+import datetime
 import pandas as pd
-from imessage_extractor.src.app.pages.pick_a_contact.common import resample_dataframe
 import streamlit as st
+from imessage_extractor.src.helpers.verbosity import code
+from imessage_extractor.src.app.helpers import intword, csstext
 from imessage_extractor.src.helpers.utils import strip_ws
 from os.path import dirname, join
-import datetime
-from imessage_extractor.src.app.helpers import intword, csstext
 
 
 root_dir = dirname(dirname(dirname(dirname(dirname(__file__)))))
@@ -17,8 +17,8 @@ def pull_page_data(data) -> dict:
     """
     pdata = {}
 
-    pdata['summary_day'] = data.daily_summary.reset_index()
-    pdata['summary_day_from_who'] = data.daily_summary_from_who.reset_index()
+    pdata['summary_day'] = data.daily_summary_vw.reset_index()
+    pdata['summary_day_from_who'] = data.daily_summary_from_who_vw.reset_index()
 
     pdata['summary_day']['dt'] = pd.to_datetime(pdata['summary_day']['dt'])
     pdata['summary_day_from_who']['dt'] = pd.to_datetime(pdata['summary_day_from_who']['dt'])
@@ -212,7 +212,7 @@ def write(data, logger):
     """
     Write the My Stats page.
     """
-    logger.info('Writing page "My Stats"')
+    logger.info(f'Writing page {code("My Stats")}', bold=True)
     st.image(join(root_dir, 'graphics', 'my_stats.png'))
 
     #
@@ -313,3 +313,4 @@ def write(data, logger):
 
     del chart_df, brush
 
+    logger.info('Done', arrow='black')

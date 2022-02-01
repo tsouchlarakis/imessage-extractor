@@ -39,8 +39,8 @@ def pull_contact_summary(data, contact_name: str, include_is_from_me: bool) -> p
     """
     if include_is_from_me:
         df = (
-            data.daily_summary_contact_from_who
-            .loc[data.daily_summary_contact_from_who.index.get_level_values('contact_name') == contact_name]
+            data.daily_summary_contact_from_who_vw
+            .loc[data.daily_summary_contact_from_who_vw.index.get_level_values('contact_name') == contact_name]
             .droplevel('contact_name')
         )
 
@@ -50,8 +50,8 @@ def pull_contact_summary(data, contact_name: str, include_is_from_me: bool) -> p
 
     else:
         df = (
-            data.daily_summary_contact
-            .loc[data.daily_summary_contact.index.get_level_values('contact_name') == contact_name]
+            data.daily_summary_contact_vw
+            .loc[data.daily_summary_contact_vw.index.get_level_values('contact_name') == contact_name]
             .droplevel('contact_name')
         )
 
@@ -174,7 +174,7 @@ def prepare_page_data(data, contact_name: str, dt_gran: str) -> tuple:
             does not align with the sum of the include message types defined in pick_a_contact.py.
             It might be that there are one or more messages in the data that were not captured
             by these include message type filters. We'll need to check the aggregation logic
-            in daily_summary_contact_from_who.sql to make sure that the sum of each column
+            in daily_summary_contact_from_who_vw.sql to make sure that the sum of each column
             corresponding to the include message types matches the count of all `message_id` values.
             This problem was found with contact {bold(contact_name)} on date(s)
             {str(list(df3[df3['unequal']]['dt']))}""")

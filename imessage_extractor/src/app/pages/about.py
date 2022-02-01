@@ -1,4 +1,5 @@
 import streamlit as st
+from imessage_extractor.src.helpers.verbosity import code
 
 
 # pylint: disable=line-too-long
@@ -6,6 +7,8 @@ def write(data, logger):
     """
     Write the About page.
     """
+    logger.info(f'Writing page {code("About")}', bold=True)
+
     st.image('../../../graphics/about.png')
 
     st.markdown("""
@@ -23,3 +26,5 @@ def write(data, logger):
     you'd like to join the project as a developer. You can find my contact info on my website.
     """,
     unsafe_allow_html=True)
+
+    logger.info('Done', arrow='black')

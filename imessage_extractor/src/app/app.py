@@ -1,15 +1,19 @@
 """Main module for the streamlit app"""
 # https://chatvisualizer.com/
 
-import streamlit as st
 import logging
-import multiapp
+import logging
+import sqlite3
+import streamlit as st
+import typing
+from imessage_extractor.src.app.data.extract import iMessageDataExtract
 from imessage_extractor.src.helpers.verbosity import logger_setup
-from os.path import join, dirname
-from pages import home
-from pages import about
-from pages import my_stats
+from os.path import join, expanduser, dirname
+from pages import about, home, my_stats
 from pages.pick_a_contact import pick_a_contact
+
+
+refresh_data = True  # Used for debugging and testing
 
 
 PAGES = {
@@ -22,8 +26,46 @@ PAGES = {
     'About': about,
 }
 
-logger = logger_setup(name='imessage-visualizer', level=logging.DEBUG)
+logger = logger_setup(name='imessage-visualizer', level=logging.INFO)
 logger.propagate = False
+
+
+class MultiApp(object):
+    """
+    Framework for combining multiple streamlit applications.
+    """
+    def __init__(self, chatdb_con: sqlite3.Connection, logger: logging.Logger):
+        self.apps = []
+        self.logger = logger
+
+        with st.spinner('Loading iMessage data...'):
+            self.data = iMessageDataExtract(chatdb_con, logger)
+
+    def add_app(self, title: str, write_func: typing.Callable):
+        """
+        write_func: the python function to render this app.
+        title: title of the app. Appears in the dropdown in the sidebar.
+        """
+        self.apps.append({
+            'title': title,
+            'function': write_func,
+        })
+
+    def run(self):
+        """
+        Run the app.
+        """
+        # Set the name of the page that the app should open to when loaded
+        default_page_title = 'My Stats'
+
+        app = st.sidebar.radio(
+            label='',
+            options=self.apps,
+            index=[x['title'] for x in self.apps].index(default_page_title),
+            format_func=lambda app: app['title']
+        )
+
+        app['function'](data=self.data, logger=self.logger)
 
 
 def activate_stylesheet(fpath: str) -> None:
@@ -42,9 +84,12 @@ def main():
     """
     activate_stylesheet(join(dirname(__file__), 'stylesheet.css'))
 
+    imessage_extractor_chatdb_path = expanduser('~/GDrive/Hobbies/Code/git-doni/imessage-extractor/database/imessage_extractor.db')
+    chatdb_con = sqlite3.connect(imessage_extractor_chatdb_path)
+
     st.sidebar.title('Navigation')
 
-    app = multiapp.MultiApp(logger=logger)
+    app = MultiApp(logger=logger, chatdb_con=chatdb_con)
 
     for page_name, page_module in PAGES.items():
         app.add_app(page_name, getattr(page_module, 'write'))
@@ -68,5 +113,5 @@ def main():
     """)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

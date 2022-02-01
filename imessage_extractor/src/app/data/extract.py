@@ -4,8 +4,9 @@ import logging
 import pandas as pd
 import streamlit as st
 import string
+import sqlite3
 from os.path import join
-from imessage_extractor.src.helpers.verbosity import code
+from imessage_extractor.src.helpers.verbosity import code, path
 
 
 @st.cache(show_spinner=False, allow_output_mutation=True)
@@ -13,21 +14,21 @@ class iMessageDataExtract(object):
     """
     Store all dataframe extract objects accessed in the GUI.
     """
-    def __init__(self, tmp_env_fpath: str, logger: logging.Logger) -> None:
-        logger.info('Initializing iMessageDataExtract...')
+    def __init__(self, chatdb_con: sqlite3.Connection, logger: logging.Logger) -> None:
+        logger.info('Extract iMessage Data', bold=True)
 
         #
         # Raw tables
         #
 
-        with open(join(tmp_env_fpath, 'manifest.json'), 'r') as f:
+        with open(join('data', 'manifest.json'), 'r') as f:
             manifest = json.load(f)
 
-        logger.info('=> read manifest')
+        logger.info(f'Read {path("manifest.json")}, extracting {len(manifest)} total datasets', arrow='black')
 
         for dataset_name, dataset_metadata in manifest.items():
-            logger.debug(f'Reading dataset {code(dataset_name)}...')
-            dataset = pd.read_csv(dataset_metadata['fpath'])
+            logger.debug(f'Reading dataset {code(dataset_name)}...', arrow='black')
+            dataset = pd.read_sql(f'select * from {dataset_name}', chatdb_con)
 
             if 'dt' in dataset.columns:
                 dataset['dt'] = pd.to_datetime(dataset['dt'])
@@ -39,7 +40,7 @@ class iMessageDataExtract(object):
                 dataset = dataset.set_index(dataset_metadata['index'])
 
             setattr(self, dataset_name, dataset)
-            logger.info(f'=> read {dataset_name}')
+            logger.info(f'Read {code(dataset_name)}, shape: {dataset.shape}', arrow='black')
 
         #
         # Lists
@@ -73,6 +74,5 @@ class iMessageDataExtract(object):
         }
         self.tapback_lst = list(self.tapback_type_map.keys())
 
-        logger.info('=> lists computed')
+        logger.info('Defined lists', arrow='black')
 
-        logger.info('=> done')

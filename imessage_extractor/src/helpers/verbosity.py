@@ -29,6 +29,13 @@ class ExtendedLogger(logging.Logger):
         msg = str(msg)
         return f'{indent_str} {arrow_str}{msg}'
 
+    def debug(self, msg: str, *args, **kwargs):
+        """
+        Override the logging.Logger.debug() method.
+        """
+        formatted_msg = self._build_message(msg, *args, **kwargs)
+        return super(ExtendedLogger, self).debug(formatted_msg)
+
     def info(self, msg: str, *args, **kwargs):
         """
         Override the logging.Logger.info() method.

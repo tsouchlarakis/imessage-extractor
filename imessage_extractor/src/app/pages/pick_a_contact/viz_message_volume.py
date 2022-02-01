@@ -84,7 +84,7 @@ def viz_message_volume(data,
     # Rank contacts by message volume
     #
 
-    chart_df = data.daily_summary_contact_from_who.reset_index().groupby('contact_name').sum()
+    chart_df = data.daily_summary_contact_from_who_vw.reset_index().groupby('contact_name').sum()
     chart_df[message_count_col] = chart_df[selected_include_type_columns].sum(axis=1)
     chart_df = chart_df[[message_count_col]].sort_values(by=message_count_col, ascending=False)
 
@@ -185,7 +185,7 @@ def viz_message_volume(data,
         [message_count_col]
         .rename('messages_contact')
         .reset_index()
-        .merge(resample_dataframe(data.daily_summary
+        .merge(resample_dataframe(data.daily_summary_vw
                                   [selected_include_type_columns]
                                   .sum(axis=1),
                                   dt_gran)

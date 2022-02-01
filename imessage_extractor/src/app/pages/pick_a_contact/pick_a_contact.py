@@ -3,6 +3,7 @@ nltk.download('stopwords')
 import streamlit as st
 from imessage_extractor.src.app.helpers import to_date_str, csstext
 from os.path import join, dirname
+from imessage_extractor.src.helpers.verbosity import code
 from imessage_extractor.src.app.pages.pick_a_contact.common import prepare_page_data, get_altair_dt_plot_attributes, controls
 from imessage_extractor.src.app.pages.pick_a_contact.viz_texting_activity import viz_texting_activity
 from imessage_extractor.src.app.pages.pick_a_contact.viz_message_volume import viz_message_volume
@@ -17,7 +18,7 @@ def write(data, logger) -> None:
     """
     Write the Pick a Contact page.
     """
-    logger.info('Writing page "Pick a Contact"')
+    logger.info(f'Writing page {code("Pick a Contact")}', bold=True)
     st.image(join(root_dir, 'graphics', 'pick_a_contact.png'))
 
     #
@@ -79,4 +80,4 @@ def write(data, logger) -> None:
     # Wrap up
     #
 
-    logger.info('=> done')
+    logger.info('Done', arrow='black')
