@@ -6,5 +6,12 @@
         },
         "primary_key": "emoji",
         "reference": null
+    },
+    "stopwords": {
+        "columnspec": {
+            "stopword": "text"
+        },
+        "primary_key": "stopword",
+        "reference": null
     }
 }

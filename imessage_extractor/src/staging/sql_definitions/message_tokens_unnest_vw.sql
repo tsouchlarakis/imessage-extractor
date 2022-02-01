@@ -22,6 +22,19 @@ with message_user_candidates as (
     where str != ''
 )
 
-select message_id, trim(token) as token
-from split
+, split_with_stopwords as (
+    select message_id
+           , trim(token) as token
+           , case when stopwords.stopword is not null then 1 else 0 end as is_stopword
+    from split
+    left join stopwords
+      on lower(trim(split.token)) = stopwords.stopword
+	where token != ''
+)
+
+select message_id
+       , row_number() over(partition by message_id) as ordinal_position
+       , token
+       , is_stopword
+from split_with_stopwords
 where token != ''

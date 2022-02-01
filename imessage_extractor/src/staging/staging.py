@@ -7,11 +7,13 @@ from imessage_extractor.src.helpers.config import WorkflowConfig
 from imessage_extractor.src.helpers.verbosity import path, code
 from imessage_extractor.src.helpers.utils import strip_ws, ensurelist
 from imessage_extractor.src.staging.python_definitions.emoji_text_map import refresh_emoji_text_map
+from imessage_extractor.src.staging.python_definitions.stopwords import refresh_stopwords
 from os.path import basename, join, isfile
 
 
 python_staging_table_refresh_functions = dict(
     emoji_text_map=refresh_emoji_text_map,
+    stopwords=refresh_stopwords,
 )
 
 
@@ -323,148 +325,3 @@ def assemble_staging_order(chatdb: 'ChatDb', cfg: 'WorkflowConfig') -> OrderedDi
                 cfg=cfg
             )
             staging_python_obj.refresh()
-
-    # staging_object_references = compute_references_exist()
-    # while not all_references_exist(staging_object_references):
-    #     for obj_name, obj_info in staging_object_references.items():
-    #         if not all(obj_info['references'].values()):
-    #             # If any of the references don't exist, we need to create them
-    #             import pdb; pdb.set_trace()
-    #             if obj_info['staging_type'] == 'staging_sql':
-    #                 StagingTableOrViewSQLDefined(table_name=obj_name,
-    #                                        logger=chatdb.logger,
-    #                                        cfg=cfg).create(chatdb=chatdb, cascade=True)
-    #             else:
-    #                 StagingTablePythonDefined(table_name=obj_name,
-    #                                           refresh_function=chatdb_table_info[obj_name]['refresh_function'],
-    #                                           chatdb=chatdb,
-    #                                           logger=chatdb.logger,
-    #                                           cfg=cfg).refresh()
-
-    #             # Now that we've created the missing references, we need to update the
-    #             # staging_object_references dictionary to reflect the new status
-    #             staging_object_references = compute_references_exist()
-
-
-    #     staging_object_references = compute_references_exist()
-
-
-
-#     object_info_nonexistent_refs = {}
-#     for obj_name, obj_info in object_info.items():
-
-#         if not obj_info['exists']:
-#             object_info_nonexistent_refs[obj_name] = dict(reference={})
-
-#             if obj_info['reference'] is not None:
-#                 reference = ensurelist(obj_info['reference'])
-
-#                 for ref in reference:
-#                     ref_exists = chatdb.table_or_view_exists(ref)
-
-#                     if not ref_exists:
-
-#                         if ref not in staging_object_info.keys() and ref not in chatdb_table_info.keys():
-#                             raise ValueError(strip_ws(
-#                                 f"""Nonexistent reference {bold(ref)} for
-#                                 staging {obj_info['type']} {bold(obj_name)} must itself either
-#                                 already exist (most likely a ChatDb table or view), or be a staging
-#                                 table or view, so it must be present in either
-#                                 {path(cfg.file.staging_object_info)} or
-#                                 {path(cfg.file.staging_object_info)}"""))
-
-#                         object_info_nonexistent_refs[obj_name]['reference'][ref] = None
-
-#     # At this point, we have a dictionary, `object_info_nonexistent_refs` that contains
-#     # information on staging tables and/or views that currently do not exist, and the
-#     # reference table or views that will be required to exist to create those tables and/or
-#     # views. Now let's iterate through that dictionary to define an order in which these objects
-#     # should be created.
-
-#     staging_order = OrderedDict()
-
-#     while len(staging_order) < len(object_info_nonexistent_refs):
-#         for obj_name, obj_info in object_info_nonexistent_refs.items():
-#             if obj_name in staging_order:
-#                 # Order already assigned
-#                 pass
-
-#             else:
-#                 # No order assigned
-#                 if len(obj_info['reference']) == 0:
-#                     # No references, so this object can be created
-#                     staging_order[obj_name] = obj_info['type']
-#                 elif all(r in staging_order for r in obj_info['reference']):
-#                     # All references have already been assigned in the ordering, so
-#                     # this object can be assigned its order
-#                     staging_order[obj_name] = None
-#                 else:
-#                     # At least one nonexistent reference that must come before this object.
-#                     # Continue loop without assigning this object's order yet.
-#                     pass
-
-#     return staging_order
-
-
-# def build_sql_defined_staging_tables_and_views(chatdb: 'ChatDb', cfg: 'WorkflowConfig', logger: logging.Logger) -> None:
-#     """
-#     Create staging tables and views defined by SQL in the sql_definitions/ folder.
-#     """
-#     with open(cfg.file.staging_sql_info, 'r') as f:
-#         chatdb_vw_info = json.load(f)
-
-#         for table_name in chatdb_vw_info:
-#             if not chatdb.table_exists(table_name):
-#                 user_table = StagingTableOrViewSQLDefined(table_name=table_name, table_type='chatdb', logger=logger, cfg=cfg)
-#                 user_table.create(chatdb=chatdb, cascade=True)
-
-
-# def build_python_defined_staging_tables(staging_order: OrderedDict,
-#                                         chatdb: 'ChatDb',
-#                                         logger: logging.Logger,
-#                                         cfg: 'WorkflowConfig',
-#                                         ) -> None:
-#     """
-#     Build each object specified in `staging_order` sequentially. Objects may be
-#     tables or views.
-#     """
-#     if len(staging_order):
-#         python_staging_table_refresh_functions = dict(
-#             emoji_text_map=refresh_emoji_text_map,
-#         )
-
-#         for item_name, item_type in staging_order.items():
-#             if item_type == 'table':
-#                 if item_name not in python_staging_table_refresh_functions:
-#                     raise ValueError(strip_ws(
-#                         f"""Attempting to refresh table {bold(item_name)} (found in
-#                         staging_table_info.json) but corresponding refresh function
-#                         not found in `python_staging_table_refresh_functions` dictionary. Please add
-#                         the function to the `python_staging_table_refresh_functions` dictionary, or remove
-#                         it from staging_table_info.json.
-#                         """))
-
-#                 table_object = StagingTablePythonDefined(
-#                     table_name=item_name,
-#                     refresh_function=python_staging_table_refresh_functions[item_name],
-#                     chatdb=chatdb,
-#                     logger=logger,
-#                     cfg=cfg
-#                 )
-
-#                 table_object.refresh()
-
-#             elif item_type == 'view':
-
-#                 view_object = StagingTableOrViewSQLDefined(
-#                     table_name=item_name,
-#                     table_type='staging',
-#                     logger=logger,
-#                     cfg=cfg
-#                 )
-
-#                 logger.debug(f'Creating view {bold(item_name)}')
-#                 view_object.create(chatdb=chatdb, cascade=False)
-#                 logger.info(f'Defined view "{bold(item_name)}"', arrow='green')
-#     else:
-#         logger.warning('No staging tables or view definitions found')

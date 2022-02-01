@@ -273,7 +273,7 @@ def write(data, logger):
         / pdata['summary_day_from_who'][count_col].sum()
     total_messages_from_others_pct = pdata['summary_day_from_who'].loc[pdata['summary_day_from_who']['is_from_me'] == False][count_col].sum() \
         / pdata['summary_day_from_who'][count_col].sum()
-    st.markdown(f"""Total messages exchanged with all contacts,
+    st.markdown(f"""Total messages exchanged with all contacts (including group chats),
     **{str(int(round(total_messages_from_me_pct * 100, 0))) + '%'}** sent by me,
     **{str(int(round(total_messages_from_others_pct * 100, 0))) + '%'}** sent by others.
     """)

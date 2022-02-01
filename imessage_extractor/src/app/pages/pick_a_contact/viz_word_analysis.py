@@ -3,8 +3,8 @@ import streamlit as st
 import stylecloud
 import altair as alt
 import plotly.express as px
+from imessage_extractor.src.app.helpers import intword, csstext
 from nltk.corpus import stopwords
-from imessage_extractor.src.app.helpers import intword, csstext, htmlbold
 from os import remove
 from os.path import isfile
 
