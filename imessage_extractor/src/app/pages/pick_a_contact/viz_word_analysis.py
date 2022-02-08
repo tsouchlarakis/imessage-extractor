@@ -83,7 +83,7 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
                                   gradient='horizontal',
                                   max_words=500,
                                   stopwords=True,
-                                  custom_stopwords=data.contractions_wo_apostrophe + stopwords.words('english'),
+                                  custom_stopwords=data.lst_contractions_wo_apostrophe + stopwords.words('english'),
                                   size=(1024, 800),)
 
     col1, col2 = st.columns(2)
@@ -263,9 +263,9 @@ def viz_word_analysis(data, page_data, stats, contact_name) -> None:
         .reset_index()
         .rename(columns={'message_id': 'count', 'message_special_type': 'tapback'})
     )
-    df_tapback['tapback'] = df_tapback['tapback'].replace(data.tapback_type_map)
+    df_tapback['tapback'] = df_tapback['tapback'].replace(data.map_tapback_type)
 
-    all_tapbacks = list(data.tapback_type_map.values())
+    all_tapbacks = list(data.map_tapback_type.values())
     df_tapback_from_me = (
         df_tapback
         .loc[df_tapback['is_from_me'] == True]

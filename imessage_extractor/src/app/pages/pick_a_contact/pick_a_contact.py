@@ -1,5 +1,5 @@
 import nltk
-nltk.download('stopwords')
+nltk.download('stopwords', quiet=True)
 import streamlit as st
 from imessage_extractor.src.app.helpers import to_date_str, csstext
 from os.path import join, dirname
@@ -12,6 +12,10 @@ from imessage_extractor.src.app.pages.pick_a_contact.viz_word_analysis import vi
 
 
 root_dir = dirname(dirname(dirname(dirname(dirname(dirname(__file__))))))
+
+
+# to add:
+# - average thread length
 
 
 def write(data, logger) -> None:
@@ -70,6 +74,10 @@ def write(data, logger) -> None:
     viz_word_analysis(data=data, page_data=page_data, stats=stats, contact_name=contact_name)
 
     st.markdown('<br>', unsafe_allow_html=True)
+
+    #
+    # Chat History
+    #
 
     st.markdown(csstext('Chat History', cls='medium-text-bold', header=True), unsafe_allow_html=True)
     st.markdown(f'Snapshot of my message history with **{contact_name}**, most recent messages first.')

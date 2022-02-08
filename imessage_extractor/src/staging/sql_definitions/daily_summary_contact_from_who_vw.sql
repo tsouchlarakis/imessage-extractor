@@ -32,7 +32,6 @@ with m as (
          , count(case when has_attachment = true and is_text = false and is_emote = false and is_url = false and message_special_type is null then message_id else null end) as messages_attachments_only
   from message_user
   group by dt, contact_name, is_from_me
-
 ),
 
 t as (

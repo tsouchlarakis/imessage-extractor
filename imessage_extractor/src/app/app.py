@@ -2,18 +2,20 @@
 # https://chatvisualizer.com/
 
 import logging
-import logging
 import sqlite3
 import streamlit as st
+from send2trash import send2trash
 import typing
 from imessage_extractor.src.app.data.extract import iMessageDataExtract
 from imessage_extractor.src.helpers.verbosity import logger_setup
-from os.path import join, expanduser, dirname
+from os.path import join, expanduser, dirname, isfile, isdir
+from os import mkdir
 from pages import about, home, my_stats
 from pages.pick_a_contact import pick_a_contact
 
 
-refresh_data = True  # Used for debugging and testing
+refresh_data = False  # Used for debugging and testing
+tmp_imessage_visualizer_dpath = expanduser('~/.imessage_visualizer')
 
 
 PAGES = {
@@ -38,8 +40,25 @@ class MultiApp(object):
         self.apps = []
         self.logger = logger
 
-        with st.spinner('Loading iMessage data...'):
-            self.data = iMessageDataExtract(chatdb_con, logger)
+        if not isdir(tmp_imessage_visualizer_dpath):
+            mkdir(tmp_imessage_visualizer_dpath)
+
+        loading_text = 'Loading iMessage data...'
+        with st.spinner(loading_text):
+            if refresh_data:
+                self.data = iMessageDataExtract(chatdb_con, logger)
+                self.data.extract_data()
+                self.data.save_data_extract(tmp_imessage_visualizer_dpath)
+
+            else:
+                if isdir(tmp_imessage_visualizer_dpath):
+                    self.data = iMessageDataExtract(chatdb_con, logger)
+                    self.data.load_data_extract(tmp_imessage_visualizer_dpath)
+                else:
+                    self.data = iMessageDataExtract(chatdb_con, logger)
+                    self.data.extract_data()
+                    self.data.save_data_extract(tmp_imessage_visualizer_dpath)
+
 
     def add_app(self, title: str, write_func: typing.Callable):
         """
@@ -111,6 +130,9 @@ def main():
     This app is developed by Andoni Sooklaris. You can learn more about me at
     [andonisooklaris.com](https://www.andonisooklaris.com).
     """)
+
+    if refresh_data:
+        send2trash(tmp_imessage_visualizer_dpath)
 
 
 if __name__ == '__main__':
