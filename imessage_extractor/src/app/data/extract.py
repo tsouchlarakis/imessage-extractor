@@ -1,14 +1,17 @@
 import emoji
 import json
+from send2trash import send2trash
 import logging
 import _pickle as cPickle
 import pandas as pd
 import streamlit as st
 import string
 import sqlite3
-from os.path import join, isfile, splitext
+from os.path import join, expanduser
 from os import listdir
 from imessage_extractor.src.helpers.verbosity import code, path
+from imessage_extractor.src.app.helpers import extract_exists, get_extract_fpath, get_db_fpath
+import subprocess
 
 
 @st.cache(show_spinner=False, allow_output_mutation=True)
@@ -16,15 +19,27 @@ class iMessageDataExtract(object):
     """
     Store all dataframe extract objects accessed in the GUI.
     """
-    def __init__(self, chatdb_con: sqlite3.Connection, logger: logging.Logger) -> None:
+    def __init__(self, chatdb_fpath: str, logger: logging.Logger) -> None:
         self.logger = logger
-        self.chatdb_con = chatdb_con
+        self.chatdb_fpath = chatdb_fpath
 
     def extract_data(self) -> None:
         """
         Perform iMessage data extract.
         """
         self.logger.info('Extract iMessage Data', bold=True)
+
+        #
+        # Call imessage-extractor
+        #
+
+        if hasattr(st.session_state, 'chatdb_fpath'):
+            system_chatdb_fpath = st.session_state.chatdb_fpath
+        else:
+            system_chatdb_fpath = expanduser('~/Library/Messages/chat.db')
+
+        self.logger.info(f'Running {code("imessage-extractor")} workflow', arrow='black')
+        subprocess.call(['imessage-extractor', 'go', '--chatdb-path', system_chatdb_fpath, '--outputdb-path', get_db_fpath()])
 
         #
         # Raw tables
@@ -37,7 +52,9 @@ class iMessageDataExtract(object):
 
         for dataset_name, dataset_metadata in manifest.items():
             self.logger.debug(f'Reading dataset {code(dataset_name)}...', arrow='black')
-            dataset = pd.read_sql(f'select * from {dataset_name}', self.chatdb_con)
+
+            with sqlite3.connect(self.chatdb_fpath) as con:
+                dataset = pd.read_sql(f'select * from {dataset_name}', con)
 
             if 'dt' in dataset.columns:
                 dataset['dt'] = pd.to_datetime(dataset['dt'])
@@ -97,10 +114,20 @@ class iMessageDataExtract(object):
         """
         dataset_names_to_save = self.get_dataset_names()
 
+        # for dataset_name in dataset_names_to_save:
+        #     fpath = join(dpath, f'{dataset_name}.pkl')
+        #     with open(fpath, 'wb') as f:
+        #         cPickle.dump(getattr(self, dataset_name), f)
+
+        if extract_exists():
+            send2trash(get_extract_fpath())
+
+        pickle_dict = {}
         for dataset_name in dataset_names_to_save:
-            fpath = join(dpath, f'{dataset_name}.pkl')
-            with open(fpath, 'wb') as f:
-                cPickle.dump(getattr(self, dataset_name), f)
+            pickle_dict[dataset_name] = getattr(self, dataset_name)
+
+        with open(get_extract_fpath(), 'wb') as f:
+            cPickle.dump(pickle_dict, f)
 
         self.logger.info(f'Saved iMessage data extract to {path(dpath)}', arrow='black')
 
@@ -108,20 +135,29 @@ class iMessageDataExtract(object):
         """
         Load iMessage Data Extract from local using pickle.
         """
-        dataset_fpaths_to_load = [splitext(x)[0] for x in listdir(dpath)]
-        if len(dataset_fpaths_to_load):
-            for dataset_name in dataset_fpaths_to_load:
-                fpath = join(dpath, f'{dataset_name}.pkl')
-                if isfile(fpath):
-                    with open(fpath, 'rb') as f:
-                        setattr(self, dataset_name, cPickle.load(f))
-                else:
-                    raise FileNotFoundError(f'Attempting to load {path(fpath)} since {code("refresh_data")} is set to False, but the file does not exist')
+        if extract_exists():
+            with open(get_extract_fpath(), 'rb') as f:
+                pickle_dict = cPickle.load(f)
+
+            for dataset_name, dataset in pickle_dict.items():
+                setattr(self, dataset_name, dataset)
 
             self.logger.info(f'Loaded iMessage data extract from {path(dpath)}', arrow='black')
 
-        else:
-            # Just extract data as usual
-            self.logger.info(f'{code("refresh_data")} is set to False, but no data extract files were found in {path(dpath)}, extracting data as normal', arrow='black')
-            self.extract_data()
-            self.save_data_extract(dpath)
+        # dataset_fpaths_to_load = [splitext(x)[0] for x in listdir(dpath)]
+        # if len(dataset_fpaths_to_load):
+        #     for dataset_name in dataset_fpaths_to_load:
+        #         fpath = join(dpath, f'{dataset_name}.pkl')
+        #         if isfile(fpath):
+        #             with open(fpath, 'rb') as f:
+        #                 setattr(self, dataset_name, cPickle.load(f))
+        #         else:
+        #             raise FileNotFoundError(f'Attempting to load {path(fpath)} since {code("refresh_data")} is set to False, but the file does not exist')
+
+        #     self.logger.info(f'Loaded iMessage data extract from {path(dpath)}', arrow='black')
+
+        # else:
+        #     # Just extract data as usual
+        #     self.logger.info(f'{code("refresh_data")} is set to False, but no data extract files were found in {path(dpath)}, extracting data as normal', arrow='black')
+        #     self.extract_data()
+        #     self.save_data_extract(dpath)

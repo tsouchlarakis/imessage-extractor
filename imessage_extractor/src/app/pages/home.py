@@ -1,17 +1,25 @@
-from imessage_extractor.src.app.helpers import to_date_str, intword, csstext, htmlbold
-from os.path import dirname, join
+import subprocess
+from imessage_extractor.src.app.helpers import get_tmp_dpath, to_date_str, remove_extract, get_db_fpath
+from send2trash import send2trash
+from os.path import dirname, join, isdir, expanduser
+from imessage_extractor.src.helpers.verbosity import code
+from imessage_extractor.src.app.data.extract import iMessageDataExtract
 import streamlit as st
 import humanize
+import logging
 
 
 root_dir = dirname(dirname(dirname(dirname(dirname(__file__)))))
+tmp_imessage_visualizer_dpath = get_tmp_dpath()
 
 
-def write(data, logger) -> None:
+def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     """
-    Write the homepage.
+    Write the home page.
     """
-    st.image(join(root_dir, 'graphics', 'imessage_extractor_logo.png'))
+    logger.info(f'Writing page {code("Home")}', bold=True)
+
+    st.image(join(root_dir, 'graphics', 'imessage_visualizer_logo.png'))
     latest_ts = data.message_user.ts.max()
 
     st.markdown(f"""
@@ -19,27 +27,32 @@ def write(data, logger) -> None:
     **{to_date_str(data.message_user.dt.min())}**
     until
     **{to_date_str(data.message_user.dt.max())}.**
-    Data last refreshed
+    Latest message sent or received
     **{humanize.naturaltime(latest_ts.replace(tzinfo=None))}**.
     """)
 
-    col1, col2 = st.columns((1.4, 1))
+    # st.markdown('Choose a view from the Navigation menu on the left to get started!')
 
-    total_days = len(data.message_user['dt'].unique())
-    col1.markdown(csstext(total_days, cls='large-text-green-center'), unsafe_allow_html=True)
-    col1.markdown(csstext('active texting days', cls='small-text-center'), unsafe_allow_html=True)
-    col1.markdown('<br><br>', unsafe_allow_html=True)
+    # st.markdown("")
+    chatdb_fpath = st.text_input(
+        label="Where's your chat.db? For most use cases, it's in ~/Library/Messages. Use the following text input to adjust if necessary.",
+        value='~/Library/Messages/chat.db',
+        placeholder='~/Library/Messages/chat.db',
+        help='The path to your chat.db file.',
+    )
 
-    total_messages = len(data.message_user)
-    col1.markdown(csstext(intword(total_messages), cls='large-text-green-center'), unsafe_allow_html=True)
-    col1.markdown(csstext('total messages', cls='small-text-center'), unsafe_allow_html=True)
-    col1.markdown('<br><br>', unsafe_allow_html=True)
+    st.session_state.chatdb_fpath = chatdb_fpath
 
-    total_words = data.message_user_text_vw['n_tokens'].sum()
-    col2.markdown(csstext(intword(total_words), cls='large-text-green-center'), unsafe_allow_html=True)
-    col2.markdown(csstext('total words', cls='small-text-center'), unsafe_allow_html=True)
-    col2.markdown('<br><br>', unsafe_allow_html=True)
 
-    total_letters = data.message_user_text_vw['n_characters'].sum()
-    col2.markdown(csstext(intword(total_letters), cls='large-text-green-center'), unsafe_allow_html=True)
-    col2.markdown(csstext('total letters', cls='small-text-center'), unsafe_allow_html=True)
+    def refresh_app_data():
+        """
+        Remove the existing extract and completely re-extract data from the original chat.db.
+        """
+        remove_extract(logger=logger)
+
+
+    if st.button(label='Refresh', help='Refreshes your iMessage data.', on_click=refresh_app_data):
+        pass
+
+
+    logger.info('Done', arrow='black')

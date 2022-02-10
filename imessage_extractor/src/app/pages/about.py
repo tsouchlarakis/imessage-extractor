@@ -1,9 +1,11 @@
 import streamlit as st
 from imessage_extractor.src.helpers.verbosity import code
+from imessage_extractor.src.app.data.extract import iMessageDataExtract
+import logging
 
 
 # pylint: disable=line-too-long
-def write(data, logger):
+def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     """
     Write the About page.
     """

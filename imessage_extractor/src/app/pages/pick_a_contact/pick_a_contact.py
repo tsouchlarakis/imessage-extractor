@@ -4,6 +4,8 @@ import streamlit as st
 from imessage_extractor.src.app.helpers import to_date_str, csstext
 from os.path import join, dirname
 from imessage_extractor.src.helpers.verbosity import code
+from imessage_extractor.src.app.data.extract import iMessageDataExtract
+import logging
 from imessage_extractor.src.app.pages.pick_a_contact.common import prepare_page_data, get_altair_dt_plot_attributes, controls
 from imessage_extractor.src.app.pages.pick_a_contact.viz_texting_activity import viz_texting_activity
 from imessage_extractor.src.app.pages.pick_a_contact.viz_message_volume import viz_message_volume
@@ -18,7 +20,7 @@ root_dir = dirname(dirname(dirname(dirname(dirname(dirname(__file__))))))
 # - average thread length
 
 
-def write(data, logger) -> None:
+def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     """
     Write the Pick a Contact page.
     """

@@ -1,10 +1,13 @@
 import altair as alt
 import datetime
 import pandas as pd
+import logging
 import plotly.express as px
 import streamlit as st
 import stylecloud
 from imessage_extractor.src.app.color_theme import iMessageVisualizerColors
+from imessage_extractor.src.app.data.extract import iMessageDataExtract
+import logging
 from imessage_extractor.src.app.helpers import intword, csstext
 from imessage_extractor.src.app.helpers import to_date_str
 from imessage_extractor.src.helpers.utils import strip_ws
@@ -255,7 +258,7 @@ def get_corner_radius_size(xaxis_length: int) -> float:
         return 1
 
 
-def write(data, logger):
+def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     """
     Write the My Stats page.
     """
@@ -542,7 +545,7 @@ def write(data, logger):
 
     st.markdown(csstext('Apps for iMessage', cls='smallmedium-text-bold', header=True), unsafe_allow_html=True)
     st.markdown("""Includes <b>Fitness</b> notifications, <b>Game Pigeon</b> plays, <b>Apple Cash</b> sends and
-    requests, <b>polls</b>, <b>stickers</b> and other apps for iMessage""")
+    requests, <b>polls</b>, <b>stickers</b> and other apps for iMessage""", unsafe_allow_html=True)
 
     df_apps_for_imessage = pdata['summary_from_who_resample'].loc[pdata['summary_from_who_resample']['is_from_me'] == 1][['dt', 'app_for_imessage']]
     df_apps_for_imessage['dt'] = df_apps_for_imessage['dt'] + dt_offset

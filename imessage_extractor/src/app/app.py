@@ -7,6 +7,7 @@ import streamlit as st
 from send2trash import send2trash
 import typing
 from imessage_extractor.src.app.data.extract import iMessageDataExtract
+from imessage_extractor.src.app.helpers import get_db_fpath, get_extract_fpath, extract_exists, get_tmp_dpath
 from imessage_extractor.src.helpers.verbosity import logger_setup
 from os.path import join, expanduser, dirname, isfile, isdir
 from os import mkdir
@@ -14,8 +15,8 @@ from pages import about, home, my_stats
 from pages.pick_a_contact import pick_a_contact
 
 
-refresh_data = False  # Used for debugging and testing
-tmp_imessage_visualizer_dpath = expanduser('~/.imessage_visualizer')
+tmp_imessage_visualizer_dpath = get_tmp_dpath()
+imessage_extractor_chatdb_path = get_db_fpath()
 
 
 PAGES = {
@@ -36,29 +37,36 @@ class MultiApp(object):
     """
     Framework for combining multiple streamlit applications.
     """
-    def __init__(self, chatdb_con: sqlite3.Connection, logger: logging.Logger):
+    def __init__(self, chatdb_fpath: str, logger: logging.Logger):
         self.apps = []
         self.logger = logger
 
-        if not isdir(tmp_imessage_visualizer_dpath):
-            mkdir(tmp_imessage_visualizer_dpath)
+        # loading_text = 'Loading iMessage data...'
+        # with st.spinner(loading_text):
+        #     if refresh_data:
+        #         self.data = iMessageDataExtract(chatdb_fpath, logger)
+        #         self.data.extract_data()
+        #         self.data.save_data_extract(tmp_imessage_visualizer_dpath)
+
+        #     else:
+        #         if isdir(tmp_imessage_visualizer_dpath):
+        #             self.data = iMessageDataExtract(chatdb_fpath, logger)
+        #             self.data.load_data_extract(tmp_imessage_visualizer_dpath)
+        #         else:
+        #             self.data = iMessageDataExtract(chatdb_fpath, logger)
+        #             self.data.extract_data()
+        #             self.data.save_data_extract(tmp_imessage_visualizer_dpath)
 
         loading_text = 'Loading iMessage data...'
         with st.spinner(loading_text):
-            if refresh_data:
-                self.data = iMessageDataExtract(chatdb_con, logger)
-                self.data.extract_data()
-                self.data.save_data_extract(tmp_imessage_visualizer_dpath)
+            if extract_exists():
+                self.data = iMessageDataExtract(chatdb_fpath, logger)
+                self.data.load_data_extract(tmp_imessage_visualizer_dpath)
 
             else:
-                if isdir(tmp_imessage_visualizer_dpath):
-                    self.data = iMessageDataExtract(chatdb_con, logger)
-                    self.data.load_data_extract(tmp_imessage_visualizer_dpath)
-                else:
-                    self.data = iMessageDataExtract(chatdb_con, logger)
-                    self.data.extract_data()
-                    self.data.save_data_extract(tmp_imessage_visualizer_dpath)
-
+                self.data = iMessageDataExtract(chatdb_fpath, logger)
+                self.data.extract_data()
+                self.data.save_data_extract(tmp_imessage_visualizer_dpath)
 
     def add_app(self, title: str, write_func: typing.Callable):
         """
@@ -75,7 +83,8 @@ class MultiApp(object):
         Run the app.
         """
         # Set the name of the page that the app should open to when loaded
-        default_page_title = 'My Stats'
+        default_page_title = 'Home'
+        assert default_page_title in PAGES.keys()
 
         app = st.sidebar.radio(
             label='',
@@ -103,12 +112,16 @@ def main():
     """
     activate_stylesheet(join(dirname(__file__), 'stylesheet.css'))
 
-    imessage_extractor_chatdb_path = expanduser('~/GDrive/Hobbies/Code/git-doni/imessage-extractor/database/imessage_extractor.db')
-    chatdb_con = sqlite3.connect(imessage_extractor_chatdb_path)
+    # logger.info('Connected to SQLite3')
+    # chatdb_con = sqlite3.connect(imessage_extractor_chatdb_path)
+
+    # (remove) and create temporary directory for extracted data files
+    if not isdir(tmp_imessage_visualizer_dpath):
+        mkdir(tmp_imessage_visualizer_dpath)
 
     st.sidebar.title('Navigation')
 
-    app = MultiApp(logger=logger, chatdb_con=chatdb_con)
+    app = MultiApp(logger=logger, chatdb_fpath=imessage_extractor_chatdb_path)
 
     for page_name, page_module in PAGES.items():
         app.add_app(page_name, getattr(page_module, 'write'))
@@ -131,8 +144,8 @@ def main():
     [andonisooklaris.com](https://www.andonisooklaris.com).
     """)
 
-    if refresh_data:
-        send2trash(tmp_imessage_visualizer_dpath)
+    # if refresh_data:
+    #     send2trash(tmp_imessage_visualizer_dpath)
 
 
 if __name__ == '__main__':
