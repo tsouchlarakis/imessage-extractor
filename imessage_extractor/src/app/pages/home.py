@@ -1,16 +1,13 @@
-import subprocess
-from imessage_extractor.src.app.helpers import get_tmp_dpath, to_date_str, remove_extract, get_db_fpath
-from send2trash import send2trash
-from os.path import dirname, join, isdir, expanduser
-from imessage_extractor.src.helpers.verbosity import code
-from imessage_extractor.src.app.data.extract import iMessageDataExtract
-import streamlit as st
 import humanize
 import logging
+import streamlit as st
+from imessage_extractor.src.app.data.extract import iMessageDataExtract
+from imessage_extractor.src.app.helpers import to_date_str, remove_extract
+from imessage_extractor.src.helpers.verbosity import code
+from os.path import dirname, join
 
 
 root_dir = dirname(dirname(dirname(dirname(dirname(__file__)))))
-tmp_imessage_visualizer_dpath = get_tmp_dpath()
 
 
 def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
@@ -49,6 +46,7 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
         Remove the existing extract and completely re-extract data from the original chat.db.
         """
         remove_extract(logger=logger)
+        st.session_state.chatdb_fpath = chatdb_fpath  # To make sure iMessageDataExtract is re-initialized pointing to this chat.db path
 
 
     if st.button(label='Refresh', help='Refreshes your iMessage data.', on_click=refresh_app_data):

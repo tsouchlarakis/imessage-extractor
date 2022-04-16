@@ -1,9 +1,8 @@
 import altair as alt
 import datetime
-import numpy as np
-import logging
-import logging
 import humanize
+import logging
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -29,13 +28,13 @@ def pull_page_data(data) -> dict:
     """
     pdata = {}
 
-    pdata['summary_day'] = data.daily_summary_vw
-    pdata['summary_day_from_who'] = data.daily_summary_from_who_vw
-    pdata['summary_day_contact_from_who'] = data.daily_summary_contact_from_who_vw
+    pdata['daily_summary'] = data.daily_summary_vw
+    pdata['daily_summary_from_who'] = data.daily_summary_from_who_vw
+    pdata['daily_summary_contact_from_who'] = data.daily_summary_contact_from_who_vw
 
-    pdata['summary_day']['dt'] = pd.to_datetime(pdata['summary_day']['dt'])
-    pdata['summary_day_from_who']['dt'] = pd.to_datetime(pdata['summary_day_from_who']['dt'])
-    pdata['summary_day_contact_from_who']['dt'] = pd.to_datetime(pdata['summary_day_contact_from_who']['dt'])
+    pdata['daily_summary']['dt'] = pd.to_datetime(pdata['daily_summary']['dt'])
+    pdata['daily_summary_from_who']['dt'] = pd.to_datetime(pdata['daily_summary_from_who']['dt'])
+    pdata['daily_summary_contact_from_who']['dt'] = pd.to_datetime(pdata['daily_summary_contact_from_who']['dt'])
 
     return pdata
 
@@ -44,38 +43,38 @@ def filter_page_data(pdata: dict, filter_start_dt: datetime.datetime, filter_sto
     """
     Apply controls filters to page data.
     """
-    pdata['summary_day'] = (
-        pdata['summary_day']
+    pdata['daily_summary'] = (
+        pdata['daily_summary']
         .loc[
-            (pdata['summary_day']['dt'] >= pd.to_datetime(filter_start_dt))
-            & (pdata['summary_day']['dt'] <= pd.to_datetime(filter_stop_dt))
+            (pdata['daily_summary']['dt'] >= pd.to_datetime(filter_start_dt))
+            & (pdata['daily_summary']['dt'] <= pd.to_datetime(filter_stop_dt))
         ]
     )
 
-    if len(pdata['summary_day']) == 0:
-        raise ValueError('Dataframe `summary_day` has no records, there must be a mistake!')
+    if len(pdata['daily_summary']) == 0:
+        raise ValueError('Dataframe `daily_summary` has no records, there must be a mistake!')
 
-    pdata['summary_day_from_who'] = (
-        pdata['summary_day_from_who']
+    pdata['daily_summary_from_who'] = (
+        pdata['daily_summary_from_who']
         .loc[
-            (pdata['summary_day_from_who']['dt'] >= pd.to_datetime(filter_start_dt))
-            & (pdata['summary_day_from_who']['dt'] <= pd.to_datetime(filter_stop_dt))
+            (pdata['daily_summary_from_who']['dt'] >= pd.to_datetime(filter_start_dt))
+            & (pdata['daily_summary_from_who']['dt'] <= pd.to_datetime(filter_stop_dt))
         ]
     )
 
-    if len(pdata['summary_day_from_who']) == 0:
-        raise ValueError('Dataframe `summary_day_from_who` has no records, there must be a mistake!')
+    if len(pdata['daily_summary_from_who']) == 0:
+        raise ValueError('Dataframe `daily_summary_from_who` has no records, there must be a mistake!')
 
-    pdata['summary_day_contact_from_who'] = (
-        pdata['summary_day_contact_from_who']
+    pdata['daily_summary_contact_from_who'] = (
+        pdata['daily_summary_contact_from_who']
         .loc[
-            (pdata['summary_day_contact_from_who']['dt'] >= pd.to_datetime(filter_start_dt))
-            & (pdata['summary_day_contact_from_who']['dt'] <= pd.to_datetime(filter_stop_dt))
+            (pdata['daily_summary_contact_from_who']['dt'] >= pd.to_datetime(filter_start_dt))
+            & (pdata['daily_summary_contact_from_who']['dt'] <= pd.to_datetime(filter_stop_dt))
         ]
     )
 
-    if len(pdata['summary_day_contact_from_who']) == 0:
-        raise ValueError('Dataframe `summary_day_contact_from_who` has no records, there must be a mistake!')
+    if len(pdata['daily_summary_contact_from_who']) == 0:
+        raise ValueError('Dataframe `daily_summary_contact_from_who` has no records, there must be a mistake!')
 
     return pdata
 
@@ -87,8 +86,8 @@ def resample_page_data(pdata: dict, dt_gran: str) -> pd.DataFrame:
     assert dt_gran in ['Day', 'Week', 'Month', 'Year'], f'Invalid date granularity: {dt_gran}'
 
     if dt_gran == 'Day':
-        pdata['summary_resample'] = pdata['summary_day']
-        pdata['summary_from_who_resample'] = pdata['summary_day_from_who']
+        pdata['summary_resample'] = pdata['daily_summary']
+        pdata['summary_from_who_resample'] = pdata['daily_summary_from_who']
         return pdata
 
     # Must apply some resampling
@@ -102,13 +101,13 @@ def resample_page_data(pdata: dict, dt_gran: str) -> pd.DataFrame:
     elif dt_gran == 'Year':
         resample_identifier = 'AS'
 
-    pdata['summary_resample'] = pdata['summary_day'].set_index('dt').resample(resample_identifier).sum().reset_index()
+    pdata['summary_resample'] = pdata['daily_summary'].set_index('dt').resample(resample_identifier).sum().reset_index()
 
     pdata['summary_from_who_resample'] = (
-        pdata['summary_day_from_who']
+        pdata['daily_summary_from_who']
         .set_index(['is_from_me', 'dt'])
         .groupby([
-            pdata['summary_day_from_who'].set_index(['is_from_me', 'dt']).index.get_level_values('is_from_me'),
+            pdata['daily_summary_from_who'].set_index(['is_from_me', 'dt']).index.get_level_values('is_from_me'),
             pd.Grouper(freq=resample_identifier, level=1),
         ])
         .sum()
@@ -116,11 +115,11 @@ def resample_page_data(pdata: dict, dt_gran: str) -> pd.DataFrame:
     )
 
     pdata['summary_contact_from_who_resample'] = (
-        pdata['summary_day_contact_from_who']
+        pdata['daily_summary_contact_from_who']
         .set_index(['contact_name', 'is_from_me', 'dt'])
         .groupby([
-            pdata['summary_day_contact_from_who'].set_index(['contact_name', 'is_from_me', 'dt']).index.get_level_values('contact_name'),
-            pdata['summary_day_contact_from_who'].set_index(['contact_name', 'is_from_me', 'dt']).index.get_level_values('is_from_me'),
+            pdata['daily_summary_contact_from_who'].set_index(['contact_name', 'is_from_me', 'dt']).index.get_level_values('contact_name'),
+            pdata['daily_summary_contact_from_who'].set_index(['contact_name', 'is_from_me', 'dt']).index.get_level_values('is_from_me'),
             pd.Grouper(freq=resample_identifier, level=2),
         ])
         .sum()
@@ -262,6 +261,7 @@ def get_corner_radius_size(xaxis_length: int) -> float:
 
 class Visuals(object):
     """
+    Visuals for the My Stats page.
     """
     def __init__(self, data, pdata, dt_gran, count_col):
         self.data = data
@@ -277,23 +277,23 @@ class Visuals(object):
         **{to_date_str(self.data.message_user.dt.min())}**
         until
         **{to_date_str(self.data.message_user.dt.max())}.**
-        Latest message sent or received
+        Latest message exchanged
         **{humanize.naturaltime(latest_ts.replace(tzinfo=None))}**.
         """)
 
     def section_message_volume(self):
 
         def text_total_message_volume():
-            total_messages_from_me_pct = self.pdata['summary_day_from_who'].loc[self.pdata['summary_day_from_who']['is_from_me'] == 1][self.count_col].sum() \
-                / self.pdata['summary_day_from_who'][self.count_col].sum()
-            total_messages_from_others_pct = self.pdata['summary_day_from_who'].loc[self.pdata['summary_day_from_who']['is_from_me'] == 0][self.count_col].sum() \
-                / self.pdata['summary_day_from_who'][self.count_col].sum()
+            total_messages_from_me_pct = self.pdata['daily_summary_from_who'].loc[self.pdata['daily_summary_from_who']['is_from_me'] == 1][self.count_col].sum() \
+                / self.pdata['daily_summary_from_who'][self.count_col].sum()
+            total_messages_from_others_pct = self.pdata['daily_summary_from_who'].loc[self.pdata['daily_summary_from_who']['is_from_me'] == 0][self.count_col].sum() \
+                / self.pdata['daily_summary_from_who'][self.count_col].sum()
             st.markdown(f"""Total messages exchanged with all contacts (including group chats),
             **{str(int(round(total_messages_from_me_pct * 100, 0))) + '%'}** sent by me,
             **{str(int(round(total_messages_from_others_pct * 100, 0))) + '%'}** sent by others.
             """)
 
-            total_messages = self.pdata['summary_day'][self.count_col].sum()
+            total_messages = self.pdata['daily_summary'][self.count_col].sum()
             st.markdown(csstext(intword(total_messages), cls='large-text-green-center'), unsafe_allow_html=True)
 
         def bar_message_volume():
@@ -324,7 +324,7 @@ class Visuals(object):
             )
 
         def line_gradient_message_volume_day_of_week():
-            message_volume_dow = self.pdata['summary_day'][['dt', self.count_col]].reset_index().copy()
+            message_volume_dow = self.pdata['daily_summary'][['dt', self.count_col]].reset_index().copy()
             message_volume_dow['weekday'] = message_volume_dow['dt'].dt.day_name()
             message_volume_dow = message_volume_dow.drop('dt', axis=1).groupby('weekday').mean()
             most_popular_day = message_volume_dow[self.count_col].idxmax()
@@ -372,15 +372,15 @@ class Visuals(object):
     def section_words(self):
 
         def text_total_word_volume():
-            total_tokens = self.pdata['summary_day']['tokens'].sum()
-            total_tokens_from_me_pct = self.pdata['summary_day_from_who'].loc[self.pdata['summary_day_from_who']['is_from_me'] == 1]['tokens'].sum() / self.pdata['summary_day']['tokens'].sum()
-            total_tokens_from_others_pct = self.pdata['summary_day_from_who'].loc[self.pdata['summary_day_from_who']['is_from_me'] == 0]['tokens'].sum() / self.pdata['summary_day']['tokens'].sum()
+            total_tokens = self.pdata['daily_summary']['tokens'].sum()
+            total_tokens_from_me_pct = self.pdata['daily_summary_from_who'].loc[self.pdata['daily_summary_from_who']['is_from_me'] == 1]['tokens'].sum() / self.pdata['daily_summary']['tokens'].sum()
+            total_tokens_from_others_pct = self.pdata['daily_summary_from_who'].loc[self.pdata['daily_summary_from_who']['is_from_me'] == 0]['tokens'].sum() / self.pdata['daily_summary']['tokens'].sum()
 
-            st.markdown(csstext(intword(total_tokens), cls='large-text-green-center'), unsafe_allow_html=True)
             st.markdown(f"""Total words exchanged with all contacts,
             **{str(int(round(total_tokens_from_others_pct * 100, 0))) + '%'}** written by them,
             **{str(int(round(total_tokens_from_me_pct * 100, 0))) + '%'}** written by me.
             """)
+            st.markdown(csstext(intword(total_tokens), cls='large-text-green-center'), unsafe_allow_html=True)
 
         def wordcloud_word_volume():
             # Pull data
@@ -438,7 +438,6 @@ class Visuals(object):
 
 
         st.markdown(csstext('Words', cls='medium-text-bold', header=True), unsafe_allow_html=True)
-        st.markdown('A visual representation of the words used across all conversations.')
 
         text_total_word_volume()
         wordcloud_word_volume()
@@ -957,8 +956,8 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     )
 
     # Get max and min message dates
-    first_message_dt = pdata['summary_day']['dt'].min()
-    last_message_dt = pdata['summary_day']['dt'].max()
+    first_message_dt = pdata['daily_summary']['dt'].min()
+    last_message_dt = pdata['daily_summary']['dt'].max()
 
     # Add filters now that first and last message dates are known
     use_exact_dates = st.checkbox(
@@ -978,9 +977,9 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
 
     # Add column that reflects sum of selected message types
     count_col = 'display_message_count'
-    pdata['summary_day'][count_col] = pdata['summary_day'][selected_include_type_columns].sum(axis=1)
-    pdata['summary_day_from_who'][count_col] = pdata['summary_day_from_who'][selected_include_type_columns].sum(axis=1)
-    pdata['summary_day_contact_from_who'][count_col] = pdata['summary_day_contact_from_who'][selected_include_type_columns].sum(axis=1)
+    pdata['daily_summary'][count_col] = pdata['daily_summary'][selected_include_type_columns].sum(axis=1)
+    pdata['daily_summary_from_who'][count_col] = pdata['daily_summary_from_who'][selected_include_type_columns].sum(axis=1)
+    pdata['daily_summary_contact_from_who'][count_col] = pdata['daily_summary_contact_from_who'][selected_include_type_columns].sum(axis=1)
 
     # Add a dataframe called 'summary_resample' to page data dictionary based on selected date granularity
     pdata = resample_page_data(pdata, dt_gran)
@@ -989,11 +988,8 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     del dt_options, use_exact_dates, selected_include_type_columns
 
     #
-    # Visualization class
+    # Page sections
     #
-
-
-
 
     visuals = Visuals(data=data, pdata=pdata, count_col=count_col, dt_gran=dt_gran)
     visuals.section_statistics_first_and_last_message_sent_dt()
@@ -1003,43 +999,43 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     visuals.section_imessage_vs_sms()
     visuals.section_people()
 
-
-
-
-
-
-
-    # Message Snapshot
-
-    # st.markdown(csstext('Recent Snapshot', cls='medium-text-bold', header=True), unsafe_allow_html=True)
-    # st.markdown('My latest messages sent and received.')
-
-    # col1, col2 = st.columns((1, 2.5))
-
-    # df_search_messages = (
-    #     self.data.message_user
-    #     .loc[(self.data.message_user['is_text'])
-    #          & (self.data.message_user['is_empty'] == 0)
-    #         #  & (self.data.message_user['contact_name'] == contact_name)
-    #          & (self.data.message_user['dt'] >= pd.to_datetime(filter_start_dt))
-    #             & (self.data.message_user['dt'] <= pd.to_datetime(filter_stop_dt))]
-    #     [['ts', 'contact_name', 'text', 'is_from_me']]
-    #     .rename(columns={'contact_name': 'Contact Name', 'text': 'Text', 'is_from_me': 'From Me'})
-    #     .sort_values('ts', ascending=False)
-    # )
-    # df_search_messages['From Me'] = df_search_messages['From Me'].map({1: 'Yes', 0: 'No'})
-    # df_search_messages['Time'] = df_search_messages['ts'].dt.strftime("%b %-d '%y at %I:%M:%S %p").str.lower().str.capitalize()
-
-    # n_message_display = col1.number_input('Show this many messages',
-    #                                       min_value=1,
-    #                                       max_value=len(df_search_messages),
-    #                                       value=min(20, len(df_search_messages)),
-    #                                       step=1)
-
-    # st.write(df_search_messages[['Time', 'Contact Name', 'From Me', 'Text']].set_index('Time').fillna('').head(n_message_display))
-
-    #
-    # Wrap Up
-    #
-
     logger.info('Done', arrow='black')
+
+
+
+
+
+# TODO: SAVED FOR USE LATER
+
+# Message Snapshot
+
+# st.markdown(csstext('Recent Snapshot', cls='medium-text-bold', header=True), unsafe_allow_html=True)
+# st.markdown('My latest messages sent and received.')
+
+# col1, col2 = st.columns((1, 2.5))
+
+# df_search_messages = (
+#     self.data.message_user
+#     .loc[(self.data.message_user['is_text'])
+#          & (self.data.message_user['is_empty'] == 0)
+#         #  & (self.data.message_user['contact_name'] == contact_name)
+#          & (self.data.message_user['dt'] >= pd.to_datetime(filter_start_dt))
+#             & (self.data.message_user['dt'] <= pd.to_datetime(filter_stop_dt))]
+#     [['ts', 'contact_name', 'text', 'is_from_me']]
+#     .rename(columns={'contact_name': 'Contact Name', 'text': 'Text', 'is_from_me': 'From Me'})
+#     .sort_values('ts', ascending=False)
+# )
+# df_search_messages['From Me'] = df_search_messages['From Me'].map({1: 'Yes', 0: 'No'})
+# df_search_messages['Time'] = df_search_messages['ts'].dt.strftime("%b %-d '%y at %I:%M:%S %p").str.lower().str.capitalize()
+
+# n_message_display = col1.number_input('Show this many messages',
+#                                       min_value=1,
+#                                       max_value=len(df_search_messages),
+#                                       value=min(20, len(df_search_messages)),
+#                                       step=1)
+
+# st.write(df_search_messages[['Time', 'Contact Name', 'From Me', 'Text']].set_index('Time').fillna('').head(n_message_display))
+
+#
+# Wrap Up
+#

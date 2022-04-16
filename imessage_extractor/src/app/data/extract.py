@@ -27,8 +27,6 @@ class iMessageDataExtract(object):
         """
         Perform iMessage data extract.
         """
-        self.logger.info('Extract iMessage Data', bold=True)
-
         #
         # Call imessage-extractor
         #

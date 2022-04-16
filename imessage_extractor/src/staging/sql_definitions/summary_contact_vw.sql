@@ -1,18 +1,16 @@
-drop view if exists summary_contact_from_who_vw;
-create view summary_contact_from_who_vw as
+drop view if exists summary_contact_vw;
+create view summary_contact_vw as
 
 with ts_statistics as (
     select contact_name
-           , is_from_me
            , min(ts) as first_message_ts
            , max(ts) as latest_message_ts
     from message_user
-    group by contact_name, is_from_me
+    group by contact_name
 ),
 
 main_statistics as (
     select contact_name
-           , is_from_me
            , sum(messages) as messages
            , sum(text_messages) as text_messages
            , sum(group_chat_messages) as group_chat_messages
@@ -44,11 +42,10 @@ main_statistics as (
            , min(dt) as first_message_dt
            , max(dt) as latest_message_dt
     from daily_summary_contact_from_who_vw
-    group by contact_name, is_from_me
+    group by contact_name
 )
 
 select m.*, t.first_message_ts, t.latest_message_ts
 from main_statistics m
 left join ts_statistics t
   on m.contact_name = t.contact_name
-  and m.is_from_me = t.is_from_me

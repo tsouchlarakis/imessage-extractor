@@ -58,6 +58,7 @@ class MultiApp(object):
         #             self.data.save_data_extract(tmp_imessage_visualizer_dpath)
 
         loading_text = 'Loading iMessage data...'
+        self.logger.info('Loading iMessage data', bold=True)
         with st.spinner(loading_text):
             if extract_exists():
                 self.data = iMessageDataExtract(chatdb_fpath, logger)

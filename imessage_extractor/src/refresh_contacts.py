@@ -8,7 +8,7 @@ from os.path import expanduser, abspath, join, dirname
 from send2trash import send2trash
 
 
-target_fpath = abspath(join(dirname(__file__), 'custom_tables', 'data', 'contacts.csv'))
+target_fpath = abspath(join(dirname(__file__), 'static_tables', 'data', 'contacts.csv'))
 
 
 def extract_phone_number(raw_string: str, sep: str=';') -> dict:
@@ -76,7 +76,7 @@ def variate_phone_number(phone_number: str) -> list:
 @click.command()
 def refresh_contacts(exported_contacts_csv_fpath, delete_input_csv, verbose) -> None:
     """
-    Refresh contacts.csv located in the 'custom_tables' directory with an exported
+    Refresh contacts.csv located in the 'static_tables' directory with an exported
     .csv file via the macOS app Exporter for Contacts:
 
     App Link:
