@@ -190,8 +190,6 @@ prompt-toolkit==3.0.20
     # via ipython
 protobuf==3.17.3
     # via streamlit
-psycopg2-binary==2.8.6
-    # via -r requirements.in
 ptyprocess==0.7.0
     # via
     #   pexpect
