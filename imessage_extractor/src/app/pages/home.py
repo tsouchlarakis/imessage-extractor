@@ -1,46 +1,56 @@
-from imessage_extractor.src.app.helpers import to_date_str, intword, csstext, htmlbold
-from os.path import dirname, join
-import streamlit as st
 import humanize
+import logging
+import streamlit as st
+from imessage_extractor.src.app.data.extract import iMessageDataExtract
+from imessage_extractor.src.app.helpers import to_date_str, remove_extract
+from imessage_extractor.src.helpers.verbosity import code
+from os.path import dirname, join
 
 
 root_dir = dirname(dirname(dirname(dirname(dirname(__file__)))))
 
 
-def write(data, logger) -> None:
+def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     """
-    Write the homepage.
+    Write the home page.
     """
-    st.image(join(root_dir, 'graphics', 'imessage_extractor_logo.png'))
-    latest_ts = data.message_vw.ts.max()
+    logger.info(f'Writing page {code("Home")}', bold=True)
 
-    st.markdown(csstext(f"""
+    st.image(join(root_dir, 'graphics', 'imessage_visualizer_logo.png'))
+    latest_ts = data.message_user.ts.max()
+
+    st.markdown(f"""
     Statistics on my iMessage history from
-    {htmlbold(to_date_str(data.message_vw.dt.min()))}
+    **{to_date_str(data.message_user.dt.min())}**
     until
-    {htmlbold(to_date_str(data.message_vw.dt.max()))}.
-    Data last refreshed
-    {htmlbold(humanize.naturaltime(latest_ts.replace(tzinfo=None)))}.
-    """, cls='small-text'), unsafe_allow_html=True)
+    **{to_date_str(data.message_user.dt.max())}.**
+    Latest message sent or received
+    **{humanize.naturaltime(latest_ts.replace(tzinfo=None))}**.
+    """)
+
+    # st.markdown('Choose a view from the Navigation menu on the left to get started!')
+
+    # st.markdown("")
+    chatdb_fpath = st.text_input(
+        label="Where's your chat.db? For most use cases, it's in ~/Library/Messages. Use the following text input to adjust if necessary.",
+        value='~/Library/Messages/chat.db',
+        placeholder='~/Library/Messages/chat.db',
+        help='The path to your chat.db file.',
+    )
+
+    st.session_state.chatdb_fpath = chatdb_fpath
 
 
-    col1, col2 = st.columns((1.4, 1))
+    def refresh_app_data():
+        """
+        Remove the existing extract and completely re-extract data from the original chat.db.
+        """
+        remove_extract(logger=logger)
+        st.session_state.chatdb_fpath = chatdb_fpath  # To make sure iMessageDataExtract is re-initialized pointing to this chat.db path
 
-    total_days = len(data.message_vw['dt'].unique())
-    col1.markdown(csstext(total_days, cls='large-text-green-center'), unsafe_allow_html=True)
-    col1.markdown(csstext('active texting days', cls='small-text-center'), unsafe_allow_html=True)
-    col1.markdown('<br><br>', unsafe_allow_html=True)
 
-    total_messages = len(data.message_vw)
-    col1.markdown(csstext(intword(total_messages), cls='large-text-green-center'), unsafe_allow_html=True)
-    col1.markdown(csstext('total messages', cls='small-text-center'), unsafe_allow_html=True)
-    col1.markdown('<br><br>', unsafe_allow_html=True)
+    if st.button(label='Refresh', help='Refreshes your iMessage data.', on_click=refresh_app_data):
+        pass
 
-    total_words = data.message_vw_text['n_tokens'].sum()
-    col2.markdown(csstext(intword(total_words), cls='large-text-green-center'), unsafe_allow_html=True)
-    col2.markdown(csstext('total words', cls='small-text-center'), unsafe_allow_html=True)
-    col2.markdown('<br><br>', unsafe_allow_html=True)
 
-    total_letters = data.message_vw_text['n_characters'].sum()
-    col2.markdown(csstext(intword(total_letters), cls='large-text-green-center'), unsafe_allow_html=True)
-    col2.markdown(csstext('total letters', cls='small-text-center'), unsafe_allow_html=True)
+    logger.info('Done', arrow='black')

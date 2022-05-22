@@ -25,6 +25,29 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
+
+1.0.5 (2022-05-21)
+------------------
+**Added**
+- Automatic contact list refreshing
+- My Stats infrastructure in analytic app
+- Stopwords table
+- ``Visuals`` class
+
+**Changed**
+- Requirements
+- Restructured staging table/view definitions
+- Enhanced logging output
+
+**Deprecated**
+
+**Removed**
+- ``psycopg2-binary`` requirement
+
+**Fixed**
+
+**Security**
+
 1.0.4 (2022-01-16)
 ------------------
 **Added**
@@ -34,7 +57,6 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 **Changed**
 - Requirements
-- Added requirements designed to be installed via ``brew``
 - Additional data added to contacts.csv
   - Now use ``phonenumbers`` packages to parse phone numbers from exported contacts
 
@@ -52,7 +74,7 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 1.0.3 (2021-09-08)
 ------------------
 **Added**
-- View of ``message_vw`` filtered for just messages that are text ``message_vw_text``
+- View of ``message_user`` filtered for just messages that are text ``message_user_text_vw``
 - Renamed column 'is_thread' to 'is_threaded_reply' for a more accurate description
 
 1.0.2 (2021-08-22)

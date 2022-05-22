@@ -190,8 +190,6 @@ prompt-toolkit==3.0.20
     # via ipython
 protobuf==3.17.3
     # via streamlit
-psycopg2-binary==2.8.6
-    # via -r requirements.in
 ptyprocess==0.7.0
     # via
     #   pexpect
@@ -300,6 +298,8 @@ urllib3==1.26.6
     # via requests
 validators==0.18.2
     # via streamlit
+watchdog==2.1.8
+    # via -r requirements.in
 wcwidth==0.2.5
     # via prompt-toolkit
 webencodings==0.5.1

@@ -1,0 +1,65 @@
+{
+    "contact_daily_message_volume_vw": {
+        "reference": ["message_user", "message_user_text_vw"]
+    },
+    "contact_group_names": {
+        "reference": ["message"]
+    },
+    "contacts_user": {
+        "reference": ["contact_group_names", "contacts_manual", "contacts"]
+    },
+    "message_count_top_contacts_vw": {
+        "reference": ["message_user"]
+    },
+    "message_user": {
+        "reference": ["chat", "chat_message_join", "message", "contacts_user"]
+    },
+    "message_user_text_vw": {
+        "reference": ["message_user"]
+    },
+    "daily_summary_contact_from_who_vw": {
+        "reference": ["message_user"]
+    },
+    "daily_summary_contact_vw": {
+        "reference": ["daily_summary_contact_from_who_vw"]
+    },
+    "daily_summary_from_who_vw": {
+        "reference": ["daily_summary_contact_from_who_vw"]
+    },
+    "daily_summary_vw": {
+        "reference": ["daily_summary_contact_from_who_vw"]
+    },
+    "message_tokens_unnest_vw": {
+        "reference": ["message_user"]
+    },
+    "message_emoji_map_vw": {
+        "reference": ["message_user", "message_tokens_unnest_vw", "emoji_text_map"]
+    },
+    "contact_token_usage_daily_from_who_vw": {
+        "reference": ["message_user_text_vw", "message_tokens_unnest_vw"]
+    },
+    "contact_token_usage_from_who_vw": {
+        "reference": ["contact_token_usage_daily_from_who_vw"]
+    },
+    "contact_token_usage_daily_vw": {
+        "reference": ["contact_token_usage_daily_from_who_vw"]
+    },
+    "contact_token_usage_vw": {
+        "reference": ["contact_token_usage_daily_from_who_vw"]
+    },
+    "summary_vw": {
+        "reference": ["daily_summary_contact_from_who_vw"]
+    },
+    "summary_from_who_vw": {
+        "reference": ["daily_summary_contact_from_who_vw"]
+    },
+    "summary_contact_vw": {
+        "reference": ["daily_summary_contact_from_who_vw", "message_user"]
+    },
+    "summary_contact_from_who_vw": {
+        "reference": ["daily_summary_contact_from_who_vw", "message_user"]
+    },
+    "contact_group_chat_map_vw" : {
+        "reference": ["message_user"]
+    }
+}

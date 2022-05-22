@@ -1,0 +1,63 @@
+{
+    "contact_token_usage_from_who_vw": {
+        "index": [
+            "contact_name",
+            "is_from_me",
+            "token",
+            "length"
+        ]
+    },
+    "daily_summary_vw": {
+        "index": [
+            "dt"
+        ]
+    },
+    "daily_summary_contact_vw": {
+        "index": [
+            "dt",
+            "contact_name"
+        ]
+    },
+    "daily_summary_contact_from_who_vw": {
+        "index": [
+            "dt",
+            "contact_name",
+            "is_from_me"
+        ]
+    },
+    "daily_summary_from_who_vw": {
+        "index": [
+            "dt",
+            "is_from_me"
+        ]
+    },
+    "message_tokens_unnest_vw": {
+        "index": [
+            "message_id"
+        ]
+    },
+    "message_user": {
+        "index": [
+            "message_id"
+        ]
+    },
+    "message_user_text_vw": {
+        "index": [
+            "message_id"
+        ]
+    },
+    "summary_vw": {
+        "index": null
+    },
+    "summary_contact_vw": {
+        "index": null
+    },
+    "summary_contact_from_who_vw": {
+        "index": null
+    },
+    "contact_group_chat_map_vw": {
+        "index": [
+            "contact_name"
+        ]
+    }
+}

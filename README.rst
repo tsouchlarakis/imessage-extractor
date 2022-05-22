@@ -15,7 +15,7 @@ Extract chat data from iMessage and much, much more!
 🏁 Getting Started
 ==================
 
-``imessage-extractor`` is a pip-installable Python package that extracts iMessage chat data stored locally in a SQLite database by macOS, and saves it to an set of flat .csv files or a Postgres database, or both. If saving to a Postgres database the workflow will create a series of staging tables, views, and other database objects designed to make querying your iMessage chat data as simple and straightforward as possible.
+``imessage-extractor`` is a pip-installable Python package that extracts iMessage chat data stored locally in a SQLite database by macOS and joins it with local Contacts data and saves the transformed data in a local SQLite database. There is also a Streamlit app baked into this package designed to display visual analytics on the user's iMessage history.
 
 🧿 Prerequisites
 ----------------
@@ -52,6 +52,8 @@ First, you'll want to make sure you have the iMessage SQLite database, called **
 
 Or by just navigating to that directory in Finder, and seeing whether a file called **chat.db** exists 🙂
 
+So that your iMessage history can be automatically joined with your contacts, you'll also want to make sure you have one one or more .aclcddb database files at **~/Library/Application Support/AddressBook/ABAssistantChangelog**. You can also check the **Sources/** subdirectories.
+
 A call to the extractor can involve the following options (examples below):
 
 .. list-table:: Commandline Options
@@ -67,31 +69,11 @@ A call to the extractor can involve the following options (examples below):
      - ~/Library/Messages/chat.db
      - Required
      - Path to working chat.db.
-   * - --save-csv
+   * - -- outputdb-path
      - string, path
-     -
-     - Optional
-     - Path to folder to save chat.db tables to.
-   * - --pg-schema
-     - string
-     -
-     - Optional
-     - Name of Postgres schema to save tables to.
-   * - --pg-credentials
-     - string, path
-     -
-     - Optional
-     - EITHER the path to a local Postgres credentials file 'i.e. ~/.pgpass', OR a string with the    connection credentials. Must be in format ``hostname:port:db_name:user:pg_pass``.
-   * - -r, --rebuild
-     - bool
-     - False
-     - Optional
-     - Wipe target Postgres schema and rebuild from scratch.
-   * - -s, --stage
-     - bool
-     - False
-     - Optional
-     - Build staging tables and views after the chat.db tables have been loaded
+     - ~/Desktop/imessage_extractor_chat.db
+     - Required
+     - Desired path to output .db SQLite database file..
    * - -v, --verbose
      - bool
      - False
@@ -108,44 +90,11 @@ A call to the extractor can involve the following options (examples below):
      - Optional
      - Show the help message and exit.
 
-*Note that while --save-csv and pg-schema are both optional, at least one of them must be specified to run the extraction beacuse the program must have an output destination (either flat .csv files, a Postgres schema, or both).*
-
-Now that we have our chat.db file and we understand the preceding options, we're ready to make a call to the extractor. To do this, we need to call the ``go`` command within the extractor.
-
-To save the chat.db tables to a set of flat .csv files at a target folder:
+Now that we have our chat.db file and we understand the preceding options, we're ready to make a call to the extractor. To do this, we need to call the ``go`` command within the extractor:
 
 .. code-block:: bash
 
-   imessage-extractor go --save-csv "~/Desktop/imessage-extractor/imessage_chatdb_extract"
-
-To save the chat.db tables to a Postgres schema, we need to supply two things:
-
-1.  The credentials to establish a Postgres connection
-2.  The name of the schema to save the tables to
-
-For (1), we can supply this either using a **.pgpass** file, which is generally stored in your home directory (**/Users/<username>**), or by passing the desired Postgres credentials in a connection string using.
-
-If we supply a **.pgpass** file, that file's contents **must** be in the format ``hostname:port:db_name:user_name:password``. Alternatively, if we supply those credentials by commandline string, they must be in the same format.
-
-For example, our **.pgpass** file might be a text file with one line: ``127.0.0.1:5432:<your_database_name>:<your_user_name>:<your_password>``. We can then supply the option ``--pg-credentials "~/.pgpass"`` to the ``go`` command.
-
-Alternatively, we can supply the same credentials to the ``go`` command with ``--pg-credentials "127.0.0.1:5432:<your_database_name>:<your_user_name>:<your_password>"``.
-
-It's totally your choice how you choose to supply the Postgres credentials (they are used identically in establishing a database connection no matter how they're supplied to ``go``, but using **.pgpass** is generally preferred for security).
-
-For (2), this can be any Postgres schema name, but ideally it would be a non-existent or unused one, the reason being that if the pipeline is run with the ``rebuild`` option set to ``True``, then the schema will be dropped and recreated before the extraction.
-
-Here are a few ways we can tell the extractor to load data into Postgres:
-
-.. code-block:: bash
-
-   # Using a .pgpass file
-   imessage-extractor go --pg-credentials "~/.pgpass" --pg-schema "imessage"
-
-   # Or by passing the connection string
-   imessage-extractor go --pg-credentials "<hostname>:<port>:<db_name>:<user_name>:<password>" --pg-schema "imessage"
-
-Lastly, we can append the ``--verbose`` option to get feedback printed to the console as the extraction is happening!
+   imessage-extractor go
 
 🌈 Releasing
 ------------

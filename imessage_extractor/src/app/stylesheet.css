@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css?family=IBM+Plex+Sans&display=swap');
+
 .small-text {
     font-size: 15px;
     font-weight: normal;
-    font-family: sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     color: #d4d4d4;
     text-align: left;
 }
@@ -9,7 +11,15 @@
 .small-text-center {
     font-size: 15px;
     font-weight: normal;
-    font-family: sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: #d4d4d4;
+    text-align: center;
+}
+
+.small-text-bold-center {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: 'IBM Plex Sans', sans-serif;
     color: #d4d4d4;
     text-align: center;
 }
@@ -17,21 +27,52 @@
 .small-text-right {
     font-size: 15px;
     font-weight: normal;
-    font-family: sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     color: #d4d4d4;
     text-align: right;
 }
 
+.small22-text-center {
+    font-size: 22px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: normal;
+    color: #d4d4d4;
+    text-align: center;
+}
+
+.smallmedium-text-bold {
+    font-size: 30px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: bold;
+    color: #d4d4d4;
+}
+
+.smallmedium-text-center {
+    font-size: 30px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: normal;
+    color: #d4d4d4;
+    text-align: center;
+}
+
+.smallmedium-text-bold-center {
+    font-size: 30px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: bold;
+    color: #d4d4d4;
+    text-align: center;
+}
+
 .medium-text {
     font-size: 45px;
-    font-family: sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     font-weight: normal;
     color: #d4d4d4;
 }
 
 .medium-text-right {
     font-size: 45px;
-    font-family: sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     font-weight: normal;
     color: #d4d4d4;
     text-align: right;
@@ -39,41 +80,70 @@
 
 .medium-text-bold {
     font-size: 45px;
-    font-family: sans-serif;
+    font-family: ibm-plex-sans, sans-serif;
     font-weight: bold;
     color: #d4d4d4;
+}
+
+.medium-text-bold-center {
+    font-size: 45px;
+    font-family: ibm-plex-sans, sans-serif;
+    font-weight: bold;
+    color: #d4d4d4;
+    text-align: center;
 }
 
 .medium-text-green {
     font-size: 45px;
     font-weight: normal;
-    font-family: sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     color: #83cf83;
 }
 
 .medium-text-green-right {
     font-size: 45px;
     font-weight: normal;
-    font-family: sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     color: #83cf83;
     text-align: right;
 }
 
+.medium-text-green-center {
+    font-size: 45px;
+    font-weight: normal;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: #83cf83;
+    text-align: center;
+}
+
+.medium-text-green-right {
+    font-size: 45px;
+    font-weight: normal;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: #83cf83;
+    text-align: center;
+}
+
 .large-text {
-    font-size: 100px;
+    font-size: 120px;
+    font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.large-text-bold {
+    font-size: 120px;
     font-weight: bold;
-    font-family: sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
 }
 
 .large-text-green {
-    font-size: 100px;
+    font-size: 120px;
     font-weight: bold;
     font-family: sans-serif;
     color: #83cf83;
 }
 
 .large-text-green-center {
-    font-size: 100px;
+    font-size: 120px;
     font-weight: bold;
     font-family: sans-serif;
     color: #83cf83;
@@ -81,7 +151,7 @@
 }
 
 .large-text-green-right {
-    font-size: 100px;
+    font-size: 120px;
     font-weight: bold;
     font-family: sans-serif;
     color: #83cf83;

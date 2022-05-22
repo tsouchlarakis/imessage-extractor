@@ -1,0 +1,15 @@
+{
+    "contacts_ignored": {
+        "chat_identifier": "text",
+        "notes": "text"
+    },
+    "contacts_manual": {
+        "chat_identifier": "text",
+        "contact_name": "text"
+    },
+    "contacts": {
+        "contact_name": "text",
+        "chat_identifier": "text",
+        "identifier_type": "text"
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "emoji_text_map": {
+        "columnspec": {
+            "emoji": "text",
+            "plain_text": "text"
+        },
+        "primary_key": "emoji",
+        "reference": null
+    },
+    "stopwords": {
+        "columnspec": {
+            "stopword": "text"
+        },
+        "primary_key": "stopword",
+        "reference": null
+    }
+}

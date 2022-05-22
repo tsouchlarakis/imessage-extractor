@@ -13,3 +13,10 @@ Icon?
 tests/test_data
 imessage_extractor/src/custom_tables/data/*.csv
 graphics/*.afphoto
+database/
+imessage_extractor/src/app/tmp_imessage_extractor_app_pick_a_contact_wordcloud.csv
+imessage_extractor/src/app/pages/home.py
+imessage_extractor/src/app/stylecloud_my_stats.png
+imessage_extractor/src/static_tables/data/contacts.csv
+imessage_extractor/src/static_tables/data/contacts_manual.csv
+imessage_extractor/src/static_tables/data/contacts_ignored.csv
