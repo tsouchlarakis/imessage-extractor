@@ -1,43 +1,94 @@
-import click
 import logging
 import numpy as np
 import pandas as pd
 import phonenumbers
-from .helpers.verbosity import logger_setup, path, code
-from os.path import expanduser, abspath, join, dirname
-from send2trash import send2trash
+import sqlite3
+from imessage_extractor.src.helpers.verbosity import logger_setup, path, code
+from os import walk
+from os.path import expanduser, abspath, join, dirname, splitext
 
 
-target_fpath = abspath(join(dirname(__file__), 'static_tables', 'data', 'contacts.csv'))
+target_fpath = abspath(join(dirname(dirname(__file__)), 'static_tables', 'data', 'contacts.csv'))
+
+
+def list_address_book_db_fpaths(dpath: str) -> list:
+    """
+    Search the address book home filepath for .abcddb files and return the filepaths
+    as a list.
+    """
+    db_fpaths = []
+    for root, dpaths, filenames in walk(dpath):
+        for f in filenames:
+            if splitext(f)[1] == '.abcddb':
+                db_fpaths.append(join(root, f).replace('./', ''))
+
+    return db_fpaths
+
+
+def get_contacts_from_db(db_con: sqlite3.Connection, sep: str=';') -> pd.DataFrame:
+    """
+    Get a dataframe with columns first_name, last_name, email, phone number
+    from a given database connection.
+    """
+    db_record = pd.read_sql('select * from ZABCDRECORD', con=db_con)
+    db_record = db_record.fillna('').set_index('Z_PK')
+    db_phone_number = pd.read_sql('select * from ZABCDPHONENUMBER', con=db_con)
+    db_email = pd.read_sql('select * from ZABCDEMAILADDRESS', con=db_con)
+
+    emails = (
+        db_record
+        [['ZFIRSTNAME', 'ZLASTNAME']]
+        .merge(db_email
+               .fillna('')
+               .set_index('ZOWNER')[['ZADDRESS']],
+               left_index=True,
+               right_index=True)
+        .groupby(['ZFIRSTNAME','ZLASTNAME'])
+        ['ZADDRESS']
+        .apply(lambda x: sep.join(x))
+        .reset_index()
+    )
+
+    phone_numbers = (
+        db_record
+        [['ZFIRSTNAME', 'ZLASTNAME']]
+        .merge(db_phone_number
+               .fillna('')
+               .set_index('ZOWNER')[['ZFULLNUMBER']],
+               left_index=True,
+               right_index=True)
+        .groupby(['ZFIRSTNAME','ZLASTNAME'])
+        ['ZFULLNUMBER']
+        .apply(lambda x: sep.join(x))
+        .reset_index()
+    )
+
+    contacts_compact = (
+        emails
+        .merge(phone_numbers, on=['ZFIRSTNAME', 'ZLASTNAME'], how='outer')
+        .rename(columns={
+            'ZFIRSTNAME': 'first_name',
+            'ZLASTNAME': 'last_name',
+            'ZADDRESS': 'email',
+            'ZFULLNUMBER': 'phone_number',
+        })
+    )
+
+    return contacts_compact
 
 
 def extract_phone_number(raw_string: str, sep: str=';') -> dict:
     """
     Extract all phone number(s) in a given row. Input format will be...
 
-        home: (XXX) XXX-XXXX; mobile: (XXX) XXX-XXXX; work: (XXX) XXX-XXXX; work fax: (XXX) XXX-XXXX
+        (XXX) XXX-XXXX;(XXX) XXX-XXXX;...
 
-    ...with an arbitrary number of phone numbers. Return each phone number (in its native format)
-    as a key: value pair in the form...
-
-        phone_number: phone_number_subtype
-
-    ...where `phone_number` is the phone number in its native format, and `phone_number_subtype` is
-    the type of phone number (i.e. 'home', 'mobile', 'work', 'work fax').
+    ...with an arbitrary number of phone numbers. Return all phone numbersas a list.
     """
-    values_dct = {}
-
     if isinstance(raw_string, str):
-        for s in raw_string.split(sep):
-            value_subtype = s.split(':')[0].strip()
-            value = s.split(':')[1].strip()
-            values_dct[value] = value_subtype
-
-        return values_dct
-
+        return raw_string.split(sep)
     elif np.isnan(raw_string):
         return {}
-
     else:
         return {}
 
@@ -64,54 +115,40 @@ def variate_phone_number(phone_number: str) -> list:
         ]
 
 
-
-@click.option('--exported-contacts-csv-fpath', type=click.Path(exists=True), required=True,
-              default=expanduser('~/Desktop/contacts_export.csv'),
-              help='Filepath of contacts exported .csv.')
-@click.option('--delete-input-csv', is_flag=True, default=False,
-              help='Move contacts .csv to the trash when upload to Postgres is complete.')
-@click.option('-v', '--verbose', is_flag=True, default=False,
-              help='Print messages to console.')
-
-@click.command()
-def refresh_contacts(exported_contacts_csv_fpath, delete_input_csv, verbose) -> None:
+def refresh_contacts(logger: logging.Logger) -> None:
     """
-    Refresh contacts.csv located in the 'static_tables' directory with an exported
-    .csv file via the macOS app Exporter for Contacts:
-
-    App Link:
-    https://itunes.apple.com/us/app/exporter-for-contacts/id959289998?mt=8
-
-    This simple script accepts the raw .csv output of Exporter for Contacts, and massages
-    it into a dataframe of key: value pairs in the form:
+    Refresh contacts.csv located in the 'static_tables' directory from the Address Book
+    local database.
 
     contact_name: chat_identifier
 
     Where 'contact_name' is the contact's full name (i.e. 'John Smith'), and 'chat_identifier'
     can be either a phone number or an email address. Split rows in the raw export that are
-    semicolon-separated (the app's default setting).
-
-    NOTE: It is not necessary to use this script to refresh contacts.csv. That file can
-    of course be refreshed manually, or however else the user wishes. This script simply
-    provides a convenient way to refresh the file using the output of Exporter for Contacts.
+    semicolon-separated.
     """
-    logging_level = logging.INFO if verbose else logging.ERROR
-    logger = logger_setup(name='refresh-contact', level=logging_level)
+    sep=';'
 
-    # Read datafile
-    exported_contacts_csv_fpath = expanduser(exported_contacts_csv_fpath)
-    logger.info(f'Processing {path(exported_contacts_csv_fpath)}')
-    df = pd.read_csv(exported_contacts_csv_fpath).drop_duplicates()
-    assert 'Full Name' in df.columns, 'Exported .csv file must contain a column named "Full Name"'
-    logger.info(f'Read CSV, shape {df.shape}')
+    # Get address boook contacts (first/last name, email, phone number). Where the user
+    # has multiple emails or phone numbers, concatenate into a separated string
+    address_book_home_dpath = expanduser('~/Library/Application Support/AddressBook')
+    address_book_db_fpaths = list_address_book_db_fpaths(address_book_home_dpath)
 
-    # Validate dataframe structure
-    assert list(df.columns) == ['Full Name', 'Phone', 'Email']
+    contacts_compact_lst = []
+    for db_fpath in address_book_db_fpaths:
+        logger.debug(f'Reading db {path(db_fpath)}', arrow='black')
+        db_con = sqlite3.connect(db_fpath)
+        df = get_contacts_from_db(db_con, sep=sep)
+        contacts_compact_lst.append(df)
+        db_con.close()
+
+    df = pd.concat(contacts_compact_lst, axis=0)[['first_name', 'last_name', 'email', 'phone_number']].drop_duplicates()
+    n_unique_contacts = df[['first_name', 'last_name']].drop_duplicates().shape[0]
+    logger.info(f'Read {n_unique_contacts} records from Contacts app', arrow='black')
 
     # Create contact map (output dataframe) in format `chat_identifier`: `contact_name`,
     # where `chat_identifier` is the contact's phone number or email, and `contact_name`
     # is the contact's display name in clear text.
-    contact_map_cols = ['contact_name', 'chat_identifier', 'identifier_type', 'identifier_subtype']
+    contact_map_cols = ['contact_name', 'chat_identifier', 'identifier_type']
     contact_map_df = pd.DataFrame(columns=contact_map_cols)
 
     #
@@ -124,36 +161,40 @@ def refresh_contacts(exported_contacts_csv_fpath, delete_input_csv, verbose) -> 
     n_unique_contacts = 0
     n_invalid_contacts = 0
     for i, row in df.iterrows():
-        name = row['Full Name']
+        name = row['first_name'] + ' ' + row['last_name']
 
         if name in ignore_full_names:
             n_invalid_contacts += 1
 
         else:
             n_unique_contacts += 1
-            pn_dct_original = extract_phone_number(row['Phone'])
-            pn_dct_variated = {}
+            pn_lst_original = extract_phone_number(row['phone_number'], sep=sep)
+            pn_lst_variated = []
 
-            for pn_string, pn_subtype in pn_dct_original.items():
-                pn_dct_variated[pn_string] = pn_subtype
-
+            for pn_string in pn_lst_original:
                 # Get all possible variations of this phone number
                 pn_variations = variate_phone_number(pn_string)
 
                 # Append each variation to a recording dictionary
                 for variation in pn_variations:
-                    if variation not in pn_dct_variated.keys():
-                        pn_dct_variated[variation] = pn_subtype
+                    if variation not in pn_lst_variated:
+                        pn_lst_variated.append(variation)
 
-            phone_number_df = pd.DataFrame(pn_dct_variated, index=[None]).T.reset_index()
-            phone_number_df.columns = ['chat_identifier', 'identifier_subtype']
+            phone_number_df = pd.DataFrame(pn_lst_variated)
+            if len(phone_number_df):
+                phone_number_df.columns = ['chat_identifier']
+            else:
+                phone_number_df = pd.DataFrame(columns=['chat_identifier'])
             phone_number_df['contact_name'] = name
             phone_number_df['identifier_type'] = 'phone'
             phone_number_df = phone_number_df[contact_map_cols]
 
-            email_dct = extract_email(row['Email'])
-            email_df = pd.DataFrame(email_dct, index=[None]).T.reset_index()
-            email_df.columns = ['chat_identifier', 'identifier_subtype']
+            email_lst = extract_email(row['email'], sep=sep)
+            email_df = pd.DataFrame(email_lst)
+            if len(email_df):
+                email_df.columns = ['chat_identifier']
+            else:
+                email_df = pd.DataFrame(columns=['chat_identifier'])
             email_df['contact_name'] = name
             email_df['identifier_type'] = 'email'
             email_df = email_df[contact_map_cols]
@@ -165,13 +206,7 @@ def refresh_contacts(exported_contacts_csv_fpath, delete_input_csv, verbose) -> 
     # Ensure only populated contact names remain
     contact_map_df = contact_map_df[~contact_map_df['contact_name'].isnull()]
     contact_map_df = contact_map_df.drop_duplicates().sort_values('contact_name')
-    logger.info(f'Extracted {len(contact_map_df)} {code("(chat_identifier : contact_name)")}, pairs from {n_unique_contacts} unique contacts ({n_invalid_contacts} invalid)')
 
     # Output to target destination
     contact_map_df.to_csv(target_fpath, index=False)
-    logger.info(f'Wrote {path(target_fpath)}')
-
-    # Move exported CSV to trash if specified
-    if delete_input_csv:
-        send2trash(exported_contacts_csv_fpath)
-        logger.info('Moved CSV to trash')
+    logger.info(f'Saved {path(target_fpath)}', arrow='black')
