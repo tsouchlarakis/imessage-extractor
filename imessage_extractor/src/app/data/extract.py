@@ -7,8 +7,7 @@ import pandas as pd
 import streamlit as st
 import string
 import sqlite3
-from os.path import join, expanduser
-from os import listdir
+from os.path import join, expanduser, dirname
 from imessage_extractor.src.helpers.verbosity import code, path
 from imessage_extractor.src.app.helpers import extract_exists, get_extract_fpath, get_db_fpath
 import subprocess
@@ -43,7 +42,7 @@ class iMessageDataExtract(object):
         # Raw tables
         #
 
-        with open(join('data', 'manifest.json'), 'r') as f:
+        with open(join(dirname(__file__), 'manifest.json'), 'r') as f:
             manifest = json.load(f)
 
         self.logger.info(f'Read {path("manifest.json")}, extracting {len(manifest)} total datasets', arrow='black')
@@ -70,7 +69,7 @@ class iMessageDataExtract(object):
         # Lists
         #
 
-        self.lst_contact_names_all = sorted([x for x in self.message_user['contact_name'].unique() if isinstance(x, str)])
+        self.lst_contact_names_all = sorted([x for x in self.message_user['contact_name'].combine_first(self.message_user['chat_identifier']).unique() if isinstance(x, str)])
         self.lst_contact_names_no_group_chats = sorted(
             [x for x in self.message_user.loc[self.message_user['is_group_chat'] == 0]['contact_name'].unique() if isinstance(x, str)]
         )

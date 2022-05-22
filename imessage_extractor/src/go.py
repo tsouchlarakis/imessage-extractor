@@ -1,20 +1,21 @@
 import click
 import logging
 import time
-from .chatdb.chatdb import ChatDb
-from .helpers.config import WorkflowConfig
-from .helpers.utils import fmt_seconds
-from .helpers.verbosity import print_startup_message, logger_setup
-from .quality_control.quality_control import create_qc_views, run_quality_control
-from .staging.staging import assemble_staging_order
-from .static_tables.static_tables import build_static_tables
+from imessage_extractor.src.chatdb.chatdb import ChatDb
+from imessage_extractor.src.helpers.config import WorkflowConfig
+from imessage_extractor.src.helpers.utils import fmt_seconds
 from imessage_extractor.src.helpers.verbosity import bold
+from imessage_extractor.src.helpers.verbosity import print_startup_message, logger_setup
+from imessage_extractor.src.quality_control.quality_control import create_qc_views, run_quality_control
+from imessage_extractor.src.refresh_contacts.refresh_contacts import refresh_contacts
+from imessage_extractor.src.staging.staging import assemble_staging_order
+from imessage_extractor.src.static_tables.static_tables import build_static_tables
 from os.path import expanduser
 
 
-@click.option('--chatdb-path', type=str, default=expanduser('~/Library/Messages/chat.db'),
+@click.option('--chatdb-path', type=str, default=expanduser('~/Library/Messages/chat.db'), required=True,
               help='Path to working chat.db, should be in ~/Library/Messages.')
-@click.option('--outputdb-path', type=str,
+@click.option('--outputdb-path', type=str, required=True,
               help='Desired path to output .db SQLite database file.')
 @click.option('-v', '--verbose', is_flag=True, default=False,
               help='Set logging level to INFO.')
@@ -48,10 +49,16 @@ def go(chatdb_path, outputdb_path, verbose, debug) -> None:
     if verbose:
         print_startup_message(logger)
 
-    logger.info('Configure Workflow', bold=True)
-
     # Load workflow configurations
+    logger.info('Configure Workflow', bold=True)
     cfg = WorkflowConfig(params=params, logger=logger)
+
+    #
+    # Refresh contacts
+    #
+
+    logger.info('Refresh Contacts', bold=True)
+    refresh_contacts(logger=logger)
 
     #
     # Establish database connections and copy data from source to target

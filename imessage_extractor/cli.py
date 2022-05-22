@@ -1,6 +1,5 @@
 import click
-from .src.go import go
-from .src.refresh_contacts import refresh_contacts
+from imessage_extractor.src.go import go
 
 
 @click.group()
@@ -12,7 +11,6 @@ def cli():
 
 
 cli.add_command(go)
-cli.add_command(refresh_contacts)
 
 
 def main(args=None):
