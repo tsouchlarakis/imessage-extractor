@@ -28,7 +28,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    description='Extract local iMessage data to a Postgres database or flat textfiles',
+    description="Extract local iMessage data, combine with Contacts data and present an analytic app view of a user's message history",
     entry_points={
         'console_scripts': [
             'imessage-extractor=imessage_extractor.cli:main',

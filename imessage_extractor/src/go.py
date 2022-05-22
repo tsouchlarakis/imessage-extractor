@@ -15,7 +15,7 @@ from os.path import expanduser
 
 @click.option('--chatdb-path', type=str, default=expanduser('~/Library/Messages/chat.db'), required=True,
               help='Path to working chat.db, should be in ~/Library/Messages.')
-@click.option('--outputdb-path', type=str, required=True,
+@click.option('--outputdb-path', type=str, required=True, default=expanduser('~/Desktop/imessage_extractor_chat.db'),
               help='Desired path to output .db SQLite database file.')
 @click.option('-v', '--verbose', is_flag=True, default=False,
               help='Set logging level to INFO.')

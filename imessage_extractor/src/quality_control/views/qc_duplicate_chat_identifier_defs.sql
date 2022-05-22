@@ -5,8 +5,7 @@ of the following source:
   1. Contact group names view (based on the `group_title`) column
      of the 'message' chat.db table
   2. Manually defined contacts in the contacts_manual.csv table.
-  3. Contacts table, generally the output of a contacts exporter
-     app, that is then uploaded to Postgres.
+  3. Contacts table extracted in refresh_contacts.py.
 
 For example, if the same contact is in your contacts AND in the
 manual contacts table, one must be chosen to represent that

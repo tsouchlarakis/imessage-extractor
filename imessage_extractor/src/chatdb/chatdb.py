@@ -10,6 +10,12 @@ from os import mkdir, remove
 from os.path import isfile, join, expanduser, isdir, dirname
 
 
+sqlite_failed_connection_string = strip_ws("""Unable to connect to SQLite! Could it be
+    that the executing environment does not have proper permissions? Perhaps wrapping
+    the command in an (Automator) application or script, and granting Full Disk
+    Access to that application or script might be a potential option""")
+
+
 class SQLiteDb(object):
     """
     Manage database connection to SQLite chat.db.
@@ -25,6 +31,7 @@ class SQLiteDb(object):
         self.logger = logger
         self.db_path = db_path
         self.sqlite_con = None
+        self.sqlite_failed_connection_string = sqlite_failed_connection_string
 
     def connect(self) -> sqlite3.Connection:
         """
@@ -34,10 +41,7 @@ class SQLiteDb(object):
             sqlite_con = sqlite3.connect(self.db_path)
             return sqlite_con
         except Exception as e:
-            raise Exception(strip_ws("""Unable to connect to SQLite! Could it be
-            that the executing environment does not have proper permissions? Perhaps wrapping
-            the command in an (Automator) application or script, and granting Full Disk
-            Access to that application or script might be a potential option"""))
+            raise Exception(self.sqlite_failed_connection_string)
 
     def execute(self, sql: str) -> None:
         """
@@ -121,6 +125,7 @@ class SQLiteDb(object):
 class ChatDb(SQLiteDb):
     def __init__(self, native_chatdb_path: str, imessage_extractor_db_path: str, logger: logging.Logger) -> None:
         self.logger = logger
+        self.sqlite_failed_connection_string = sqlite_failed_connection_string
 
         # Find native chat.db
         self.native_chatdb_path = expanduser(native_chatdb_path)
@@ -186,7 +191,11 @@ class ChatDb(SQLiteDb):
             if not isdir(dirname(imessage_extractor_chatdb_path)):
                 mkdir(dirname(imessage_extractor_chatdb_path))
 
-        native_chatdb_con = sqlite3.connect(native_chatdb_path)
+        try:
+            native_chatdb_con = sqlite3.connect(native_chatdb_path)
+        except Exception as e:
+            raise Exception(self.sqlite_failed_connection_string)
+
         cursor = native_chatdb_con.cursor()
         native_chatdb_tables = [x[0] for x in cursor.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()]
 

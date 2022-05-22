@@ -2,6 +2,7 @@ import streamlit as st
 from imessage_extractor.src.helpers.verbosity import code
 from imessage_extractor.src.app.data.extract import iMessageDataExtract
 import logging
+from os.path import join, dirname
 
 
 # pylint: disable=line-too-long
@@ -11,7 +12,7 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     """
     logger.info(f'Writing page {code("About")}', bold=True)
 
-    st.image('../../../graphics/about.png')
+    st.image(join(dirname(dirname(dirname(dirname(dirname(__file__))))), 'graphics', 'about.png'))
 
     st.markdown("""
     ## Contributions

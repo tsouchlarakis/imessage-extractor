@@ -1,7 +1,7 @@
 import logging
 from imessage_extractor.src.helpers.verbosity import path, bold
 from imessage_extractor.src.helpers.utils import listfiles, ensurelist, duplicated
-from os.path import dirname, basename, join, isdir, isfile, splitext, expanduser
+from os.path import dirname, basename, join, isdir, isfile, splitext
 
 
 class Attribute():
@@ -75,7 +75,7 @@ class WorkflowConfig(object):
                 else:
                     self.logger.debug(f'Validated existence of file {path(subthing.replace(self.dir.home + "/", ""))}')
 
-        self.logger.info('Validated that all necessary configured paths exist', arrow='black')
+        self.logger.info('All required configured paths exist', arrow='black')
         self.logger.info('Loaded workflow configuration', arrow='black')
 
     def _no_duplicate_object_names(self):

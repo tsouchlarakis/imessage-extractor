@@ -69,16 +69,6 @@ class StaticTable(object):
                     has no definition in the key "{self.table_name}" in the configuration file
                     "{self.cfg.file.static_table_info}"'''))
 
-    # def save_to_postgres(self):
-    #     """
-    #     Save static table to Postgres by overwriting the table if it exists.
-    #     """
-    #     self.df.to_sql(name=self.table_name,
-    #                    con=self.pg.dbcon,
-    #                    schema=self.cfg.pg_schema,
-    #                    index=False,
-    #                    if_exists='replace')
-
     def save_to_sqlite(self):
         """
         Save static table to SQLite by overwriting the table if it exists.
@@ -97,6 +87,28 @@ def build_static_tables(sqlite_con: sqlite3.Connection,
     Build static, user-maintained tables, the information for which is stored in the
     'static_tables' folder.
     """
+    expected_contacts_csv_fpath = join(cfg.dir.static_table_data, 'contacts.csv')
+    expected_contacts_ignored_csv_fpath = join(cfg.dir.static_table_data, 'contacts_ignored.csv')
+    expected_contacts_manual_csv_fpath = join(cfg.dir.static_table_data, 'contacts_manual.csv')
+
+    with open(join(cfg.dir.static_tables, 'static_table_info.json')) as f:
+        static_table_info = json.load(f)
+
+    if not isfile(expected_contacts_csv_fpath):
+        columns = [k for k, v in static_table_info['contacts'].items()]
+        with open(expected_contacts_csv_fpath, 'w') as f:
+            f.write(','.join(columns))
+
+    if not isfile(expected_contacts_ignored_csv_fpath):
+        columns = [k for k, v in static_table_info['contacts_ignored'].items()]
+        with open(expected_contacts_ignored_csv_fpath, 'w') as f:
+            f.write(','.join(columns))
+
+    if not isfile(expected_contacts_manual_csv_fpath):
+        columns = [k for k, v in static_table_info['contacts_manual'].items()]
+        with open(expected_contacts_manual_csv_fpath, 'w') as f:
+            f.write(','.join(columns))
+
     static_table_fpaths = [abspath(x) for x in listdir(cfg.dir.static_table_data) if not x.startswith('.')]
 
     if len(static_table_fpaths) > 0:

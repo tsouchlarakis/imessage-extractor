@@ -14,10 +14,8 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 .. V.V.V (YYYY-MM-DD)
 .. ------------------
 .. **Added**
-- Automatic contact list refreshing
 
 .. **Changed**
-- Requirements
 
 .. **Deprecated**
 
@@ -26,6 +24,22 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 .. **Fixed**
 
 .. **Security**
+
+V.V.V (YYYY-MM-DD)
+------------------
+**Added**
+- Automatic contact list refreshing
+
+**Changed**
+- Requirements
+
+**Deprecated**
+
+**Removed**
+
+**Fixed**
+
+**Security**
 
 1.0.4 (2022-01-16)
 ------------------

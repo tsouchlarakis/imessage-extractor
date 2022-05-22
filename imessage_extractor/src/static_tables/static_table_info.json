@@ -8,8 +8,8 @@
         "contact_name": "text"
     },
     "contacts": {
-        "chat_identifier": "text",
         "contact_name": "text",
+        "chat_identifier": "text",
         "identifier_type": "text"
     }
 }

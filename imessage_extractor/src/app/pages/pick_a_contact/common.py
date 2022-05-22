@@ -14,10 +14,13 @@ def controls(data) -> tuple:
     col1, col2 = st.columns(2)
 
     contact_names_display = data.lst_contact_names_all if show_group_chats else data.lst_contact_names_no_group_chats
+    assert len(contact_names_display), 'No contact names in contact.csv or chat identifiers. Something is catastrophically wrong.'
+
     contact_name = col1.selectbox(
         label='Contact name',
         options=contact_names_display,
-        index=contact_names_display.index('Maria Sooklaris'),
+        index=contact_names_display[0],
+        # index=contact_names_display.index('Maria Sooklaris'),
         help="Choose a contact you'd like to analyze data for!"
     )
 

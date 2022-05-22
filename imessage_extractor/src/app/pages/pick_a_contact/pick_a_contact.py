@@ -59,7 +59,7 @@ def filter_page_data(pdata: dict, filter_start_dt: datetime.datetime, filter_sto
     ).copy()
 
     if len(pdata['daily_summary']) == 0:
-        raise ValueError('Dataframe `daily_summary` has no records, there must be a mistake!')
+        raise ValueError('Dataframe `daily_summary` has no records, there must be a mistake! Perhaps something went wrong with filtering the dataframe?')
 
     pdata['daily_summary_all_contacts'] = (
         pdata['daily_summary_all_contacts']
@@ -291,10 +291,13 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     col1, col2 = st.columns(2)
 
     contact_names_display = data.lst_contact_names_all if show_group_chats else data.lst_contact_names_no_group_chats
+    assert len(contact_names_display), 'No contact names in contact.csv or chat identifiers. Something is catastrophically wrong.'
+
     contact_name = col1.selectbox(
         label='Contact name',
         options=contact_names_display,
-        index=contact_names_display.index('Maria Sooklaris'),
+        index=contact_names_display[0],
+        # index=contact_names_display.index('Maria Sooklaris'),
         help="Choose a contact you'd like to analyze data for!"
     )
 

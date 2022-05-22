@@ -57,12 +57,7 @@ def run_quality_control(chatdb: 'ChatDb', cfg: WorkflowConfig, logger: logging.L
                     logger.warning(f'Chat Identifier {code(chat_id)} mapped to: {mappings_str}', arrow='yellow', indent=1)
 
             elif view_name == 'qc_missing_contact_names':
-                logger.warning(f"""Unmapped {code("chat_identifier")} value(s). Add these to your contacts,
-                or ensure they are accounted for in either {path("contacts_manual.csv")} or
-                {path("contacts_ignored.csv")}""", arrow='yellow')
-
-                for chat_id in qc_df['chat_identifier'].unique():
-                    logger.warning(chat_id, arrow='yellow', indent=1)
+                logger.warning(f'Unmapped {code("chat_identifier")} value(s) found, please check {code(view_name)}', arrow='yellow')
 
             elif view_name == 'qc_null_flags':
                 logger.warning(
