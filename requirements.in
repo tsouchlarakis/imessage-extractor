@@ -5,7 +5,6 @@ nltk
 pandas
 send2trash
 sql-query-tools
-sqlalchemy
 streamlit
 humanize
 plotly
