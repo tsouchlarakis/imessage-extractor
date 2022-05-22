@@ -1,5 +1,8 @@
 import nltk
-nltk.download('stopwords', quiet=True)
+if nltk.download('stopwords', quiet=True) == False:
+    import subprocess
+    subprocess.call('/Applications/Python\ 3.9/Install\ Certificates.command', shell=True)
+
 from nltk.corpus import stopwords
 
 import logging
