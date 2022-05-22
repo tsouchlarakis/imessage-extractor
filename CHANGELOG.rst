@@ -25,17 +25,23 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
-V.V.V (YYYY-MM-DD)
+1.0.5 (2022-05-21)
 ------------------
 **Added**
 - Automatic contact list refreshing
+- My Stats infrastructure in analytic app
+- Stopwords table
+- ``Visuals`` class
 
 **Changed**
 - Requirements
+- Restructured staging table/view definitions
+- Enhanced logging output
 
 **Deprecated**
 
 **Removed**
+- ``psycopg2-binary`` requirement
 
 **Fixed**
 
