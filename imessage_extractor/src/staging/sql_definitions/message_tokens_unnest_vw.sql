@@ -6,7 +6,7 @@ with message_user_candidates as (
            , replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(text, '‘', ''''), '’', ''''), '“', '"'), '”', '"'), "'s", " 's"), "'d", " 'd"), '.', ' . '), ',', ' , '), '!', ' ! '), '?', ' ? ') as text
     from message_user
     where is_text = true
-      and is_empty = false
+      and has_no_text = false
 )
 
 , split(message_id, token, str) as (

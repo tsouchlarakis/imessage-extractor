@@ -36,8 +36,10 @@ main_statistics as (
            , sum(app_for_imessage) as app_for_imessage
            , sum(thread_origins) as thread_origins
            , sum(threaded_replies) as threaded_replies
-           , sum(messages_containing_attachments) as messages_containing_attachments
-           , sum(messages_attachments_only) as messages_attachments_only
+           , sum(messages_containing_attachment) as messages_containing_attachment
+           , sum(messages_attachment_only) as messages_attachment_only
+           , sum(messages_containing_attachment_image) as messages_containing_attachment_image
+           , sum(messages_image_attachment_only) as messages_image_attachment_only
            , sum(tokens) as tokens
            , sum(characters) as characters
            , count(distinct dt) as dates_messaged

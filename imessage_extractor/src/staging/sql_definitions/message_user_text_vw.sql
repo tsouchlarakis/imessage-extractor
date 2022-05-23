@@ -7,13 +7,13 @@ select message_id
        , ts
        , dt
        , "text"
-       , length(case when is_emote = false and is_url = false and is_empty = false and message_special_type is null
+       , length(case when is_emote = 0 and is_url = 0 and has_no_text = 0 and message_special_type is null
                           then "text"
                      else null
                 end) as n_characters
-       , case when is_emote = false and is_url = false and message_special_type is null
+       , case when is_emote = 0 and is_url = 0 and message_special_type is null
                    then (length(text) - length(replace(text, ' ', ''))) / length(' ') + 1
-              when is_empty
+              when has_no_text
                    then 0
               else null
          end as n_tokens
@@ -23,5 +23,5 @@ select message_id
        , is_threaded_reply
        , thread_original_message_id
 from message_user
-where is_text = true
-  and is_empty = false
+where is_text = 1
+  and has_no_text = 0

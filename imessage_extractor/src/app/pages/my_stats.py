@@ -181,7 +181,7 @@ def message_type_input(pdata: dict) -> list:
     Add message type filter.
     """
     include_types_options = ['Text', 'Emote', 'Attachment', 'URL', 'App for iMessage']
-    include_types_columns = ['text_messages', 'emotes', 'messages_attachments_only', 'urls', 'app_for_imessage']
+    include_types_columns = ['text_messages', 'emotes', 'messages_image_attachment_only', 'urls', 'app_for_imessage']
 
     include_types = st.multiselect(
         'Include message types',
@@ -191,7 +191,7 @@ def message_type_input(pdata: dict) -> list:
             in the analysis below. By default, all message types are included.
             'Text' includes both iMessage and SMS messages.
             'Emote' includes all tapback replies (i.e. likes, dislikes, hearts, etc.).
-            'Attachment' includes messages that were ONLY attachments (photos, videos, etc.),
+            'Attachment' includes messages that were ONLY image attachments (photos, videos, etc.),
             i.e. not those containing text + attachments, which are already captured with 'Text'
             'App for iMessage' includes other messages sent via apps
             integrated into iMessage (i.e. Workout notifications, Apple Cash payments, etc.).
@@ -204,7 +204,7 @@ def message_type_input(pdata: dict) -> list:
     if 'Emote' in include_types:
         selected_include_type_columns.append('emotes')
     if 'Attachment' in include_types:
-        selected_include_type_columns.append('messages_attachments_only')
+        selected_include_type_columns.append('messages_image_attachment_only')
     if 'URL' in include_types:
         selected_include_type_columns.append('urls')
     if 'App for iMessage' in include_types:
@@ -532,10 +532,10 @@ class Visuals(object):
             .
             """, unsafe_allow_html=True)
 
-            df_attachments = self.pdata['summary_from_who_resample'].loc[self.pdata['summary_from_who_resample']['is_from_me'] == 1][['dt', 'messages_containing_attachments', 'messages_attachments_only']]
+            df_attachments = self.pdata['summary_from_who_resample'].loc[self.pdata['summary_from_who_resample']['is_from_me'] == 1][['dt', 'messages_containing_attachment_image', 'messages_image_attachment_only']]
             df_attachments['dt'] = df_attachments['dt'] + self.dt_offset
-            df_attachments = df_attachments.melt(id_vars='dt', value_vars=['messages_containing_attachments', 'messages_attachments_only'], var_name='Attachment Type', value_name='count')
-            df_attachments['Attachment Type'] = df_attachments['Attachment Type'].map({'messages_containing_attachments': 'Messages with Attachments', 'messages_attachments_only': 'Attachments Only'})
+            df_attachments = df_attachments.melt(id_vars='dt', value_vars=['messages_containing_attachment_image', 'messages_image_attachment_only'], var_name='Attachment Type', value_name='count')
+            df_attachments['Attachment Type'] = df_attachments['Attachment Type'].map({'messages_containing_attachment_image': 'Messages with Attachments', 'messages_image_attachment_only': 'Attachments Only'})
 
             st.altair_chart(
                 alt.Chart(data=df_attachments.sort_values('dt'), background=color.background_main)
