@@ -25,6 +25,20 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
+1.0.6 (2022-05-22)
+------------------
+**Added**
+
+**Changed**
+
+**Deprecated**
+
+**Removed**
+
+**Fixed**
+- Security dependencies detailed `here <https://github.com/tsouchlarakis/imessage-extractor/security/dependabot/15>`_ and `here <https://github.com/tsouchlarakis/imessage-extractor/security/dependabot/16>`_
+
+**Security**
 
 1.0.5 (2022-05-21)
 ------------------
