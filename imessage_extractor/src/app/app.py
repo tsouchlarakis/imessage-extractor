@@ -1,6 +1,3 @@
-"""Main module for the streamlit app"""
-# https://chatvisualizer.com/
-
 import logging
 import sqlite3
 import streamlit as st
@@ -113,9 +110,6 @@ def main():
     """
     activate_stylesheet(join(dirname(__file__), 'stylesheet.css'))
 
-    # logger.info('Connected to SQLite3')
-    # chatdb_con = sqlite3.connect(imessage_extractor_chatdb_path)
-
     # (remove) and create temporary directory for extracted data files
     if not isdir(tmp_imessage_visualizer_dpath):
         mkdir(tmp_imessage_visualizer_dpath)
@@ -144,9 +138,6 @@ def main():
     This app is developed by Andoni Sooklaris. You can learn more about me at
     [andonisooklaris.com](https://www.andonisooklaris.com).
     """)
-
-    # if refresh_data:
-    #     send2trash(tmp_imessage_visualizer_dpath)
 
 
 if __name__ == '__main__':
