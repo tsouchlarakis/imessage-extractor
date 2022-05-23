@@ -291,12 +291,13 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     col1, col2 = st.columns(2)
 
     contact_names_display = data.lst_contact_names_all if show_group_chats else data.lst_contact_names_no_group_chats
+    contact_names_display = [x for x in contact_names_display if len(x.strip()) > 0]
     assert len(contact_names_display), 'No contact names in contact.csv or chat identifiers. Something is catastrophically wrong.'
 
     contact_name = col1.selectbox(
         label='Contact name',
         options=contact_names_display,
-        index=contact_names_display[0],
+        index=0,
         # index=contact_names_display.index('Maria Sooklaris'),
         help="Choose a contact you'd like to analyze data for!"
     )
@@ -765,6 +766,104 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
             average_words_per_message()
             average_characters_per_message()
 
+        def section_special_messages(self):
+
+            def bar_threads():
+                st.markdown(csstext('Threads', cls='smallmedium-text-bold', header=True), unsafe_allow_html=True)
+                st.markdown(f"""Number of times
+                <b><font color="{color.imessage_purple}">a new thread was started</font></b>,
+                and
+                <b><font color="{color.imessage_green}">when an existing thread was replied to</font></b>.
+                For context, threads were introduced to iMessage in November '20.
+                """, unsafe_allow_html=True)
+
+                df_threads = (
+                    self.pdata['summary_from_who_resample']
+                    [['dt', 'is_from_me', 'thread_origins', 'threaded_replies']]
+                    .copy()
+                )
+
+                df_threads['dt'] = df_threads['dt'] + self.dt_offset
+
+                df_threads_from_me = df_threads.loc[df_threads['is_from_me'] == 1].drop('is_from_me', axis=1).copy()
+                df_threads_from_me = df_threads_from_me.melt(id_vars='dt', value_vars=['thread_origins', 'threaded_replies'], var_name='Thread Type', value_name='count')
+                df_threads_from_me['Thread Type'] = df_threads_from_me['Thread Type'].map({'thread_origins': 'Origins', 'threaded_replies': 'Replies'})
+
+                df_threads_from_them = df_threads.loc[df_threads['is_from_me'] == 0].drop('is_from_me', axis=1).copy()
+                df_threads_from_them = df_threads_from_them.melt(id_vars='dt', value_vars=['thread_origins', 'threaded_replies'], var_name='Thread Type', value_name='count')
+                df_threads_from_them['Thread Type'] = df_threads_from_them['Thread Type'].map({'thread_origins': 'Origins', 'threaded_replies': 'Replies'})
+
+                col1, col2 = st.columns(2)
+
+                col1.markdown(csstext(contact_name, cls='small22-text-center'), unsafe_allow_html=True)
+                col2.markdown(csstext('Me', cls='small22-text-center'), unsafe_allow_html=True)
+
+                col1.altair_chart(
+                    alt.Chart(data=df_threads_from_them.sort_values('dt'), background=color.background_main)
+                    .mark_bar(
+                        cornerRadiusTopLeft=get_corner_radius_size(len(df_threads_from_them)),
+                        cornerRadiusTopRight=get_corner_radius_size(len(df_threads_from_them)),
+                    ).encode(
+                        x=alt.X(self.xaxis_identifier, title=None, axis=alt.Axis(format=self.tooltip_dt_format, labelColor=color.xaxis_label)),
+                        y=alt.Y(
+                            'count',
+                            title=None,
+                            scale=alt.Scale(
+                                domain=[0, int(np.ceil(max(df_threads_from_me['count'].max(), df_threads_from_them['count'].max())/10)*10)]
+                            ),
+                            axis=alt.Axis(labelColor=color.xaxis_label)
+                        ),
+                        color=alt.Color(
+                            'Thread Type',
+                            scale=alt.Scale(domain=['Origins', 'Replies'], range=[color.imessage_purple, color.imessage_green]),
+                            legend=None,
+                        ),
+                        tooltip=[
+                            alt.Tooltip('count', title='Messages'),
+                            alt.Tooltip('dt', title=self.tooltip_dt_title, format=self.tooltip_dt_format),
+                        ],
+                    )
+                    .configure_axis(grid=False)
+                    .configure_view(strokeOpacity=0)
+                    .properties(width=300, height=220)
+                )
+
+                col2.altair_chart(
+                    alt.Chart(data=df_threads_from_me.sort_values('dt'), background=color.background_main)
+                    .mark_bar(
+                        cornerRadiusTopLeft=get_corner_radius_size(len(df_threads_from_me)),
+                        cornerRadiusTopRight=get_corner_radius_size(len(df_threads_from_me)),
+                    ).encode(
+                        x=alt.X(self.xaxis_identifier, title=None, axis=alt.Axis(format=self.tooltip_dt_format, labelColor=color.xaxis_label)),
+                        y=alt.Y(
+                            'count',
+                            title=None,
+                            scale=alt.Scale(
+                                domain=[0, int(np.ceil(max(df_threads_from_me['count'].max(), df_threads_from_them['count'].max())/10)*10)]
+                            ),
+                            axis=alt.Axis(labelColor=color.xaxis_label)
+                        ),
+                        color=alt.Color(
+                            'Thread Type',
+                            scale=alt.Scale(domain=['Origins', 'Replies'], range=[color.imessage_purple, color.imessage_green]),
+                            legend=None,
+                        ),
+                        tooltip=[
+                            alt.Tooltip('count', title='Messages'),
+                            alt.Tooltip('dt', title=self.tooltip_dt_title, format=self.tooltip_dt_format),
+                        ],
+                    )
+                    .configure_axis(grid=False)
+                    .configure_view(strokeOpacity=0)
+                    .properties(width=300, height=220)
+                )
+
+
+            st.markdown(csstext('Special Messages', cls='medium-text-bold', header=True), unsafe_allow_html=True)
+            st.markdown('Usage breakdown of special messages types (threads, attachments, URLs, Apps for iMessage and tapbacks).')
+
+            bar_threads()
+
         # TODO next step: migrate special message section from my_stats
 
 
@@ -774,6 +873,7 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     visuals.section_statistics_first_and_last_message_sent_dt()
     visuals.section_message_volume()
     visuals.section_words()
+    visuals.section_special_messages()
 
 
 
