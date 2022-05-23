@@ -627,7 +627,7 @@ class Visuals(object):
             st.plotly_chart(fig)
 
         st.markdown(csstext('Special Messages', cls='medium-text-bold', header=True), unsafe_allow_html=True)
-        st.markdown('Breakdown of my usage of special messages types (threads, attachments, URLs, Apps for iMessage and tapbacks.')
+        st.markdown('Breakdown of my usage of special messages types (threads, attachments, URLs, Apps for iMessage and tapbacks).')
 
         bar_threads()
         bar_apps_for_imessage()
