@@ -25,12 +25,13 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
-1.0.7 (YYYY-MM-DD)
+1.0.7 (2022-05-24)
 ------------------
 **Added**
 - ``imessage-extractor run-app`` command
 
 **Changed**
+- Finalized initial version of **Pick a Contact** page
 
 **Deprecated**
 

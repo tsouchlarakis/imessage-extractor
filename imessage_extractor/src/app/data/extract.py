@@ -36,7 +36,7 @@ class iMessageDataExtract(object):
             system_chatdb_fpath = expanduser('~/Library/Messages/chat.db')
 
         self.logger.info(f'Running {code("imessage-extractor")} workflow', arrow='black')
-        subprocess.call(['imessage-extractor', 'go', '--chatdb-path', system_chatdb_fpath, '--outputdb-path', get_db_fpath()])
+        subprocess.call(['imessage-extractor', 'go', '--chatdb-path', system_chatdb_fpath, '--output-db-path', get_db_fpath()])
 
         #
         # Raw tables

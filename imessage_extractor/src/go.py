@@ -15,7 +15,7 @@ from os.path import expanduser
 
 @click.option('--chatdb-path', type=str, default=expanduser('~/Library/Messages/chat.db'), required=True,
               help='Path to working chat.db, should be in ~/Library/Messages.')
-@click.option('--outputdb-path', type=str, required=True, default=expanduser('~/Desktop/imessage_extractor_chat.db'),
+@click.option('--output-db-path', type=str, required=True, default=expanduser('~/Desktop/imessage_extractor_chat.db'),
               help='Desired path to output .db SQLite database file.')
 @click.option('-v', '--verbose', is_flag=True, default=False,
               help='Set logging level to INFO.')
@@ -23,7 +23,7 @@ from os.path import expanduser
               help='Set logging level to DEBUG.')
 
 @click.command()
-def go(chatdb_path, outputdb_path, verbose, debug) -> None:
+def go(chatdb_path, output_db_path, verbose, debug) -> None:
     """
     Run the imessage-extractor!
     """
@@ -66,8 +66,8 @@ def go(chatdb_path, outputdb_path, verbose, debug) -> None:
 
     logger.info('Establish Database Connections', bold=True)
 
-    outputdb_path = expanduser(outputdb_path)
-    chatdb = ChatDb(native_chatdb_path=chatdb_path, imessage_extractor_db_path=outputdb_path, logger=logger)
+    output_db_path = expanduser(output_db_path)
+    chatdb = ChatDb(native_chatdb_path=chatdb_path, imessage_extractor_db_path=output_db_path, logger=logger)
 
     logger.info('All subsequent actions apply to the target chat.db', arrow='black')
 
