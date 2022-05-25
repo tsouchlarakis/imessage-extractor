@@ -133,7 +133,7 @@ def prepare_page_data(data, contact_name: str, dt_gran: str) -> tuple:
 
 
     include_types_options = ['Text', 'Emote', 'Attachment', 'URL', 'App for iMessage']
-    include_types_columns = ['text_messages', 'emotes', 'messages_attachments_only', 'urls', 'app_for_imessage']
+    include_types_columns = ['text_messages', 'emotes', 'messages_attachment_only', 'urls', 'app_for_imessage']
     include_types = st.multiselect(
         'Include message types',
         include_types_options,
@@ -192,7 +192,7 @@ def prepare_page_data(data, contact_name: str, dt_gran: str) -> tuple:
     if 'Emote' in include_types:
         selected_include_type_columns.append('emotes')
     if 'Attachment' in include_types:
-        selected_include_type_columns.append('messages_attachments_only')
+        selected_include_type_columns.append('messages_attachment_only')
     if 'URL' in include_types:
         selected_include_type_columns.append('urls')
     if 'App for iMessage' in include_types:

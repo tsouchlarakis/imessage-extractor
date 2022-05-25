@@ -11,7 +11,7 @@ with m as (
            , case when m.is_from_me = 1 then true when m.is_from_me = 0 then false else null end as is_from_me
            , coalesce(thread_origins.is_thread_origin, false) as is_thread_origin
            , case when m.thread_originator_guid is not null then true else false end as is_threaded_reply
-           , threaded_replies.thread_original_message_id
+           , thread_origins.thread_original_message_id
            , case when m.cache_has_attachments = 1 then true
                   when m.cache_has_attachments = 0 then false
                   else null
@@ -22,21 +22,21 @@ with m as (
     from message m
     left join (
         -- Get the ROWID for all messages that have a thread_originator_guid
-        select distinct t1.thread_originator_guid, t2.ROWID as thread_original_message_id
-        from message t1
-        join message t2
-          on t1.thread_originator_guid = t2.guid
+        select ROWID as threaded_reply_message_id, true as is_threaded_reply
+        from message
+        where thread_originator_guid is not null
     ) as threaded_replies
-      on m.thread_originator_guid = threaded_replies.thread_originator_guid
+      on m.ROWID = threaded_replies.threaded_reply_message_id
     left join (
         -- Get a boolean flag for all messages that are the origin of a thread. These messages
         -- will not have a thread_originator_guid, because at the time that they are sent,
         -- they are not yet part of a thread
-        select ROWID as thread_originator_guid, true as is_thread_origin
-        from message
-        where thread_originator_guid is not null
+        select distinct m1.ROWID as thread_original_message_id, true as is_thread_origin
+        from message m1
+        join message m2
+          on m1.guid = m2.thread_originator_guid
     ) as thread_origins
-      on m.ROWID = thread_origins.thread_originator_guid
+      on m.ROWID = thread_origins.thread_original_message_id
 ),
 
 m_join_chat_contacts as (
@@ -90,7 +90,7 @@ m_join_chat_contacts as (
            , case when length(text) = 0 then true
                   when m.text is null then true
                   else false
-             end as is_empty
+             end as has_no_text
            , is_thread_origin
            , is_threaded_reply
            , thread_original_message_id
@@ -111,6 +111,38 @@ m_join_chat_contacts as (
       on cm_mapping.message_id = m.message_id
     left join contacts_user n
       on c.chat_identifier = n.chat_identifier
+),
+
+m2 as (
+    select message_id
+          , chat_identifier
+          , contact_name
+          , ts
+          , dt
+          , case when text = '' then null
+                  when text = '�' then null
+                  when is_emote = 1 then null
+                  when is_url = 1 then null
+                  when has_no_text = 1 then null
+                  else text
+            end as text
+          , service
+          , is_from_me
+          , is_group_chat
+          , case when is_emote = 0 and is_url = 0 and message_special_type is null and has_no_text = 0
+                      then true
+                  else false
+            end as is_text
+          , has_no_text
+          , is_emote
+          , message_special_type
+          , associated_message_type
+          , is_url
+          , is_thread_origin
+          , is_threaded_reply
+          , thread_original_message_id
+          , case when has_attachment = 1 and is_emote = 0 then 1 else 0 end as has_attachment
+    from m_join_chat_contacts
 )
 
 select message_id
@@ -118,21 +150,12 @@ select message_id
        , contact_name
        , ts
        , dt
-       , case when text = '' then null
-              when text = '�' then null
-              when is_emote = true then null
-              when is_url = true then null
-              when is_empty = true then null
-              else text
-         end as text
+       , text
        , service
        , is_from_me
        , is_group_chat
-       , case when is_emote = false and is_url = false and message_special_type is null
-                   then true
-              else false
-         end as is_text
-       , is_empty
+       , is_text
+       , has_no_text
        , is_emote
        , message_special_type
        , associated_message_type
@@ -141,5 +164,8 @@ select message_id
        , is_threaded_reply
        , thread_original_message_id
        , has_attachment
-from m_join_chat_contacts
+       , case when has_attachment = 1 and is_url = 0 and is_text = 0 then 1 else 0 end as is_attachment
+       , case when has_attachment = 1 and is_url = 0 and message_special_type is null then 1 else 0 end as has_attachment_image
+       , case when has_attachment = 1 and is_url = 0 and message_special_type is null and is_text = 0 then 1 else 0 end as is_attachment_image
+from m2
 order by message_id desc nulls last

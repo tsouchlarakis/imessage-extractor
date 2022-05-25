@@ -1,5 +1,6 @@
 import click
 from imessage_extractor.src.go import go
+from imessage_extractor.src.app.run_app import run_app
 
 
 @click.group()
@@ -11,6 +12,7 @@ def cli():
 
 
 cli.add_command(go)
+cli.add_command(run_app)
 
 
 def main(args=None):

@@ -181,7 +181,7 @@ def message_type_input(pdata: dict) -> list:
     Add message type filter.
     """
     include_types_options = ['Text', 'Emote', 'Attachment', 'URL', 'App for iMessage']
-    include_types_columns = ['text_messages', 'emotes', 'messages_attachments_only', 'urls', 'app_for_imessage']
+    include_types_columns = ['text_messages', 'emotes', 'messages_image_attachment_only', 'urls', 'app_for_imessage']
 
     include_types = st.multiselect(
         'Include message types',
@@ -191,7 +191,7 @@ def message_type_input(pdata: dict) -> list:
             in the analysis below. By default, all message types are included.
             'Text' includes both iMessage and SMS messages.
             'Emote' includes all tapback replies (i.e. likes, dislikes, hearts, etc.).
-            'Attachment' includes messages that were ONLY attachments (photos, videos, etc.),
+            'Attachment' includes messages that were ONLY image attachments (photos, videos, etc.),
             i.e. not those containing text + attachments, which are already captured with 'Text'
             'App for iMessage' includes other messages sent via apps
             integrated into iMessage (i.e. Workout notifications, Apple Cash payments, etc.).
@@ -204,7 +204,7 @@ def message_type_input(pdata: dict) -> list:
     if 'Emote' in include_types:
         selected_include_type_columns.append('emotes')
     if 'Attachment' in include_types:
-        selected_include_type_columns.append('messages_attachments_only')
+        selected_include_type_columns.append('messages_image_attachment_only')
     if 'URL' in include_types:
         selected_include_type_columns.append('urls')
     if 'App for iMessage' in include_types:
@@ -450,7 +450,7 @@ class Visuals(object):
             <b><font color="{color.imessage_purple}">started a new thread</font></b>,
             and
             <b><font color="{color.imessage_green}">replied to an existing thread</font></b>.
-            For context, threads were introduced to iMessage in November '20.
+            Threads were introduced to iMessage in November '20.
             """, unsafe_allow_html=True)
 
             df_threads = (
@@ -523,7 +523,7 @@ class Visuals(object):
                 .properties(width=600, height=200)
             )
 
-        def bar_attachments():
+        def bar_image_attachments():
             st.markdown(csstext('Image Attachments', cls='smallmedium-text-bold', header=True), unsafe_allow_html=True)
             st.markdown(f"""Number of
             <b><font color="{color.imessage_purple}">messages with images attached</font></b>
@@ -532,10 +532,10 @@ class Visuals(object):
             .
             """, unsafe_allow_html=True)
 
-            df_attachments = self.pdata['summary_from_who_resample'].loc[self.pdata['summary_from_who_resample']['is_from_me'] == 1][['dt', 'messages_containing_attachments', 'messages_attachments_only']]
+            df_attachments = self.pdata['summary_from_who_resample'].loc[self.pdata['summary_from_who_resample']['is_from_me'] == 1][['dt', 'messages_containing_attachment_image', 'messages_image_attachment_only']]
             df_attachments['dt'] = df_attachments['dt'] + self.dt_offset
-            df_attachments = df_attachments.melt(id_vars='dt', value_vars=['messages_containing_attachments', 'messages_attachments_only'], var_name='Attachment Type', value_name='count')
-            df_attachments['Attachment Type'] = df_attachments['Attachment Type'].map({'messages_containing_attachments': 'Messages with Attachments', 'messages_attachments_only': 'Attachments Only'})
+            df_attachments = df_attachments.melt(id_vars='dt', value_vars=['messages_containing_attachment_image', 'messages_image_attachment_only'], var_name='Attachment Type', value_name='count')
+            df_attachments['Attachment Type'] = df_attachments['Attachment Type'].map({'messages_containing_attachment_image': 'Messages with Attachments', 'messages_image_attachment_only': 'Attachments Only'})
 
             st.altair_chart(
                 alt.Chart(data=df_attachments.sort_values('dt'), background=color.background_main)
@@ -582,7 +582,7 @@ class Visuals(object):
 
             df_tapback = (
                 df_tapback
-                .loc[df_tapback['is_from_me'] == True]
+                .loc[df_tapback['is_from_me'] == 1]
                 .drop('is_from_me', axis=1)
                 .merge(pd.DataFrame(all_tapbacks, columns=['tapback']), how='outer', on='tapback')
                 .fillna(0.0)
@@ -627,11 +627,11 @@ class Visuals(object):
             st.plotly_chart(fig)
 
         st.markdown(csstext('Special Messages', cls='medium-text-bold', header=True), unsafe_allow_html=True)
-        st.markdown('Breakdown of my usage of special messages types (threads, attachments, URLs, Apps for iMessage and tapbacks.')
+        st.markdown('Breakdown of my usage of special messages types (threads, image attachments, URLs, Apps for iMessage and tapbacks).')
 
         bar_threads()
         bar_apps_for_imessage()
-        bar_attachments()
+        bar_image_attachments()
         pie_tapbacks()
 
     def section_imessage_vs_sms(self):
@@ -737,7 +737,7 @@ class Visuals(object):
 
     def section_people(self):
 
-        def bar_favorite_contacts_total_volume():
+        def bar_favorite_contacts_total_volume() -> list:
             st.markdown(csstext('Favorite Contacts', cls='smallmedium-text-bold', header=True), unsafe_allow_html=True)
             st.markdown('Who do I message the most? Includes both sent and received messages to individual contacts (excluding group chats).')
 
@@ -762,7 +762,7 @@ class Visuals(object):
             df_favorite_contacts['rank'] = df_favorite_contacts['rank'] + 1  # 0 index -> 1 index
 
             col1, col2 = st.columns((1, 2.5))
-            n_rows_display = col1.number_input('', min_value=1, max_value=len(df_favorite_contacts), value=min(20, len(df_favorite_contacts)), step=1)
+            n_rows_display = col1.number_input('Number of contacts to show', min_value=1, max_value=len(df_favorite_contacts), value=min(20, len(df_favorite_contacts)), step=1)
 
             brush = alt.selection_interval(encodings=['y'])
             sort_order = df_favorite_contacts['contact_name'].tolist()
@@ -790,6 +790,68 @@ class Visuals(object):
 
             return sort_order
 
+        def line_favorite_contacts_over_time_cumulative(sort_order: list):
+            df_favorite_contacts_time = (
+                self.pdata['summary_contact_from_who_resample']
+                .groupby(['contact_name', 'dt', self.count_col])
+                .sum()
+                .reset_index()
+                .groupby(['contact_name', 'dt'])
+                .agg({self.count_col: sum})
+                .reset_index()
+            )
+
+            df_favorite_contacts_time[self.count_col] = df_favorite_contacts_time.groupby('contact_name')[self.count_col].cumsum()
+            df_favorite_contacts_time['dt'] = df_favorite_contacts_time['dt'] + self.dt_offset
+
+            st.markdown('Favorite contacts, cumulative message volume (sent and received) over time.')
+
+            col1, col2 = st.columns((1, 2.5))
+            n_rows_display = col1.number_input('Number of contacts to show', min_value=1, max_value=len(sort_order), value=min(10, len(sort_order)), step=1)
+
+            df_favorite_contacts_time = (
+                df_favorite_contacts_time
+                .loc[df_favorite_contacts_time['contact_name'].isin(sort_order[0:n_rows_display])]
+                .rename(columns={'contact_name': 'Contact Name'})
+            )
+
+            st.altair_chart(
+                alt.Chart(data=df_favorite_contacts_time, background=color.background_main)
+                .mark_line(
+                ).encode(
+                    x=alt.X('dt', title=None, axis=alt.Axis(labelColor=color.xaxis_label)),
+                    y=alt.Y(self.count_col, title=None, sort=sort_order, axis=alt.Axis(labelColor=color.xaxis_label, labelAngle=0)),
+                    color=alt.Color(
+                        'Contact Name',
+                        scale=alt.Scale(
+                            domain=sort_order[0:n_rows_display],
+                            range=[
+                                '#aedfb2',
+                                '#8fd792',
+                                '#70cf72',
+                                '#51c752',
+                                '#32c032',
+                                color.imessage_purple,
+                                # '#d6bae8',
+                                '#cda9e2',
+                                '#c498dc',
+                                '#bb87d6',
+                                '#b377d0',
+                            ]
+                        ),
+                    ),
+                    tooltip=[
+                        alt.Tooltip('Contact Name', title='Contact'),
+                        alt.Tooltip('dt', title=self.tooltip_dt_title, format=self.tooltip_dt_format),
+                        alt.Tooltip(self.count_col, title='Cumulative Messages'),
+                    ],
+                )
+                .configure_axis(grid=False)
+                .configure_view(strokeOpacity=0)
+                .properties(width=730, height=500)
+            )
+
+
         def bar_grid_favorite_contacts(sort_order):
             df_favorite_contacts_time = (
                 self.pdata['summary_contact_from_who_resample']
@@ -800,6 +862,8 @@ class Visuals(object):
             )
 
             df_favorite_contacts_time['dt'] = df_favorite_contacts_time['dt'] + self.dt_offset
+
+            st.markdown('Favorite contacts, message volume (sent and received) over time.')
 
             col1, col2, col3 = st.columns(3)
 
@@ -850,7 +914,7 @@ class Visuals(object):
             n_columns_favorite_contacts = 3
 
             n_bar_graphs_favorite_contacts = col1.number_input(
-                'Number of favorite contacts',
+                'Number of contacts to show',
                 min_value=3,
                 max_value=30,
                 value=9,
@@ -928,6 +992,7 @@ class Visuals(object):
         st.markdown(csstext('People', cls='medium-text-bold', header=True), unsafe_allow_html=True)
 
         sort_order = bar_favorite_contacts_total_volume()
+        line_favorite_contacts_over_time_cumulative(sort_order)
         bar_grid_favorite_contacts(sort_order)
         bar_favorite_group_chats_total_volume()
 

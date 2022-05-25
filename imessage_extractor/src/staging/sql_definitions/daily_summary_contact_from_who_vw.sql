@@ -6,12 +6,12 @@ with m as (
          , contact_name
          , is_from_me
          , count(message_id) as messages
-         , count(case when is_text = true then message_id else null end) as text_messages
-         , count(case when is_group_chat = true then message_id else null end) as group_chat_messages
-         , count(case when is_text = true and is_group_chat = true then message_id else null end) as group_chat_text_messages
+         , count(case when is_text = 1 then message_id else null end) as text_messages
+         , count(case when is_group_chat = 1 then message_id else null end) as group_chat_messages
+         , count(case when is_text = 1 and is_group_chat = 1 then message_id else null end) as group_chat_text_messages
          , count(case when service = 'iMessage' then message_id else null end) as imessages
          , count(case when service = 'SMS' then message_id else null end) as sms
-         , count(case when is_emote = true then message_id else null end) as emotes
+         , count(case when is_emote = 1 then message_id else null end) as emotes
          , count(case when message_special_type = 'emote_love' then message_id else null end) as emotes_love
          , count(case when message_special_type = 'emote_like' then message_id else null end) as emotes_likes
          , count(case when message_special_type = 'emote_dislike' then message_id else null end) as emotes_dislikes
@@ -24,12 +24,14 @@ with m as (
          , count(case when message_special_type = 'emote_remove_laugh' then message_id else null end) as emotes_remove_laugh
          , count(case when message_special_type = 'emote_remove_emphasis' then message_id else null end) as emotes_remove_emphasis
          , count(case when message_special_type = 'emote_remove_question' then message_id else null end) as emotes_remove_question
-         , count(case when is_url = true then message_id else null end) as urls
-         , count(case when message_special_type is not null and is_emote = false then message_id else null end) as app_for_imessage
-         , count(case when is_thread_origin = true then message_id else null end) as thread_origins
-         , count(case when is_threaded_reply = true then message_id else null end) as threaded_replies
-         , count(case when has_attachment = true then message_id else null end) as messages_containing_attachments
-         , count(case when has_attachment = true and is_text = false and is_emote = false and is_url = false and message_special_type is null then message_id else null end) as messages_attachments_only
+         , count(case when is_url = 1 then message_id else null end) as urls
+         , count(case when message_special_type is not null and is_emote = 0 then message_id else null end) as app_for_imessage
+         , count(case when is_thread_origin = 1 then message_id else null end) as thread_origins
+         , count(case when is_threaded_reply = 1 then message_id else null end) as threaded_replies
+         , count(case when has_attachment = 1 then message_id else null end) as messages_containing_attachment
+         , count(case when is_attachment = 1 then message_id else null end) as messages_attachment_only
+         , count(case when has_attachment_image = 1 then message_id else null end) as messages_containing_attachment_image
+         , count(case when is_attachment_image = 1 then message_id else null end) as messages_image_attachment_only
   from message_user
   group by dt, contact_name, is_from_me
 ),

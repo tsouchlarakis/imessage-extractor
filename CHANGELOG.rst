@@ -25,6 +25,23 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
+1.0.7 (2022-05-24)
+------------------
+**Added**
+- ``imessage-extractor run-app`` command
+
+**Changed**
+- Finalized initial version of **Pick a Contact** page
+
+**Deprecated**
+
+**Removed**
+
+**Fixed**
+- Thread identification logic in ``message_user`` table
+
+**Security**
+
 1.0.6 (2022-05-22)
 ------------------
 **Added**

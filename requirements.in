@@ -4,6 +4,7 @@ emoji
 humanize
 nltk>=3.6.6
 pandas
+phonenumbers
 Pillow>=9.0.1
 plotly
 send2trash

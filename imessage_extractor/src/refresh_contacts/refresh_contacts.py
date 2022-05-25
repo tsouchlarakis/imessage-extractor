@@ -141,6 +141,9 @@ def refresh_contacts(logger: logging.Logger) -> None:
         contacts_compact_lst.append(df)
         db_con.close()
 
+    if not len(contacts_compact_lst):
+        raise Exception('Executing application does not have full disk access. Remedy this in System Preferences > Security > Full Disk Access.')
+
     df = pd.concat(contacts_compact_lst, axis=0)[['first_name', 'last_name', 'email', 'phone_number']].drop_duplicates()
     n_unique_contacts = df[['first_name', 'last_name']].drop_duplicates().shape[0]
     logger.info(f'Read {n_unique_contacts} records from Contacts app', arrow='black')

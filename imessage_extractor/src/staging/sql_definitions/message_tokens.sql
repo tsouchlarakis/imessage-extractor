@@ -21,5 +21,5 @@ select message_id,
          , ' '
        ) as tokens
 from {pg_schema}.message_vw
-where is_text = true
-  and is_empty = false
+where is_text = 1
+  and has_no_text = 0

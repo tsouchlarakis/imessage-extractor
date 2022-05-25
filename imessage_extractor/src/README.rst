@@ -1,6 +1,6 @@
 .. image:: ../../graphics/source_code.png
 
-The **iMessage Extractor** workflow is split into multiple steps...
+The **iMessage Extractor** workflow (called with ``imessage-extractor go```) is split into multiple steps...
 
 Step 1: Extract chat.db Tables
 ==============================
