@@ -450,7 +450,7 @@ class Visuals(object):
             <b><font color="{color.imessage_purple}">started a new thread</font></b>,
             and
             <b><font color="{color.imessage_green}">replied to an existing thread</font></b>.
-            For context, threads were introduced to iMessage in November '20.
+            Threads were introduced to iMessage in November '20.
             """, unsafe_allow_html=True)
 
             df_threads = (
@@ -523,7 +523,7 @@ class Visuals(object):
                 .properties(width=600, height=200)
             )
 
-        def bar_attachments():
+        def bar_image_attachments():
             st.markdown(csstext('Image Attachments', cls='smallmedium-text-bold', header=True), unsafe_allow_html=True)
             st.markdown(f"""Number of
             <b><font color="{color.imessage_purple}">messages with images attached</font></b>
@@ -582,7 +582,7 @@ class Visuals(object):
 
             df_tapback = (
                 df_tapback
-                .loc[df_tapback['is_from_me'] == True]
+                .loc[df_tapback['is_from_me'] == 1]
                 .drop('is_from_me', axis=1)
                 .merge(pd.DataFrame(all_tapbacks, columns=['tapback']), how='outer', on='tapback')
                 .fillna(0.0)
@@ -627,11 +627,11 @@ class Visuals(object):
             st.plotly_chart(fig)
 
         st.markdown(csstext('Special Messages', cls='medium-text-bold', header=True), unsafe_allow_html=True)
-        st.markdown('Breakdown of my usage of special messages types (threads, attachments, URLs, Apps for iMessage and tapbacks).')
+        st.markdown('Breakdown of my usage of special messages types (threads, image attachments, URLs, Apps for iMessage and tapbacks).')
 
         bar_threads()
         bar_apps_for_imessage()
-        bar_attachments()
+        bar_image_attachments()
         pie_tapbacks()
 
     def section_imessage_vs_sms(self):

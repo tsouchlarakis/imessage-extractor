@@ -297,8 +297,8 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     contact_name = col1.selectbox(
         label='Contact name',
         options=contact_names_display,
-        index=0,
-        # index=contact_names_display.index('Maria Sooklaris'),
+        # index=0,
+        index=contact_names_display.index('Maria Sooklaris'),  # TODO reset to above line
         help="Choose a contact you'd like to analyze data for!"
     )
 
@@ -541,6 +541,7 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
                 # Pull data
                 df_word_counts = (
                     self.data.contact_token_usage_from_who_vw
+                    .loc[self.data.contact_token_usage_from_who_vw['contact_name'] == self.contact_name]
                     [['token', 'usages']]
                     .groupby('token')
                     .sum()
@@ -728,6 +729,7 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
             def average_words_per_message():
                 # TODO: Make this and the following function into a grouped bar chart, with three bars:
                 # avg words/message, avg chars/message avg chars/word
+
                 avg_words_per_message_from_me = \
                     (self.pdata['daily_summary_from_who'].loc[self.pdata['daily_summary_from_who']['is_from_me'] == 1]['tokens'].sum()
                     / self.pdata['daily_summary_from_who'].loc[self.pdata['daily_summary_from_who']['is_from_me'] == 1]['text_messages'].sum())
@@ -770,28 +772,30 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
 
             def bar_threads():
                 st.markdown(csstext('Threads', cls='smallmedium-text-bold', header=True), unsafe_allow_html=True)
-                st.markdown(f"""Number of times
-                <b><font color="{color.imessage_purple}">a new thread was started</font></b>,
-                and
-                <b><font color="{color.imessage_green}">when an existing thread was replied to</font></b>.
-                For context, threads were introduced to iMessage in November '20.
+                st.markdown(f"""Number of messages each of us sent that either
+                <b><font color="{color.imessage_purple}">resulted in a new thread being created</font></b>,
+                (by the other responding to that message), or
+                <b><font color="{color.imessage_green}">replied to an existing thread</font></b>.
+                Threads were introduced to iMessage in November '20.
                 """, unsafe_allow_html=True)
 
-                df_threads = (
+                df = (
                     self.pdata['summary_from_who_resample']
-                    [['dt', 'is_from_me', 'thread_origins', 'threaded_replies']]
+                    [['is_from_me', 'dt', 'thread_origins', 'threaded_replies']]
                     .copy()
                 )
 
-                df_threads['dt'] = df_threads['dt'] + self.dt_offset
+                df['dt'] = df['dt'] + self.dt_offset
 
-                df_threads_from_me = df_threads.loc[df_threads['is_from_me'] == 1].drop('is_from_me', axis=1).copy()
-                df_threads_from_me = df_threads_from_me.melt(id_vars='dt', value_vars=['thread_origins', 'threaded_replies'], var_name='Thread Type', value_name='count')
-                df_threads_from_me['Thread Type'] = df_threads_from_me['Thread Type'].map({'thread_origins': 'Origins', 'threaded_replies': 'Replies'})
+                df_from_me = df.loc[df['is_from_me'] == 1].drop('is_from_me', axis=1).copy()
+                df_from_me = df_from_me.melt(id_vars='dt', value_vars=['thread_origins', 'threaded_replies'], var_name='Thread Type', value_name='count')
+                df_from_me['Thread Type'] = df_from_me['Thread Type'].map({'thread_origins': 'Origins', 'threaded_replies': 'Replies'})
 
-                df_threads_from_them = df_threads.loc[df_threads['is_from_me'] == 0].drop('is_from_me', axis=1).copy()
-                df_threads_from_them = df_threads_from_them.melt(id_vars='dt', value_vars=['thread_origins', 'threaded_replies'], var_name='Thread Type', value_name='count')
-                df_threads_from_them['Thread Type'] = df_threads_from_them['Thread Type'].map({'thread_origins': 'Origins', 'threaded_replies': 'Replies'})
+                df_from_them = df.loc[df['is_from_me'] == 0].drop('is_from_me', axis=1).copy()
+                df_from_them = df_from_them.melt(id_vars='dt', value_vars=['thread_origins', 'threaded_replies'], var_name='Thread Type', value_name='count')
+                df_from_them['Thread Type'] = df_from_them['Thread Type'].map({'thread_origins': 'Origins', 'threaded_replies': 'Replies'})
+
+                max_y_value = max(df_from_me.groupby('dt').sum()['count'].max(), df_from_them.groupby('dt').sum()['count'].max())
 
                 col1, col2 = st.columns(2)
 
@@ -799,18 +803,16 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
                 col2.markdown(csstext('Me', cls='small22-text-center'), unsafe_allow_html=True)
 
                 col1.altair_chart(
-                    alt.Chart(data=df_threads_from_them.sort_values('dt'), background=color.background_main)
+                    alt.Chart(data=df_from_them.sort_values('dt'), background=color.background_main)
                     .mark_bar(
-                        cornerRadiusTopLeft=get_corner_radius_size(len(df_threads_from_them)),
-                        cornerRadiusTopRight=get_corner_radius_size(len(df_threads_from_them)),
+                        cornerRadiusTopLeft=get_corner_radius_size(len(df_from_them)),
+                        cornerRadiusTopRight=get_corner_radius_size(len(df_from_them)),
                     ).encode(
                         x=alt.X(self.xaxis_identifier, title=None, axis=alt.Axis(format=self.tooltip_dt_format, labelColor=color.xaxis_label)),
                         y=alt.Y(
                             'count',
                             title=None,
-                            scale=alt.Scale(
-                                domain=[0, int(np.ceil(max(df_threads_from_me['count'].max(), df_threads_from_them['count'].max())/10)*10)]
-                            ),
+                            scale=alt.Scale(domain=[0, max_y_value]),
                             axis=alt.Axis(labelColor=color.xaxis_label)
                         ),
                         color=alt.Color(
@@ -829,18 +831,16 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
                 )
 
                 col2.altair_chart(
-                    alt.Chart(data=df_threads_from_me.sort_values('dt'), background=color.background_main)
+                    alt.Chart(data=df_from_me.sort_values('dt'), background=color.background_main)
                     .mark_bar(
-                        cornerRadiusTopLeft=get_corner_radius_size(len(df_threads_from_me)),
-                        cornerRadiusTopRight=get_corner_radius_size(len(df_threads_from_me)),
+                        cornerRadiusTopLeft=get_corner_radius_size(len(df_from_me)),
+                        cornerRadiusTopRight=get_corner_radius_size(len(df_from_me)),
                     ).encode(
                         x=alt.X(self.xaxis_identifier, title=None, axis=alt.Axis(format=self.tooltip_dt_format, labelColor=color.xaxis_label)),
                         y=alt.Y(
                             'count',
                             title=None,
-                            scale=alt.Scale(
-                                domain=[0, int(np.ceil(max(df_threads_from_me['count'].max(), df_threads_from_them['count'].max())/10)*10)]
-                            ),
+                            scale=alt.Scale(domain=[0, max_y_value]),
                             axis=alt.Axis(labelColor=color.xaxis_label)
                         ),
                         color=alt.Color(
@@ -858,11 +858,273 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
                     .properties(width=300, height=220)
                 )
 
+            def bar_apps_for_imessage():
+                st.markdown(csstext('Apps for iMessage', cls='smallmedium-text-bold', header=True), unsafe_allow_html=True)
+                st.markdown("""
+                Our usage of Apps for iMessage, includes <b>Fitness</b> notifications, <b>Game Pigeon</b> plays, <b>Apple Cash</b> sends and
+                requests, <b>polls</b>, <b>stickers</b> and any other app that's integrated into the native Messages app.
+                """, unsafe_allow_html=True)
+
+                df = self.pdata['summary_from_who_resample'][['is_from_me', 'dt', 'app_for_imessage']]
+                df['dt'] = df['dt'] + self.dt_offset
+
+                df_from_me = df.loc[df['is_from_me'] == 1].copy()
+                df_from_them = df.loc[df['is_from_me'] == 0].copy()
+
+                max_y_value = max(df_from_me['app_for_imessage'].max(), df_from_them['app_for_imessage'].max())
+
+                col1, col2 = st.columns(2)
+
+                col1.markdown(csstext(contact_name, cls='small22-text-center'), unsafe_allow_html=True)
+                col2.markdown(csstext('Me', cls='small22-text-center'), unsafe_allow_html=True)
+
+                brush = alt.selection_interval(encodings=['x'])
+
+                col1.altair_chart(
+                    alt.Chart(data=df_from_them.sort_values('dt'), background=color.background_main)
+                    .mark_bar(
+                        cornerRadiusTopLeft=get_corner_radius_size(len(df_from_them)),
+                        cornerRadiusTopRight=get_corner_radius_size(len(df_from_them))
+                    ).encode(
+                        x=alt.X(self.xaxis_identifier, title=None, axis=alt.Axis(format=self.tooltip_dt_format, labelColor=color.xaxis_label)),
+                        y=alt.Y(
+                            'app_for_imessage',
+                            title=None,
+                            scale=alt.Scale(domain=[0, max_y_value]),
+                            axis=alt.Axis(labelColor=color.xaxis_label)
+                        ),
+                        color=alt.condition(brush, alt.value(color.imessage_green), alt.value('gray')),
+                        tooltip=[
+                            alt.Tooltip('app_for_imessage', title='App Messages'),
+                            alt.Tooltip('dt', title=self.tooltip_dt_title, format=self.tooltip_dt_format),
+                        ],
+                    )
+                    .configure_axis(grid=False)
+                    .configure_view(strokeOpacity=0)
+                    .add_selection(brush)
+                    .properties(width=300, height=220)
+                )
+
+                col2.altair_chart(
+                    alt.Chart(data=df_from_me.sort_values('dt'), background=color.background_main)
+                    .mark_bar(
+                        cornerRadiusTopLeft=get_corner_radius_size(len(df_from_me)),
+                        cornerRadiusTopRight=get_corner_radius_size(len(df_from_me))
+                    ).encode(
+                        x=alt.X(self.xaxis_identifier, title=None, axis=alt.Axis(format=self.tooltip_dt_format, labelColor=color.xaxis_label)),
+                        y=alt.Y(
+                            'app_for_imessage',
+                            title=None,
+                            scale=alt.Scale(domain=[0, max_y_value]),
+                            axis=alt.Axis(labelColor=color.xaxis_label)
+                        ),
+                        color=alt.condition(brush, alt.value(color.imessage_green), alt.value('gray')),
+                        tooltip=[
+                            alt.Tooltip('app_for_imessage', title='App Messages'),
+                            alt.Tooltip('dt', title=self.tooltip_dt_title, format=self.tooltip_dt_format),
+                        ],
+                    )
+                    .configure_axis(grid=False)
+                    .configure_view(strokeOpacity=0)
+                    .add_selection(brush)
+                    .properties(width=300, height=220)
+                )
+
+            def bar_image_attachments():
+                st.markdown(csstext('Image Attachments', cls='smallmedium-text-bold', header=True), unsafe_allow_html=True)
+                st.markdown(f"""Number of
+                <b><font color="{color.imessage_purple}">messages with images attached</font></b>
+                that we've sent, and
+                <b><font color="{color.imessage_green}">images sent by themselves</font></b>
+                .
+                """, unsafe_allow_html=True)
+
+                df = (
+                    self.pdata['summary_from_who_resample']
+                    [['is_from_me', 'dt', 'messages_containing_attachment_image', 'messages_image_attachment_only']]
+                )
+                df['dt'] = df['dt'] + self.dt_offset
+
+                df_from_me = df.loc[df['is_from_me'] == 1].copy()
+                df_from_me = df_from_me.melt(id_vars='dt', value_vars=['messages_containing_attachment_image', 'messages_image_attachment_only'], var_name='Attachment Type', value_name='count')
+                df_from_me['Attachment Type'] = df_from_me['Attachment Type'].map({'messages_containing_attachment_image': 'Messages with Attachments', 'messages_image_attachment_only': 'Attachments Only'})
+
+                df_from_them = df.loc[df['is_from_me'] == 0].copy()
+                df_from_them = df_from_them.melt(id_vars='dt', value_vars=['messages_containing_attachment_image', 'messages_image_attachment_only'], var_name='Attachment Type', value_name='count')
+                df_from_them['Attachment Type'] = df_from_them['Attachment Type'].map({'messages_containing_attachment_image': 'Messages with Attachments', 'messages_image_attachment_only': 'Attachments Only'})
+
+                max_y_value = max(df_from_me.groupby('dt').sum()['count'].max(), df_from_them.groupby('dt').sum()['count'].max())
+
+                col1, col2 = st.columns(2)
+
+                col1.markdown(csstext(contact_name, cls='small22-text-center'), unsafe_allow_html=True)
+                col2.markdown(csstext('Me', cls='small22-text-center'), unsafe_allow_html=True)
+
+                col1.altair_chart(
+                    alt.Chart(data=df_from_them.sort_values('dt'), background=color.background_main)
+                    .mark_bar(
+                        cornerRadiusTopLeft=get_corner_radius_size(len(df_from_them)),
+                        cornerRadiusTopRight=get_corner_radius_size(len(df_from_them))
+                    ).encode(
+                        x=alt.X(self.xaxis_identifier, title=None, axis=alt.Axis(format=self.tooltip_dt_format, labelColor=color.xaxis_label)),
+                        y=alt.Y(
+                            'count',
+                            title=None,
+                            scale=alt.Scale(domain=[0, max_y_value]),
+                            axis=alt.Axis(labelColor=color.xaxis_label)
+                        ),
+                        color=alt.Color(
+                            'Attachment Type',
+                            scale=alt.Scale(
+                                domain=['Messages with Attachments', 'Attachments Only'],
+                                range=[color.imessage_purple, color.imessage_green]
+                            ),
+                            legend=None,
+                        ),
+                        tooltip=[
+                            alt.Tooltip('count', title='Attachments'),
+                            alt.Tooltip('dt', title=self.tooltip_dt_title, format=self.tooltip_dt_format),
+                        ],
+                    )
+                    .configure_axis(grid=False)
+                    .configure_view(strokeOpacity=0)
+                    .properties(width=300, height=220)
+                )
+
+                col2.altair_chart(
+                    alt.Chart(data=df_from_me.sort_values('dt'), background=color.background_main)
+                    .mark_bar(
+                        cornerRadiusTopLeft=get_corner_radius_size(len(df_from_me)),
+                        cornerRadiusTopRight=get_corner_radius_size(len(df_from_me))
+                    ).encode(
+                        x=alt.X(self.xaxis_identifier, title=None, axis=alt.Axis(format=self.tooltip_dt_format, labelColor=color.xaxis_label)),
+                        y=alt.Y(
+                            'count',
+                            title=None,
+                            scale=alt.Scale(domain=[0, max_y_value]),
+                            axis=alt.Axis(labelColor=color.xaxis_label)
+                        ),
+                        color=alt.Color(
+                            'Attachment Type',
+                            scale=alt.Scale(
+                                domain=['Messages with Attachments', 'Attachments Only'],
+                                range=[color.imessage_purple, color.imessage_green]
+                            ),
+                            legend=None,
+                        ),
+                        tooltip=[
+                            alt.Tooltip('count', title='Attachments'),
+                            alt.Tooltip('dt', title=self.tooltip_dt_title, format=self.tooltip_dt_format),
+                        ],
+                    )
+                    .configure_axis(grid=False)
+                    .configure_view(strokeOpacity=0)
+                    .properties(width=300, height=220)
+                )
+
+            def pie_tapbacks():
+                st.markdown(csstext('Tapbacks', cls='smallmedium-text-bold', header=True), unsafe_allow_html=True)
+                st.markdown("How frequently we use each flavor of tapback.")
+
+                df = (
+                    self.data.message_user
+                    .reset_index()
+                    .loc[self.data.message_user.reset_index()['is_emote'] == 1]
+                    .groupby(['is_from_me', 'message_special_type'])
+                    .agg({'message_id': 'count'})
+                    .reset_index()
+                    .rename(columns={'message_id': 'count', 'message_special_type': 'tapback'})
+                )
+                df['tapback'] = df['tapback'].replace(self.data.map_tapback_type)
+
+                all_tapbacks = list(self.data.map_tapback_type.values())
+
+                df_from_me = (
+                    df
+                    .loc[df['is_from_me'] == 1]
+                    .drop('is_from_me', axis=1)
+                    .merge(pd.DataFrame(all_tapbacks, columns=['tapback']), how='outer', on='tapback')
+                    .fillna(0.0)
+                )
+
+                df_from_them = (
+                    df
+                    .loc[df['is_from_me'] == 0]
+                    .drop('is_from_me', axis=1)
+                    .merge(pd.DataFrame(all_tapbacks, columns=['tapback']), how='outer', on='tapback')
+                    .fillna(0.0)
+                )
+
+                # Color ramp generator: https://www.geeksforgeeks.org/pie-plot-using-plotly-in-python/
+                color_map = {
+                    'Love': '#cde7d2',
+                    'Like': '#aedfb2',
+                    'Dislike': '#8fd792',
+                    'Laugh': '#70cf72',
+                    'Emphasis': '#51c752',
+                    'Question': '#32c032',
+                    'Remove Heart': color.imessage_purple,
+                    'Remove Like': '#d6bae8',
+                    'Remove Dislike': '#cda9e2',
+                    'Remove Laugh': '#c498dc',
+                    'Remove Emphasis': '#bb87d6',
+                    'Remove Question': '#b377d0',
+                }
+
+                fig_from_me = px.pie(
+                    df_from_me,
+                    hole=.5,
+                    values='count',
+                    names='tapback',
+                    color_discrete_sequence=list(color_map.values()),
+                    width=360,
+                    height=340,
+                )
+
+                fig_from_me.update_traces(
+                    textposition='inside',
+                    textinfo='percent+label',
+                    hovertemplate='Tapback: <b>%{label}</b><br>Usages: <b>%{value}</b>',
+                )
+
+                fig_from_me.update_layout(
+                    showlegend=False,
+                )
+
+                fig_from_them = px.pie(
+                    df_from_them,
+                    hole=.5,
+                    values='count',
+                    names='tapback',
+                    color_discrete_sequence=list(color_map.values()),
+                    width=360,
+                    height=340,
+                )
+
+                fig_from_them.update_traces(
+                    textposition='inside',
+                    textinfo='percent+label',
+                    hovertemplate='Tapback: <b>%{label}</b><br>Usages: <b>%{value}</b>',
+                )
+
+                fig_from_them.update_layout(
+                    showlegend=False,
+                )
+
+                col1, col2 = st.columns(2)
+                col1.markdown(csstext(contact_name, cls='small22-text-center'), unsafe_allow_html=True)
+                col2.markdown(csstext('Me', cls='small22-text-center'), unsafe_allow_html=True)
+                col1.plotly_chart(fig_from_them)
+                col2.plotly_chart(fig_from_me)
+
 
             st.markdown(csstext('Special Messages', cls='medium-text-bold', header=True), unsafe_allow_html=True)
-            st.markdown('Usage breakdown of special messages types (threads, attachments, URLs, Apps for iMessage and tapbacks).')
+            st.markdown('Usage breakdown of special messages types (threads, image attachments, URLs, Apps for iMessage and tapbacks).')
 
             bar_threads()
+            bar_apps_for_imessage()
+            bar_image_attachments()
+            pie_tapbacks()
 
         # TODO next step: migrate special message section from my_stats
 
