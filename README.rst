@@ -1,4 +1,4 @@
-.. image:: graphics/imessage_extractor_logo.png
+.. image:: imessage_extractor/graphics/imessage_extractor_logo.png
 
 .. role:: raw-html(raw)
     :format: html

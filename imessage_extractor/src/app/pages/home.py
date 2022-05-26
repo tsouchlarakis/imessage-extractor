@@ -16,7 +16,7 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     """
     logger.info(f'Writing page {code("Home")}', bold=True)
 
-    st.image(join(root_dir, 'graphics', 'imessage_visualizer_logo.png'))
+    st.image(join(root_dir, 'imessage_extractor', 'graphics', 'imessage_visualizer_logo.png'))
     latest_ts = data.message_user.ts.max()
 
     st.markdown(f"""

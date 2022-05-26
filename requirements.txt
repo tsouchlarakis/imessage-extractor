@@ -191,8 +191,10 @@ prometheus-client==0.11.0
     # via notebook
 prompt-toolkit==3.0.20
     # via ipython
-protobuf==3.17.3
-    # via streamlit
+protobuf==3.20.0
+    # via
+    #   -r requirements.in
+    #   streamlit
 ptyprocess==0.7.0
     # via
     #   pexpect
@@ -244,7 +246,6 @@ six==1.16.0
     #   icon-font-to-png
     #   jsonschema
     #   plotly
-    #   protobuf
     #   python-dateutil
     #   validators
 smmap==4.0.0

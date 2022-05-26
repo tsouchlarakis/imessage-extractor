@@ -280,7 +280,7 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     Write the Pick a Contact page.
     """
     logger.info(f'Writing page {code("Pick a Contact")}', bold=True)
-    st.image(join(root_dir, 'graphics', 'pick_a_contact.png'))
+    st.image(join(root_dir, 'imessage_extractor', 'graphics', 'pick_a_contact.png'))
 
     #
     # Page preparation
@@ -1150,7 +1150,7 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
 #     Write the Pick a Contact page.
 #     """
 #     logger.info(f'Writing page {code("Pick a Contact")}', bold=True)
-#     st.image(join(root_dir, 'graphics', 'pick_a_contact.png'))
+#     st.image(join(root_dir, 'imessage_extractor', 'graphics', 'pick_a_contact.png'))
 
 #     #
 #     # Prepare page

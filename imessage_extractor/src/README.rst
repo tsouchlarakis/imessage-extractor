@@ -1,4 +1,4 @@
-.. image:: ../../graphics/source_code.png
+.. image:: ../graphics/source_code.png
 
 The **iMessage Extractor** workflow (called with ``imessage-extractor go```) is split into multiple steps...
 

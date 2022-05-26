@@ -1002,7 +1002,7 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     Write the My Stats page.
     """
     logger.info(f'Writing page {code("My Stats")}', bold=True)
-    st.image(join(root_dir, 'graphics', 'my_stats.png'))
+    st.image(join(root_dir, 'imessage_extractor', 'graphics', 'my_stats.png'))
 
     #
     # Page preparation
