@@ -7,6 +7,7 @@ pandas
 phonenumbers
 Pillow>=9.0.1
 plotly
+protobuf==3.20
 send2trash
 sql-query-tools
 streamlit
