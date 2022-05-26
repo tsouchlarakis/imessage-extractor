@@ -25,10 +25,23 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
+1.0.9 (2022-05-25)
+------------------
+**Added**
+- Grpahics folder to manifest
+
+**Changed**
+
+**Deprecated**
+
+**Removed**
+
+**Fixed**
+
 1.0.8 (2022-05-24)
 ------------------
 **Added**
-- CHANGELOG to MANIFEST
+- CHANGELOG to manifest
 
 **Changed**
 
@@ -79,6 +92,7 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 - ``Visuals`` class
 
 **Changed**
+- Overhaul to migrate Postgres dependency to SQLite
 - Requirements
 - Restructured staging table/view definitions
 - Enhanced logging output
