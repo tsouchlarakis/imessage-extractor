@@ -13,4 +13,4 @@ recursive-exclude * __pycache__
 recursive-include tests *
 recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
 recursive-include imessage_extractor/src *
-recursive-include graphics *
+recursive-include imessage_extractor/graphics *

@@ -12,7 +12,7 @@ def write(data: 'iMessageDataExtract', logger: logging.Logger) -> None:
     """
     logger.info(f'Writing page {code("About")}', bold=True)
 
-    st.image(join(dirname(dirname(dirname(dirname(dirname(__file__))))), 'graphics', 'about.png'))
+    st.image(join(dirname(dirname(dirname(dirname(__file__)))), 'graphics', 'about.png'))
 
     st.markdown("""
     ## Contributions

@@ -31,6 +31,7 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 - Grpahics folder to manifest
 
 **Changed**
+- Included all files in the graphics folder in pypi build
 
 **Deprecated**
 
@@ -157,4 +158,4 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 **Added**
 - ``imessage-extractor`` launch! 🚀
 
-.. image:: graphics/rocket.gif
+.. image:: imessage_extractor/graphics/rocket.gif
