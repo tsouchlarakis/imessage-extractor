@@ -25,7 +25,7 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 .. **Security**
 
-1.0.9 (2022-05-25)
+1.0.12 (2022-05-25)
 ------------------
 **Added**
 - Grpahics folder to manifest
