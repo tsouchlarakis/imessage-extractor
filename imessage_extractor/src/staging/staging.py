@@ -137,6 +137,9 @@ class StagingTableOrViewSQLDefined(object):
                 raise ValueError(f'Reference {code(ref_name)} not found in either {path(self.cfg.file.staging_sql_info)} or {path(self.cfg.file.staging_python_info)}')
 
 
+        self.logger.debug(f'Attempting to create staging object {code(self.table_name)}')
+
+
         with open(self.cfg.file.staging_sql_info, 'r') as f:
             staging_sql_info = json.load(f)
 
@@ -144,7 +147,9 @@ class StagingTableOrViewSQLDefined(object):
             staging_python_info = json.load(f)
 
         if not cascade:
+            self.logger.debug(f'Cascaded create not required, creating the staging object {code(self.table_name)}')
             chatdb.execute(self.def_sql)
+            self.logger.info(f'Created staging object {code(self.table_name)}', arrow='black')
         else:
             self.logger.debug(f'Requested cascaded definition for {code(self.table_name)}')
             if chatdb.table_or_view_exists(self.table_name):
@@ -154,9 +159,9 @@ class StagingTableOrViewSQLDefined(object):
                     self.check_references(chatdb)
 
                 if self.references_exist:
-                    self.logger.debug('All references exist, creating the table')
+                    self.logger.debug(f'All references exist, creating the staging object {code(self.table_name)}')
                     chatdb.execute(self.def_sql)
-                    self.logger.info(f'Defined staging object {code(self.table_name)}', arrow='black')
+                    self.logger.info(f'Created staging object {code(self.table_name)}', arrow='black')
                 else:
                     self.logger.debug(strip_ws(
                         f"""Cannot create the user table because of nonexistent
@@ -184,7 +189,7 @@ class StagingTableOrViewSQLDefined(object):
                     # so we should be able to simply create it as normal
                     chatdb.execute(self.def_sql)
                     self.logger.debug('Created all nonexistent references and defined view successfully')
-                    self.logger.info(f'Defined staging object {code(self.table_name)}', arrow='black')
+                    self.logger.info(f'Created staging object {code(self.table_name)}', arrow='black')
 
 
 class StagingTablePythonDefined(object):
